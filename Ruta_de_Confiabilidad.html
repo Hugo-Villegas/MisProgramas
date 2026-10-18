@@ -1,0 +1,1199 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ruta de Confiabilidad</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: bitácora de planta. Panel del jugador (etapa MCEM + XP) arriba, mapa de 12 misiones en grilla,
+   y vista de misión con 4 pestañas: briefing, desafío, quiz y misión en planta. */
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --surface-2:#E2E7EC; --ink:#14202B; --muted:#56636F; --line:#C7D0D8;
+  --accent:#A65F00; --accent-strong:#C77700; --accent-ink:#FFFFFF; --accent-soft:#F5E6CE;
+  --steel:#1F3A55; --steel-soft:#D9E3EC;
+  --ok:#1C7448; --ok-soft:#DCEFE3; --bad:#AE2A1F; --bad-soft:#F6DFDB; --lock:#97A2AD;
+  --f-display:"Barlow Condensed","Arial Narrow","Roboto Condensed",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0E151C; --surface:#16202A; --surface-2:#1E2A36; --ink:#E3E9EF; --muted:#97A3AF; --line:#2B3947;
+  --accent:#F0A33A; --accent-strong:#F0A33A; --accent-ink:#1B1205; --accent-soft:#36270F;
+  --steel:#A9C6E0; --steel-soft:#1C2F42;
+  --ok:#4DC48B; --ok-soft:#12301F; --bad:#F2877E; --bad-soft:#3A1916; --lock:#4B5967; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E151C; --surface:#16202A; --surface-2:#1E2A36; --ink:#E3E9EF; --muted:#97A3AF; --line:#2B3947;
+  --accent:#F0A33A; --accent-strong:#F0A33A; --accent-ink:#1B1205; --accent-soft:#36270F;
+  --steel:#A9C6E0; --steel-soft:#1C2F42;
+  --ok:#4DC48B; --ok-soft:#12301F; --bad:#F2877E; --bad-soft:#3A1916; --lock:#4B5967; color-scheme:dark }
+
+*{box-sizing:border-box}
+#app{display:flex;flex-direction:column;gap:36px}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 72px;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:.01em;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:clamp(40px,7vw,64px);text-transform:uppercase}
+h2{font-size:28px;text-transform:uppercase}
+h3{font-size:21px}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent-strong);outline-offset:2px}
+
+/* Botones */
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:8px 14px;font-weight:500;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--accent-strong);border-color:var(--accent-strong);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.small{padding:5px 10px;font-size:13px}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:end}
+.hero-copy{display:flex;flex-direction:column;gap:12px;min-width:0}
+.hero-copy .lead{max-width:56ch;color:var(--muted)}
+.player{background:var(--steel);color:var(--bg);border-radius:10px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+:root .player{--pc-muted:color-mix(in srgb,var(--bg) 70%,var(--steel))}
+.player .eyebrow{color:var(--pc-muted)}
+.rank-name{font-family:var(--f-display);font-size:40px;font-weight:700;text-transform:uppercase;line-height:1}
+.rank-sub{font-size:13px;color:var(--pc-muted)}
+.stages{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.stage{display:flex;flex-direction:column;gap:5px;min-width:0}
+.stage i{display:block;height:6px;border-radius:2px;background:color-mix(in srgb,var(--bg) 22%,var(--steel))}
+.stage.on i{background:var(--accent-strong)}
+.stage span{font-family:var(--f-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--pc-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stage.on span{color:var(--bg)}
+.xpbar{height:10px;border-radius:5px;background:color-mix(in srgb,var(--bg) 18%,var(--steel));overflow:hidden}
+.xpbar b{display:block;height:100%;background:var(--accent-strong);border-radius:5px;transition:width .5s ease}
+.xprow{display:flex;justify-content:space-between;gap:10px;font-family:var(--f-mono);font-size:12px;color:var(--pc-muted);flex-wrap:wrap}
+.quote{font-size:13px;font-style:italic;color:var(--pc-muted);border-top:1px solid color-mix(in srgb,var(--bg) 18%,var(--steel));padding-top:10px}
+
+/* Estadísticas */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat b{font-family:var(--f-display);font-size:30px;font-weight:600;line-height:1}
+.stat span{font-size:12.5px;color:var(--muted)}
+
+/* Mapa */
+.sec-head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.map{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.tile{position:relative;text-align:left;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;min-width:0;transition:transform .15s ease,border-color .15s ease}
+.tile:hover:not(.locked){border-color:var(--ink);transform:translateY(-1px)}
+.tile .wk{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tile .wk .eyebrow{color:var(--muted)}
+.tile h3{font-size:19px}
+.tile .meta{font-size:12.5px;color:var(--muted)}
+.chip{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;border-radius:3px;padding:2px 6px;white-space:nowrap}
+.chip.lock{background:var(--surface-2);color:var(--muted)}
+.chip.now{background:var(--accent-soft);color:var(--accent)}
+.chip.done{background:var(--ok-soft);color:var(--ok)}
+.segs{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:2px}
+.segs i{height:4px;border-radius:2px;background:var(--surface-2)}
+.segs i.on{background:var(--ok)}
+.tile.locked{background:transparent;border-style:dashed;cursor:not-allowed}
+.tile.locked h3,.tile.locked .meta{color:var(--lock)}
+.tile.current{border-color:var(--accent-strong);box-shadow:0 0 0 1px var(--accent-strong) inset}
+.tile.final{grid-column:span 2;background:var(--steel-soft);border-color:var(--steel)}
+.tile.final h3{color:var(--steel)}
+:root .tile.final.locked{background:transparent;border-color:var(--line)}
+
+/* Insignias */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:14px}
+.badge{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);min-width:0}
+.badge svg{flex:none}
+.badge b{display:block;font-size:13.5px;line-height:1.25}
+.badge small{display:block;font-size:12px;color:var(--muted);line-height:1.3}
+.badge.off{background:transparent;opacity:.55}
+
+/* Ajustes */
+.settings{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+.settings label{display:inline-flex;gap:8px;align-items:center}
+.settings input[type=date]{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:5px 8px}
+.sync{font-family:var(--f-mono);font-size:12px}
+
+/* Vista de misión */
+.mission{display:flex;flex-direction:column;gap:20px}
+.m-head{display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line);padding-bottom:18px}
+.m-head h2{font-size:clamp(30px,5vw,44px)}
+.m-tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-size:12.5px;border:1px solid var(--line);border-radius:3px;padding:2px 8px;background:var(--surface)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{border:none;background:none;padding:10px 14px;border-bottom:2px solid transparent;font-weight:500;color:var(--muted);display:inline-flex;gap:8px;align-items:center;white-space:nowrap}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent-strong)}
+.tab .tick{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line);display:inline-grid;place-items:center;font-size:10px}
+.tab .tick.on{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.panel{display:flex;flex-direction:column;gap:18px}
+.cols{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.box h3{font-size:19px}
+ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.concepts{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.concept{border-left:3px solid var(--steel);background:var(--surface);padding:10px 12px;border-radius:0 var(--r) var(--r) 0;min-width:0}
+.concept b{display:block;font-size:14px;margin-bottom:2px}
+.concept p{font-size:13.5px;color:var(--muted)}
+.formula{font-family:var(--f-mono);font-size:13px;background:var(--surface-2);padding:2px 6px;border-radius:3px;overflow-wrap:anywhere}
+.read-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--accent-soft);border-radius:var(--r);padding:12px 14px}
+.read-row p{color:var(--ink)}
+.check{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.check input{margin-top:4px;accent-color:var(--ok);width:16px;height:16px;flex:none}
+
+/* Desafío */
+.items{display:flex;flex-direction:column;gap:10px}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 14px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.item.ok{border-color:var(--ok);background:var(--ok-soft)}
+.item.bad{border-color:var(--bad);background:var(--bad-soft)}
+.item label{font-size:14px;min-width:0}
+.item .ctl{display:flex;gap:8px;align-items:center}
+.item input[type=text]{width:130px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-family:var(--f-mono);text-align:right}
+.item select{max-width:260px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.unit{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:44px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.feedback{font-size:14px}
+.feedback.ok{color:var(--ok);font-weight:600}
+.feedback.bad{color:var(--bad)}
+.solution{background:var(--surface-2);border-radius:var(--r);padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.scenario{font-size:14.5px;background:var(--steel-soft);border-radius:var(--r);padding:12px 14px}
+
+/* Herramientas */
+.tool{border:1px solid var(--steel);border-radius:var(--r);background:var(--surface);overflow:hidden;min-width:0}
+.tool-h{background:var(--steel);color:var(--bg);padding:8px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.tool-h b{font-family:var(--f-display);font-size:18px;text-transform:uppercase;letter-spacing:.03em}
+.tool-h span{font-size:12px;opacity:.85}
+.tool-b{padding:14px;display:flex;flex-direction:column;gap:12px}
+.grid-in{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);min-width:0}
+.field input,.field select,.field textarea{padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink);font-family:var(--f-mono);font-size:13px;width:100%}
+.field textarea{min-height:64px;resize:vertical}
+.readout{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.readout div{background:var(--surface);padding:8px 10px;min-width:0}
+.readout small{display:block;font-size:11.5px;color:var(--muted)}
+.readout b{font-family:var(--f-mono);font-size:16px;font-weight:500}
+.note{font-size:13px;color:var(--muted)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+.chart .ax{stroke:var(--line);stroke-width:1}
+.chart .grid{stroke:var(--surface-2);stroke-width:1}
+.chart .l1{fill:none;stroke:var(--accent-strong);stroke-width:2}
+.chart .l2{fill:none;stroke:var(--steel);stroke-width:2;stroke-dasharray:4 3}
+.chart .pt{fill:var(--steel)}
+.chart .mk{fill:var(--accent-strong)}
+.scroll{overflow-x:auto}
+table.mx{border-collapse:collapse;font-family:var(--f-mono);font-size:12px}
+table.mx td,table.mx th{border:1px solid var(--line);padding:6px 8px;text-align:center;min-width:44px}
+table.mx th{background:var(--surface-2);font-weight:500;color:var(--muted)}
+td.z-NC,td.z-B{background:var(--ok-soft);color:var(--ok)}
+td.z-MC,td.z-M{background:var(--accent-soft);color:var(--accent)}
+td.z-C,td.z-A{background:var(--bad-soft);color:var(--bad)}
+td.z-MA{background:var(--bad);color:var(--surface)}
+td.hit{outline:3px solid var(--ink);outline-offset:-3px;font-weight:700}
+.ahp td{padding:4px}
+.ahp select{padding:4px;border:1px solid var(--line);border-radius:4px;background:var(--surface);font-family:var(--f-mono);font-size:12px}
+
+/* Quiz */
+.quiz{display:flex;flex-direction:column;gap:14px}
+.qprog{display:flex;gap:4px}
+.qprog i{flex:1;height:5px;border-radius:2px;background:var(--surface-2)}
+.qprog i.ok{background:var(--ok)}.qprog i.bad{background:var(--bad)}.qprog i.cur{background:var(--accent-strong)}
+.qtext{font-size:18px;font-weight:500;line-height:1.4;max-width:70ch}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:11px 14px;display:flex;gap:12px;align-items:flex-start}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt .k{font-family:var(--f-mono);font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 6px;flex:none;margin-top:2px}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt:disabled{cursor:default}
+.why{background:var(--surface-2);border-radius:var(--r);padding:12px 14px;font-size:14px}
+.why .ref{display:block;font-family:var(--f-mono);font-size:11.5px;color:var(--muted);margin-top:6px}
+.result{display:flex;flex-direction:column;gap:12px;align-items:flex-start;padding:18px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line)}
+.result .big{font-family:var(--f-display);font-size:52px;font-weight:700;line-height:1}
+
+/* Misión en planta */
+.steps{display:flex;flex-direction:column;gap:10px}
+.notes{width:100%;min-height:120px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);resize:vertical;font-size:14px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--r);font-size:14px;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:calc(100% - 32px)}
+.confirm{display:inline-flex;gap:8px;align-items:center}
+
+@media (max-width:900px){ .map{grid-template-columns:repeat(2,minmax(0,1fr))} .hero{grid-template-columns:1fr} .cols{grid-template-columns:1fr} }
+@media (max-width:560px){ .stats{grid-template-columns:repeat(2,minmax(0,1fr))} .map{grid-template-columns:1fr} .tile.final{grid-column:auto} .item{grid-template-columns:1fr} .item input[type=text]{width:100%} .item select{max-width:100%;width:100%} .item .ctl{width:100%} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
+</style>
+
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">Autoestudio · 12 semanas · ~4 h por semana</span>
+      <h1>Ruta de Confiabilidad</h1>
+      <p class="lead">Doce misiones que recorren el Modelo de Gestión del Mantenimiento (MGM) de 8 fases de Parra y Crespo, <i>Ingeniería de Mantenimiento y Fiabilidad Aplicada en la Gestión de Activos</i> (INGEMAN, 2ª ed.). Cada misión trae lectura, un desafío de cálculo con los ejemplos del libro, un quiz que desbloquea la siguiente y una misión en planta para los compresores de ENAP Magallanes.</p>
+    </div>
+    <aside class="player" id="player" aria-label="Tu progreso"></aside>
+  </header>
+  <section class="stats" id="stats" aria-label="Resumen"></section>
+  <main id="app"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ===================== CONTENIDO DEL PROGRAMA ===================== */
+const PHASES = {
+  1:"Fase 1 · Objetivos, estrategia y KPIs",
+  2:"Fase 2 · Jerarquización de equipos",
+  3:"Fase 3 · Análisis de puntos débiles",
+  4:"Fase 4 · Diseño de planes de mantenimiento",
+  5:"Fase 5 · Programación y recursos",
+  6:"Fase 6 · Evaluación y control",
+  7:"Fase 7 · Ciclo de vida y renovación",
+  8:"Fase 8 · Mejora continua y nuevas tecnologías"
+};
+const GROUP_COLOR = {ef:"var(--steel)", efi:"var(--accent-strong)", ev:"var(--ok)", mej:"var(--bad)"};
+
+const WEEKS = [
+{ id:"w1", title:"El mapa del territorio", phase:"MGM completo + ISO 55000", group:"ef",
+  read:"Cap. I (pp. 1–11), Cap. II (pp. 13–21) y Anexo I (pp. 262–296, lectura rápida)", hours:"3–4 h",
+  objectives:[
+    "Explicar las 8 fases del MGM y qué condiciona cada bloque: 1–3 la eficacia, 4–5 la eficiencia, 6–7 la evaluación y 8 la mejora.",
+    "Distinguir eficacia (minimiza costes indirectos: pérdidas de producción) de eficiencia (minimiza costes directos).",
+    "Relacionar las fases del MGM con los 24 requisitos certificables de la ISO 55001."
+  ],
+  concepts:[
+    {t:"MGM en bucle cerrado", d:"Modelo dinámico y secuencial de 8 fases (Crespo, 2007). Cada fase tiene técnicas de soporte: BSC, criticidad, RCA, RCM, RAM, CRBA, ACCV y e-maintenance."},
+    {t:"Eficacia vs eficiencia", d:"La eficacia (fases 1–3) es hacer lo correcto según las necesidades del negocio. La eficiencia (fases 4–5) es hacerlo con el mínimo de recursos. El libro prioriza la eficacia."},
+    {t:"Tres pilares de soporte", d:"Tecnologías de la información (GMAO como SAP PM y monitoreo de condición), técnicas de ingeniería de mantenimiento (RCA, RCM, TPM, modelos estocásticos) y técnicas de mejora organizacional."},
+    {t:"Activo según ISO 55000", d:"Elemento, cosa o entidad con valor real o potencial para una organización. La PAS 55 (BSI, 2004) es su antecedente principal; la norma certificable es la ISO 55001."}
+  ],
+  challenge:{ intro:"Asigna cada técnica de soporte a la fase del MGM donde la ubica la Figura 1.3 del libro.", kind:"match",
+    items:[
+      {label:"Cuadro de mando integral (BSC) y KPIs", opts:"phases", a:1},
+      {label:"Análisis de criticidad", opts:"phases", a:2},
+      {label:"Análisis causa raíz (RCA)", opts:"phases", a:3},
+      {label:"RCM y RBI", opts:"phases", a:4},
+      {label:"Análisis probabilístico RAM (fiabilidad, mantenibilidad, disponibilidad)", opts:"phases", a:5},
+      {label:"Optimización coste-riesgo-beneficio (CRBA)", opts:"phases", a:6},
+      {label:"Análisis de costes de ciclo de vida (ACCV)", opts:"phases", a:7},
+      {label:"e-maintenance y adopción de nuevas tecnologías", opts:"phases", a:8}
+    ],
+    solution:"Figura 1.3 (p. 6): F1 indicadores clave (BSC) · F2 criticidad · F3 RCA · F4 RCM y RBI · F5 RAM · F6 CRBA · F7 ciclo de vida · F8 mejora continua y nuevas tecnologías. Los sistemas de soporte (SAP PM, MAXIMO, MERIDIUM) atraviesan todas las fases."},
+  quiz:[
+    {q:"¿Qué fases del MGM condicionan la eficacia de la gestión?", o:["Fases 1, 2 y 3","Fases 4 y 5","Fases 6 y 7","Solo la fase 8"], a:0, why:"Los tres primeros bloques condicionan la eficacia; los bloques 4 y 5 aseguran la eficiencia; 6 y 7 la evaluación y control; el 8 la mejora continua.", ref:"Cap. I.3, p. 4"},
+    {q:"Mejorar la eficiencia de la gestión de mantenimiento permite minimizar principalmente…", o:["Los costes indirectos asociados a pérdidas de producción","Los costes directos de mantenimiento","El coste de capital de los activos","Las penalizaciones contractuales"], a:1, why:"La eficacia minimiza costes indirectos (pérdidas de producción e insatisfacción del cliente). La eficiencia minimiza costes directos: igual o mejor servicio a menor coste.", ref:"Cap. I.2.1, p. 2"},
+    {q:"¿Cuántos requisitos certificables contiene el modelo ISO 55001 según el libro?", o:["12","18","24","32"], a:2, why:"El libro lista 24 requisitos agrupados en contexto, liderazgo, planificación, soporte, operación, evaluación del desempeño y mejora, en ciclo PHVA.", ref:"Cap. II.3.1, p. 16"},
+    {q:"¿Cuál es el principal antecedente de la norma ISO 55000?", o:["ISO 14224","PAS 55, publicada por BSI en 2004","UNE-EN 13306","SAE JA1011"], a:1, why:"La PAS 55 del British Standards Institute (2004) es el antecedente directo; ISO desarrolló la serie 55000 a partir de ella desde 2009.", ref:"Cap. II.2, p. 14"},
+    {q:"¿En qué pilar de la estructura de soporte se ubican SAP PM y las tecnologías de conocimiento de la condición?", o:["Pilar de técnicas de ingeniería de mantenimiento","Pilar de mejora organizacional","Pilar de tecnologías de la información","Pilar de gestión de riesgos"], a:2, why:"El pilar de TI incluye el GMAO (SAP PM, MAXIMO) y las tecnologías de monitoreo de condición. RCA, RCM y TPM son del pilar de técnicas de ingeniería.", ref:"Cap. I.4, p. 5"}
+  ],
+  field:{ title:"Ubica tu portafolio en el MGM",
+    steps:[
+      "Lista tus proyectos activos: análisis TBF/TTR de INFOR_DT, RCA del AJAX 1, FMECA-RCM, costo por unidad producida, disponibilidad sistémica (COPT), display de PI Vision y meta de planes eléctricos.",
+      "Asigna cada proyecto a una o más fases del MGM y marca la técnica de soporte que usa.",
+      "Identifica la fase sin cobertura o con cobertura débil. Esa es la brecha que conviene atacar primero.",
+      "Resume el resultado en una tabla de una página que puedas mostrarle a Gabriel."
+    ], deliverable:"Matriz proyectos × fases MGM, con la brecha prioritaria identificada." }
+},
+{ id:"w2", title:"Medir lo que importa", phase:PHASES[1], group:"ef",
+  read:"Cap. III completo (pp. 23–38)", hours:"4 h",
+  objectives:[
+    "Construir un cuadro de mando integral con sus 4 perspectivas y bajar los KPIs clave a indicadores funcionales.",
+    "Calcular MTTF, FF, MDT, CIF, D y VEA a nivel de componente, equipo y planta.",
+    "Conectar los indicadores técnicos con los resultados económicos del activo."
+  ],
+  concepts:[
+    {t:"Fallo vs avería", d:"El fallo es la transición (cese de la aptitud para la función). La avería es el estado posterior. El modo de fallo es la evidencia física que provocó el fallo."},
+    {t:"Incapacidad externa", d:"Si el equipo no opera por falta de un medio exterior (gas, energía), sigue disponible: está en incapacidad externa. Solo la incapacidad interna es indisponibilidad."},
+    {t:"Los cinco básicos", d:"MTTF = ΣTTF/n · FF = 1/MTTF · MDT = ΣDT/n · CIF = FF × MDT × (CD + CP) · D = MTTF/(MTTF + MDT)."},
+    {t:"VEA", d:"VEA = IR − G, con IR = CP × VP × D × 365 y G = CF + CO + CMP + CMC. La disponibilidad entra en los ingresos; MTTF, FF, MDT y CIF entran en los gastos."}
+  ],
+  challenge:{ intro:"Reproduce el ejemplo del sello (nivel componente). Datos: TTF (meses) = 6, 2, 4, 3, 2 · DT (horas) = 7, 6, 8, 7, 6 · CD = 100 $/h · CP = 1.000 $/h · 730,39 h/mes.", kind:"numeric",
+    items:[
+      {label:"MTTF del sello", unit:"meses", a:3.4, tol:0.02, abs:true},
+      {label:"FF, frecuencia de fallos", unit:"fallos/mes", a:0.294, tol:0.01},
+      {label:"MDT", unit:"horas", a:6.8, tol:0.02, abs:true},
+      {label:"CIF, coste de indisponibilidad por fallos", unit:"$/mes", a:2199, tol:0.01},
+      {label:"D, disponibilidad", unit:"%", a:99.73, tol:0.02, abs:true}
+    ],
+    solution:"MTTF = (6+2+4+3+2)/5 = 3,4 meses · FF = 1/3,4 = 0,294 fallos/mes · MDT = (7+6+8+7+6)/5 = 6,8 h · CIF = 0,294 × 6,8 × (100 + 1.000) = 2.199 $/mes · D = 3,4 / (3,4 + 6,8/730,39) = 99,73 %. (Cap. III.6, pp. 35–36)"},
+  quiz:[
+    {q:"Un moto-compresor está detenido porque la planta aguas arriba dejó de enviar gas. Según el libro, el equipo está…", o:["Indisponible por avería","En estado disponible, con incapacidad externa","En mantenimiento correctivo","En estado de fallo funcional total"], a:1, why:"Si la aptitud cesa por falta de medios exteriores, el equipo sigue disponible pero en incapacidad externa (modo de fallo externo). La indisponibilidad corresponde a la incapacidad interna.", ref:"Cap. III.4, p. 30"},
+    {q:"¿Cuál es la expresión del indicador CIF?", o:["CIF = MTTF × MDT × CD","CIF = FF × MDT × (CD + CP)","CIF = FF × (CD + CP) / MDT","CIF = D × CP × 365"], a:1, why:"CIF = FF × MDT × (CD + CP): frecuencia × horas fuera de servicio por fallo × (coste directo + penalización por hora).", ref:"Ec. 3.4, p. 32"},
+    {q:"En el ejemplo de BSC del libro, ¿qué KPI resume la perspectiva financiera del mantenimiento?", o:["Cumplimiento del MP","Disponibilidad de planta","Coste de mantenimiento por unidad producida","Número de fallos repetitivos"], a:2, why:"El KPI financiero es el coste de mantenimiento por unidad de producción, apoyado por indicadores funcionales como cumplimiento de MP (98 %) e integridad de datos (95 %).", ref:"Cap. III.3, Fig. 3.4, p. 27"},
+    {q:"¿Qué diferencia hay entre fallo y avería?", o:["Son sinónimos","El fallo es un estado y la avería una transición","El fallo es la transición entre estados y la avería es un estado","La avería incluye el mantenimiento preventivo"], a:2, why:"Fallo es el paso de un estado a otro; avería es el estado en que queda el equipo tras el fallo.", ref:"Cap. III.4, p. 29"},
+    {q:"Según la Tabla 3.4, ¿qué utilidad tiene calcular la disponibilidad a nivel de partes (sello, rodamiento)?", o:["Es el nivel más útil","No es de mucha utilidad","Sirve para definir el overhaul","Sirve para calcular el VEA"], a:1, why:"La tabla indica que la disponibilidad de partes no es de mucha utilidad; su valor está a nivel de sistemas (planes de producción) y de planta (evaluación gerencial).", ref:"Tabla 3.4, p. 34"}
+  ],
+  field:{ title:"Tus cinco KPIs, en tres niveles",
+    steps:[
+      "Extrae 24 meses de eventos de un compresor crítico (avisos IW38/IW69 o tus informes INFOR_DT).",
+      "Calcula MTTF, FF, MDT y D a nivel componente (modo de fallo principal), equipo y planta.",
+      "Estima CD (KSB1) y CP (gas no comprimido valorizado) y calcula el CIF.",
+      "Propón 2 indicadores funcionales que soporten tu KPI de costo por unidad producida."
+    ], deliverable:"Hoja de cálculo con los 5 KPIs en 3 niveles y una nota de interpretación." }
+},
+{ id:"w3", title:"Diagnóstico de madurez", phase:PHASES[1], group:"ef",
+  read:"Cap. IV completo (pp. 39–55)", hours:"3 h",
+  objectives:[
+    "Aplicar las auditorías MCEM (matriz 5 × 7), MES (60 preguntas, 5 áreas) y MWCS (105 preguntas, 9 áreas).",
+    "Calcular e interpretar la puntuación MES y su categoría.",
+    "Usar el resultado para priorizar acciones de mejora."
+  ],
+  concepts:[
+    {t:"MCEM", d:"5 etapas (incertidumbre, conciencia, entendimiento, madurez, excelencia) × 7 factores de gestión. Se puntúa de 1 a 5 y se promedia entre participantes. Tu rango en esta ruta usa esas mismas 5 etapas."},
+    {t:"MES (Instituto Marshall)", d:"60 preguntas en 5 áreas, escala 1–5, mínimo 8 participantes. Máximo 300 puntos. 261–300 clase mundial · 201–260 muy buena · 141–200 sobre el promedio · 81–140 bajo el promedio · ≤ 80 muy bajo."},
+    {t:"MWCS", d:"105 preguntas en 9 áreas, desde la organización del departamento hasta la relación entre mantenimiento programado y correctivo."},
+    {t:"Qué debe tener una auditoría", d:"Decidir con datos cualitativos y cuantitativos, combinar lenguaje financiero y técnico, ser rápida de aplicar y generar acciones."}
+  ],
+  tool:"mes",
+  challenge:{ intro:"Usa la escala MES del libro. Puedes apoyarte en la calculadora de abajo.", kind:"mixed",
+    items:[
+      {label:"Pet-Con obtuvo 168 puntos. ¿En qué categoría queda?", opts:["Clase mundial (261–300)","Muy buena (201–260)","Por arriba del promedio (141–200)","Por debajo del promedio (81–140)","Muy por debajo del promedio (≤ 80)"], a:2},
+      {label:"Una planta promedia por área 48, 44, 52, 40 y 46. ¿Puntuación total?", unit:"puntos", a:230, tol:0, abs:true},
+      {label:"¿Y su categoría?", opts:["Clase mundial (261–300)","Muy buena (201–260)","Por arriba del promedio (141–200)","Por debajo del promedio (81–140)","Muy por debajo del promedio (≤ 80)"], a:1},
+      {label:"Puntuación mínima posible de la MES", unit:"puntos", a:60, tol:0, abs:true}
+    ],
+    solution:"168 cae en 141–200: por arriba del promedio, nivel aceptable (Tabla 4.7). 48+44+52+40+46 = 230 → muy buena (201–260). Mínimo: 12 preguntas × 1 punto × 5 áreas = 60. (Cap. IV.3, pp. 43–47)"},
+  quiz:[
+    {q:"La auditoría MES se compone de…", o:["105 preguntas en 9 áreas","60 preguntas en 5 áreas","35 celdas de una matriz 5 × 7","24 requisitos certificables"], a:1, why:"MES: 60 preguntas, 12 por cada una de 5 áreas, escala 1–5. MWCS: 105 preguntas en 9 áreas. MCEM: matriz 5 × 7.", ref:"Cap. IV.3, p. 43"},
+    {q:"¿Qué rango de la MES corresponde a la categoría «Muy buena / buenas prácticas»?", o:["261–300","201–260","141–200","81–140"], a:1, why:"261–300 clase mundial, 201–260 muy buena, 141–200 sobre el promedio, 81–140 bajo el promedio.", ref:"Cap. IV.3, p. 44"},
+    {q:"¿Cuál es el orden correcto de las etapas de la MCEM?", o:["Conciencia, incertidumbre, madurez, entendimiento, excelencia","Incertidumbre, conciencia, entendimiento, madurez, excelencia","Reactiva, preventiva, predictiva, proactiva, excelencia","Incertidumbre, entendimiento, conciencia, excelencia, madurez"], a:1, why:"Eje horizontal de la MCEM: incertidumbre → conciencia → entendimiento → madurez → excelencia.", ref:"Cap. IV.2, p. 41"},
+    {q:"En la etapa «Excelencia» de la MCEM, la relación costes de mantenimiento / costes de producción es…", o:["30 % o más","20–30 %","10–20 %","Menos del 5 %"], a:3, why:"La fila de costes de la Tabla 4.1 va de 30+ % (incertidumbre) a menos del 5 % (excelencia).", ref:"Tabla 4.1, p. 42"},
+    {q:"¿A cuántos participantes como mínimo recomienda el libro aplicar el cuestionario MES?", o:["3","5","8","27"], a:2, why:"Se recomienda un mínimo de 8 participantes de gerencia, supervisión, operaciones y mantenimiento. Pet-Con encuestó a 27.", ref:"Cap. IV.3, p. 43"}
+  ],
+  field:{ title:"Autoevaluación MES de mantenimiento Magallanes",
+    steps:[
+      "Aplica el cuestionario MES (60 preguntas, Tablas 4.2–4.6) a 8 personas: IPM, supervisores de planta, operaciones y activos.",
+      "Promedia por área y calcula el total sobre 300.",
+      "Grafica las 5 áreas en un radar y elige las 2 más débiles.",
+      "Ubica a la organización en la MCEM y compara con el puntaje MES."
+    ], deliverable:"Radar MES con puntaje y categoría, más 2 acciones de mejora priorizadas." }
+},
+{ id:"w4", title:"¿Qué es crítico?", phase:PHASES[2], group:"ef",
+  read:"Cap. V.1–V.4 (pp. 57–65) y VII.3.2.1 (pp. 122–124)", hours:"4 h",
+  objectives:[
+    "Aplicar el flujograma cualitativo (E, S, Q, W, D, F, M → A/B/C).",
+    "Calcular la criticidad total por riesgo (CTR) y ubicarla en su matriz.",
+    "Aplicar el modelo MCR, diseñado para los activos off-shore de Magallanes de ENAP SIPETROL (2008)."
+  ],
+  concepts:[
+    {t:"Riesgo = frecuencia × consecuencia", d:"Base común de los modelos semicuantitativos (concepto PRN). La criticidad es la materia prima de cualquier proceso de optimización."},
+    {t:"CTR", d:"CTR = FF × ((IO × FO) + CM + SHA). FF 1–4, IO 1–10, FO 1/2/4, CM 1–2, SHA 1/3/6/8. Consecuencia máxima: 50."},
+    {t:"MCR (ENAP SIPETROL)", d:"C = 0,2 × (SHA + IC + IP + BM + CM), cada factor de 1 a 5. Riesgo = FF × C. Matriz 5 × 5 con zonas baja, media, alta y muy alta."},
+    {t:"Flujograma A/B/C", d:"Preguntas en orden: medio ambiente, seguridad, calidad, tiempo de trabajo, entrega, fiabilidad y mantenibilidad. Distribución típica: 20 % A, 30 % B y 50 % C."}
+  ],
+  tool:"crit",
+  challenge:{ intro:"Moto-compresor de una estación: 1 a 2 fallos al año; un fallo saca del sistema entre 50 % y 74 % de la producción; hay una unidad de reserva que cubre parcialmente; cada reparación supera 20.000 USD; riesgo mínimo para las personas y fuga controlable. Factores CTR: FF = 3, IO = 7, FO = 2, CM = 2, SHA = 3.", kind:"mixed",
+    items:[
+      {label:"Consecuencia C = (IO × FO) + CM + SHA", unit:"", a:19, tol:0, abs:true},
+      {label:"CTR = FF × C", unit:"", a:57, tol:0, abs:true},
+      {label:"Zona en la matriz CTR (Figura 5.3)", opts:["No crítico (NC)","Media criticidad (MC)","Crítico (C)"], a:1},
+      {label:"Con el MCR: SHA 3, IC 1, IP 4, BM 3, CM 4. Consecuencia C", unit:"", a:3, tol:0.01, abs:true},
+      {label:"Con FF = 4 (entre 1 y 3 eventos al año), Riesgo MCR = FF × C", unit:"", a:12, tol:0.01, abs:true},
+      {label:"Zona en la matriz MCR (Figura 5.4)", opts:["Baja (B)","Media (M)","Alta (A)","Muy alta (MA)"], a:2}
+    ],
+    solution:"CTR: C = 7 × 2 + 2 + 3 = 19 → CTR = 3 × 19 = 57. Frecuencia 3 y consecuencia 11–20 → media criticidad. MCR: C = 0,2 × (3+1+4+3+4) = 3,0 → Riesgo = 4 × 3 = 12; fila 4, columna 3 → alta. (pp. 60–65)"},
+  quiz:[
+    {q:"¿Cuál es la expresión del modelo CTR?", o:["CTR = FF + IO + FO + CM + SHA","CTR = FF × ((IO × FO) + CM + SHA)","CTR = (FF × IO) + (FO × CM) + SHA","CTR = FF × IO × FO × CM × SHA"], a:1, why:"CTR = FF × C, con C = (IO × FO) + CM + SHA (ecs. 5.1–5.3).", ref:"Cap. V.3, p. 61"},
+    {q:"En el flujograma de criticidad, ¿en qué orden se evalúan los atributos?", o:["S, E, D, Q, F, M, W","E, S, Q, W, D, F, M","D, F, M, E, S, Q, W","F, M, D, W, Q, S, E"], a:1, why:"Medio ambiente (E), seguridad (S), calidad (Q), tiempo de trabajo (W), entrega (D), fiabilidad (F) y mantenibilidad (M). El orden expresa el peso de cada atributo.", ref:"Fig. 5.2, p. 59"},
+    {q:"El modelo MCR del libro fue diseñado para…", o:["Una refinería FCC en Venezuela","Los activos off-shore de Magallanes de ENAP SIPETROL","Una cervecera de Empresas Polar","El Canal de Panamá"], a:1, why:"El MCR toma como referencia el método diseñado para los activos off-shore del área de Magallanes de ENAP SIPETROL (informe técnico, 2008).", ref:"Cap. V.4, p. 63"},
+    {q:"En el flujograma, ¿qué distribución de equipos A/B/C se considera normal?", o:["50 / 30 / 20","33 / 33 / 33","20 / 30 / 50","10 / 20 / 70"], a:2, why:"Es normal un criterio que deje cerca del 20 % de los activos en A, 30 % en B y 50 % en C.", ref:"Cap. V.2, p. 60"},
+    {q:"En el CTR, un factor de flexibilidad operacional FO = 4 significa…", o:["Hay unidades de reserva en línea","La reserva cubre parcialmente la producción","No hay unidades de reserva y los tiempos de reparación y logística son muy grandes","El impacto en producción supera el 75 %"], a:2, why:"FO: 4 sin reserva y logística muy grande; 2 reserva parcial; 1 reserva en línea con tiempos pequeños.", ref:"Cap. V.3, p. 61"}
+  ],
+  field:{ title:"MCR para el parque de compresión",
+    steps:[
+      "Evalúa con el MCR un compresor representativo de cada planta: ECA, SARA, CULLEN, DAU-1, DAU-2 y Posesión.",
+      "Usa tu historial de fallos para el factor FF y no la percepción del equipo.",
+      "Ubica cada equipo en la matriz 5 × 5 y compara el ranking con tu análisis Jack-Knife.",
+      "Explica en un párrafo las diferencias entre ambos rankings."
+    ], deliverable:"Matriz MCR poblada y comparación con Jack-Knife." }
+},
+{ id:"w5", title:"AHP: decidir con números", phase:PHASES[2], group:"ef",
+  read:"Cap. V.5 completo (pp. 65–76)", hours:"4 h",
+  objectives:[
+    "Estructurar una jerarquía de objetivo, criterios y alternativas.",
+    "Calcular pesos con el autovector de la matriz de comparación apareada.",
+    "Verificar la consistencia de los juicios con CI e IR."
+  ],
+  concepts:[
+    {t:"Escala de Saaty", d:"1 igual · 3 moderado · 5 fuerte · 7 muy fuerte · 9 extremo (2, 4, 6 y 8 son intermedios). Si A vs B = 3, entonces B vs A = 1/3."},
+    {t:"Consistencia", d:"CI = (λmax − n)/(n − 1) e IR = CI/RI. Con la Tabla 5.2, RI = 0,52 (n=3), 0,89 (n=4), 1,11 (n=5), 1,25 (n=6) y 1,35 (n=7). Se acepta IR ≤ 0,1."},
+    {t:"Caso FCC (REP-TOL)", d:"Criterios: frecuencia (0,302), detección (0,110), severidad (0,230) y costes de fallos (0,358). IR = 0,02, calculado con Expert Choice."},
+    {t:"Por qué AHP", d:"Es más fácil comparar dos criterios que asignar valores absolutos. Reduce la incertidumbre de una jerarquización basada solo en el «feeling»."}
+  ],
+  tool:"ahp",
+  challenge:{ intro:"La herramienta AHP viene cargada con la matriz de la Tabla 5.4 (planta FCC). Calcula y responde.", kind:"mixed",
+    items:[
+      {label:"Peso del criterio «Costes de fallos»", unit:"", a:0.358, tol:0.004, abs:true},
+      {label:"Ratio de inconsistencia IR (2 decimales)", unit:"", a:0.02, tol:0.006, abs:true},
+      {label:"¿Son aceptables los juicios?", opts:["Sí, IR ≤ 0,1","No, IR > 0,1","No se puede saber sin RI"], a:0},
+      {label:"Si cambias Frecuencia vs Detección de 3 a 9 sin tocar nada más, el IR…", opts:["Baja a cero","No cambia","Sube hasta quedar cerca del límite 0,1","Supera 0,5"], a:2}
+    ],
+    solution:"Autovector normalizado: F 0,302 · D 0,110 · S 0,230 · C 0,358; λmax ≈ 4,046; CI ≈ 0,015; IR = 0,015/0,89 ≈ 0,02 ≤ 0,1 → aceptable (Tabla 5.14, p. 74). Con F vs D = 9, el IR sube a ≈ 0,098: todavía bajo 0,1, pero en el límite."},
+  quiz:[
+    {q:"¿Cuándo se consideran aceptables los juicios en AHP?", o:["Cuando IR ≤ 0,1","Cuando IR ≥ 0,5","Cuando CI = RI","Cuando λmax < n"], a:0, why:"Los juicios son aceptables si IR ≤ 0,1. Con una inconsistencia mayor, la matriz debe reevaluarse.", ref:"Cap. V.5.1, p. 66"},
+    {q:"¿Cuál es la expresión del índice de consistencia?", o:["CI = n/λmax","CI = (λmax − n)/(n − 1)","CI = RI/IR","CI = (n − 1)/λmax"], a:1, why:"CI = (λmax − n)/(n − 1), con λmax el máximo autovalor de la matriz de juicios (ec. 5.6).", ref:"Ec. 5.6, p. 66"},
+    {q:"Según la Tabla 5.2 del libro, ¿qué RI corresponde a una matriz 4 × 4?", o:["0,52","0,89","1,11","1,25"], a:1, why:"n = 4 → RI = 0,89. Ese es el valor que usa el caso FCC.", ref:"Tabla 5.2, p. 66"},
+    {q:"En la escala de Saaty, el valor 7 corresponde a un juicio…", o:["Moderado","Fuerte","Muy fuerte","Extremo"], a:2, why:"1 igual, 3 moderado, 5 fuerte, 7 muy fuerte, 9 extremo.", ref:"Tabla 5.1, p. 66"},
+    {q:"En el caso de la planta FCC, ¿qué criterio obtuvo mayor peso?", o:["Frecuencia de fallos","Detección de fallos","Severidad de fallos","Costes de fallos"], a:3, why:"Costes de fallos 0,358 > frecuencia 0,302 > severidad 0,230 > detección 0,110.", ref:"Tabla 5.14, p. 74"}
+  ],
+  field:{ title:"AHP para priorizar las 6 plantas",
+    steps:[
+      "Define el objetivo: priorizar ECA, SARA, CULLEN, DAU-1, DAU-2 y Posesión para tu programa de confiabilidad.",
+      "Elige 4 criterios (por ejemplo frecuencia, detección, severidad y costes de fallos) y haz la comparación apareada con 3 colegas.",
+      "Calcula pesos e IR. Si IR > 0,1, revisa los juicios antes de seguir.",
+      "Compara el ranking con el MCR de la misión anterior."
+    ], deliverable:"Matriz AHP con IR ≤ 0,1 y ranking de plantas justificado." }
+},
+{ id:"w6", title:"Cazar la causa raíz", phase:PHASES[3], group:"ef",
+  read:"Cap. VI completo (pp. 79–113)", hours:"4–5 h",
+  objectives:[
+    "Ejecutar las 6 etapas del ACR, desde el equipo natural de trabajo hasta la evaluación de soluciones.",
+    "Cuantificar el riesgo de problemas y modos de fallo para priorizar con Pareto (80 % de las pérdidas).",
+    "Clasificar causas raíces físicas, humanas y latentes."
+  ],
+  concepts:[
+    {t:"Problemas de reglas vs de eventos", d:"Los problemas basados en eventos dependen de causa y efecto y admiten varias soluciones. Resolverlos con reglas es una de las causas de soluciones inefectivas."},
+    {t:"Riesgo del problema", d:"R = FF × TPFS × (CD + PEN), en US$/año. Para modos de fallo: RTA = CAR + PAF, con CAR = FF × (CMO + CM) y PAF = FF × PE."},
+    {t:"Cómo, por qué y quién", d:"Al definir el problema solo se responde qué, cuándo, dónde e importancia. El cómo va en los modos de fallo, el por qué en las hipótesis, y el quién no se pregunta: se busca prevenir, no culpar."},
+    {t:"Tres niveles de causa", d:"Física (mecanismo del material), humana (acción u omisión) y latente (deficiencias de gestión, procedimientos o normas culturales). Las latentes son la mayor preocupación."}
+  ],
+  challenge:{ intro:"Parte 1: bomba P101 con FF = 10 fallos/año, TPFS = 4 h/fallo, CD = 1.000 $/h y PEN = 30.000 $/h. Parte 2: clasifica causas tomadas de la Tabla 6.8.", kind:"mixed",
+    items:[
+      {label:"Riesgo del problema P101", unit:"US$/año", a:1240000, tol:0.001},
+      {label:"«Aceite fuera de especificación»", opts:["Física","Humana","Latente"], a:0},
+      {label:"«Mala operación del equipo de subsuelo»", opts:["Física","Humana","Latente"], a:1},
+      {label:"«No existe procedimiento de reemplazo»", opts:["Física","Humana","Latente"], a:2},
+      {label:"«Cambio de condiciones del pozo»", opts:["Física","Humana","Latente"], a:0},
+      {label:"«Procedimiento de izaje incompleto»", opts:["Física","Humana","Latente"], a:2},
+      {label:"«Puesta en marcha después del pulling»", opts:["Física","Humana","Latente"], a:1}
+    ],
+    solution:"R = 10 × 4 × (1.000 + 30.000) = 1.240.000 US$/año (p. 85). Clasificación de la Tabla 6.8 (pp. 98–100): aceite fuera de especificación (F), mala operación (H), sin procedimiento de reemplazo (L), cambio de condiciones del pozo (F), izaje incompleto (L), puesta en marcha tras pulling (H)."},
+  quiz:[
+    {q:"¿Cuál es el orden de las etapas del ACR propuesto en el libro?", o:["Hipótesis → modos de fallo → problemas → causas → soluciones","Equipo natural → problemas → modos de fallo → hipótesis → causas raíces → soluciones","Problemas → equipo natural → causas raíces → hipótesis → soluciones","Modos de fallo → equipo natural → soluciones → causas"], a:1, why:"Figura 6.3: equipo natural de trabajo, definición y jerarquización de problemas, modos de fallo, hipótesis, causas raíces y evaluación de soluciones.", ref:"Cap. VI.3, p. 83"},
+    {q:"¿Qué pregunta NO debe hacerse durante la definición del problema?", o:["¿Qué?","¿Cuándo?","¿Dónde?","¿Quién?"], a:3, why:"El objetivo es prevenir, no buscar culpables. El cómo y el por qué también se dejan para etapas posteriores.", ref:"Cap. VI.3.2, p. 86"},
+    {q:"Una causa raíz latente se refiere a…", o:["El mecanismo físico de degradación del material","Un error de acción u omisión del operador","Deficiencias en sistemas de gestión, procedimientos o normas culturales","Un fallo de un equipo vecino"], a:2, why:"La causa latente es la falta o deficiencia de sistemas de gestión y administrativos (reglas, procedimientos, guías) o normas culturales que permiten el fallo.", ref:"Cap. VI.3.5, p. 89"},
+    {q:"Para enfocar el esfuerzo de ACR, el libro recomienda analizar…", o:["Todos los problemas por igual","Los problemas que generan el 80 % de las pérdidas (Pareto)","Solo los fallos con lesionados","Los 3 problemas más recientes"], a:1, why:"Se jerarquiza por riesgo (coste/año) y se aplica Pareto: analizar los eventos que generan el 80 % de las pérdidas.", ref:"Cap. VI.3.2, p. 85"},
+    {q:"«¿Por qué falló la bomba?» es un problema…", o:["Basado en reglas, con una única respuesta correcta","Basado en eventos, que depende de causa y efecto y admite más de una solución","De tipo administrativo","Sin solución técnica"], a:1, why:"Los problemas basados en eventos dependen de leyes de causa y efecto. Tratarlos como problemas de reglas lleva a soluciones inefectivas.", ref:"Cap. VI.2.1, p. 81"}
+  ],
+  field:{ title:"Audita tu RCA del AJAX 1",
+    steps:[
+      "Contrasta tu RCA PROACT de la fundición de biela del AJAX DPC-2804 N°1 con las 6 etapas del libro y marca qué etapa quedó más débil.",
+      "Calcula el RTA del modo de fallo con costes reales (KSB1) y la penalización por gas no comprimido.",
+      "Revisa que cada causa esté clasificada como física, humana o latente y que existan causas latentes.",
+      "Verifica que cada solución cumpla los criterios del libro: prevenir o mitigar, no crear nuevos modos de fallo y estar justificada por coste-riesgo-beneficio. Define cómo medirás TPO, TPFS, FF y CIF antes y después."
+    ], deliverable:"Nota de auditoría del RCA y plan de medición de efectividad para Gabriel." }
+},
+{ id:"w7", title:"RCM I: funciones y FMEA", phase:PHASES[4], group:"efi",
+  read:"Cap. VII.1–VII.3.3 (pp. 115–135)", hours:"4 h",
+  objectives:[
+    "Responder las 7 preguntas del RCM sobre un sistema real.",
+    "Definir el contexto operacional con un diagrama entrada-proceso-salida (EPS).",
+    "Redactar funciones con estándares de ejecución, fallos funcionales totales y parciales, modos de fallo y efectos."
+  ],
+  concepts:[
+    {t:"Las 7 preguntas", d:"Funciones y estándares · formas de fallar · causas de cada fallo funcional · qué ocurre · cómo impacta · qué hacer para predecir o prevenir · qué hacer si no hay tarea adecuada."},
+    {t:"Equipo natural de trabajo", d:"Entre 4 y 7 personas, idealmente 5 o 6: operación, mantenimiento, ingeniero de procesos, programador, especialista externo y facilitador."},
+    {t:"Tipos de función", d:"Primarias, secundarias (contención, soporte, apariencia, higiene y seguridad), de protección, de control y subsidiarias."},
+    {t:"Modo de fallo en RCM", d:"Causa física que provoca el fallo funcional total o parcial. Las tareas atacan modos de fallo específicos. El nivel de detalle recomendado para el análisis es el sistema."}
+  ],
+  challenge:{ intro:"Moto-compresor de gas del ejemplo del libro (p. 134): comprimir 75–83 MMPCD desde 1150/1300 hasta 5500/6400 lppcm, con temperatura de descarga de 186 °F. Clasifica funciones y cuantifica un efecto.", kind:"mixed",
+    items:[
+      {label:"«Comprimir 75–83 MMPCD de 1150/1300 a 5500/6400 lppcm»", opts:["Primaria","Secundaria (contención)","Secundaria (higiene y seguridad)","Protección","Control"], a:0},
+      {label:"«Contener el gas sin fugas a la atmósfera»", opts:["Primaria","Secundaria (contención)","Secundaria (higiene y seguridad)","Protección","Control"], a:1},
+      {label:"«Parar el equipo por alta temperatura de descarga»", opts:["Primaria","Secundaria (contención)","Secundaria (higiene y seguridad)","Protección","Control"], a:3},
+      {label:"«Mantener la presión de succión mediante el lazo PIC»", opts:["Primaria","Secundaria (contención)","Secundaria (higiene y seguridad)","Protección","Control"], a:4},
+      {label:"«Comprimir a menos de 5500 lppcm» es un fallo funcional…", opts:["Total","Parcial"], a:1},
+      {label:"Modo de fallo 1.b.7 (anillos del cilindro de fuerza): 16 h/fallo × 120.000 $/h. Impacto total por fallo", unit:"$", a:1920000, tol:0.001}
+    ],
+    solution:"Comprimir es la función primaria. Contener es secundaria de contención. Parar por alta temperatura es protección. El lazo PIC es control. Operar fuera del estándar es fallo funcional parcial; dejar de comprimir sería total. Impacto: 16 × 120.000 = 1.920.000 $ por fallo (pp. 128–135)."},
+  quiz:[
+    {q:"¿Cuál es la primera de las 7 preguntas del RCM?", o:["¿Qué causa cada fallo funcional?","¿Cuáles son las funciones y estándares de ejecución del activo en su entorno de operación actual?","¿Qué tareas preventivas existen?","¿Cuánto cuesta cada fallo?"], a:1, why:"El RCM parte de las funciones y sus estándares de ejecución en el contexto operacional actual.", ref:"Cap. VII.2, p. 117"},
+    {q:"¿Qué tamaño recomienda el libro para el equipo natural de trabajo de RCM?", o:["2 a 3 personas","Ideal 5 o 6, nunca menos de 4 ni más de 7","10 a 12 personas","Solo el facilitador y el planificador"], a:1, why:"Grupos de no menos de 4 ni más de 7 personas, idealmente 5 o 6, con distintos departamentos representados.", ref:"Cap. VII.3.1, p. 119"},
+    {q:"¿Qué nivel de detalle considera más eficaz la experiencia RCM para el análisis?", o:["Parte","Equipo","Sistema","Complejo industrial"], a:2, why:"El nivel de sistema, porque suele estar bien documentado en diagramas y bloques funcionales. El nivel de partes puede ser irrealizable y el de planta superficial.", ref:"Cap. VII.3.2, p. 122"},
+    {q:"En RCM, el modo de fallo se define como…", o:["La pérdida total de la función","La causa física que provoca el fallo funcional","El efecto del fallo sobre la producción","La frecuencia del fallo"], a:1, why:"Los modos de fallo son las causas físicas que provocan los fallos funcionales totales o parciales.", ref:"Cap. VII.3.3.3, p. 131"},
+    {q:"¿Qué norma recomienda el libro para definir límites de contorno e ítems mantenibles en el contexto operacional?", o:["ISO 55001","ISO 14224","UNE-EN 15341","ISO 9001"], a:1, why:"La ISO 14224 permite definir límites de contorno, subdivisión en niveles y los ítems mantenibles por clase de equipo.", ref:"Cap. VII.3.2.2, p. 126"}
+  ],
+  field:{ title:"Contexto operacional de un moto-compresor",
+    steps:[
+      "Elige un moto-compresor crítico (AJAX de ECA o CLARK TLA-8) y define sus límites con ISO 14224.",
+      "Dibuja el diagrama EPS: materia prima, servicios, controles, productos primarios y secundarios, controles y alarmas.",
+      "Redacta 3 a 5 funciones con estándares cuantificados (MMPCD, presiones, temperaturas) y sus fallos funcionales totales y parciales.",
+      "Lista los modos de fallo de una función con efectos y consecuencias cuantificadas."
+    ], deliverable:"Contexto operacional y primera hoja FMEA del sistema." }
+},
+{ id:"w8", title:"RCM II: el árbol de decisión", phase:PHASES[4], group:"efi",
+  read:"Cap. VII.3.4–VII.6 (pp. 135–151)", hours:"4 h",
+  objectives:[
+    "Clasificar las consecuencias de cada modo de fallo: ocultas, seguridad y ambiente, operacionales y no operacionales.",
+    "Elegir el tipo de tarea con el árbol lógico RCM.",
+    "Usar el intervalo P-F para justificar tareas a condición."
+  ],
+  concepts:[
+    {t:"Curva P-F", d:"I: inicio del fallo (a menudo indetectable) → P: fallo potencial detectable → F: fallo funcional. Entre P y F hay tiempo para actuar."},
+    {t:"Tareas proactivas", d:"A condición (predictivas), reacondicionamiento (overhaul de equipos mayores), sustitución programada de componentes y búsqueda de fallos ocultos."},
+    {t:"Tareas reactivas", d:"Rediseño (obligatorio si afecta seguridad o ambiente y no hay tarea efectiva; justificación económica si es operacional) y mantenimiento no programado."},
+    {t:"Horizonte realista", d:"Los resultados del RCM se cuantifican de forma fiable a mediano plazo, entre 1 y 3 años. Es un proyecto de largo alcance, no una iniciativa aislada."}
+  ],
+  challenge:{ intro:"Recorre el árbol lógico para cada escenario y elige el tipo de tarea.", kind:"match",
+    items:[
+      {label:"Detector de gas del F&G de la sala de compresores: función de protección que, si falla sola, no se nota en operación normal.", opts:"tasks", a:3},
+      {label:"Rodamiento de motor eléctrico: la vibración permite detectar el deterioro semanas antes del fallo funcional.", opts:"tasks", a:0},
+      {label:"Luminaria de patio: sin efecto en seguridad ni producción; reparar al fallar es barato.", opts:"tasks", a:5},
+      {label:"Modo de fallo que puede herir a una persona y para el cual no existe tarea preventiva técnicamente efectiva.", opts:"tasks", a:4},
+      {label:"Componente con desgaste claro por edad, no monitoreable, que se reemplaza por uno nuevo antes de su vida útil.", opts:"tasks", a:2},
+      {label:"Overhaul periódico de un compresor mayor para restaurar su condición, que puede limitarse a limpieza, inspección y reparación.", opts:"tasks", a:1}
+    ],
+    solution:"Función oculta → búsqueda de fallos ocultos. Deterioro detectable con P-F suficiente → tarea a condición. Consecuencia no operacional y barata → no programado. Seguridad sin tarea efectiva → rediseño obligatorio. Desgaste por edad en un componente → sustitución programada. Overhaul de un equipo mayor → reacondicionamiento (pp. 135–138)."},
+  quiz:[
+    {q:"¿Qué es un fallo potencial?", o:["Un fallo que nunca ocurrirá","Una condición física identificable que indica que el fallo funcional está por ocurrir o ya está ocurriendo","Un fallo de una función oculta","El momento en que el activo deja de cumplir su función"], a:1, why:"Es el punto P de la curva: una condición física detectable, como vibración, grietas, partículas en el aceite o puntos calientes.", ref:"Cap. VII.3.4.1, p. 137"},
+    {q:"¿Cuáles son las categorías de consecuencias de los modos de fallo en RCM?", o:["Leves, moderadas y graves","Ocultas, seguridad y ambiente, operacionales y no operacionales","Mecánicas, eléctricas e instrumentales","Planificadas y no planificadas"], a:1, why:"El RCM clasifica los modos de fallo en consecuencias ocultas, de seguridad humana y ambiente, operacionales y no operacionales.", ref:"Cap. VII.3.3.4, p. 133"},
+    {q:"Si un modo de fallo tiene consecuencias operacionales y no se encuentra una tarea preventiva efectiva, elegir el rediseño…", o:["Es obligatorio","Se convierte en un proceso de justificación económica","Está prohibido","Solo lo decide el fabricante"], a:1, why:"El rediseño es obligatorio para seguridad y ambiente. Para consecuencias operacionales o no operacionales es una decisión económica.", ref:"Cap. VII.3.4.2, p. 138"},
+    {q:"¿Qué distingue el reacondicionamiento de la sustitución programada?", o:["No hay diferencia","El reacondicionamiento involucra un equipo mayor y puede limitarse a limpieza, reparación o inspección; la sustitución reemplaza componentes viejos por nuevos","La sustitución siempre es más cara","El reacondicionamiento solo se aplica a equipos electrónicos"], a:1, why:"La sustitución incide en componentes y siempre cambia viejo por nuevo. El overhaul abarca el equipo mayor y no necesariamente sustituye piezas.", ref:"Cap. VII.3.4.1, p. 137"},
+    {q:"¿En qué plazo pueden cuantificarse de forma fiable los resultados de un RCM?", o:["1 a 3 meses","6 meses","Entre 1 y 3 años","Más de 10 años"], a:2, why:"El libro habla de mediano plazo, entre uno y tres años: el RCM es un proyecto de largo alcance.", ref:"Cap. VII.5, p. 150"}
+  ],
+  field:{ title:"Árbol RCM para tu meta de planes eléctricos",
+    steps:[
+      "Toma un equipo eléctrico crítico de tu meta 3 (motor, transformador o reconectador) y lista 10 modos de fallo.",
+      "Clasifica la consecuencia de cada uno con la Figura 7.8 y recorre el árbol de la Figura 7.9.",
+      "Contrasta con el plan actual en SAP PM (IP30): marca las tareas del fabricante sin modo de fallo asociado ni justificación.",
+      "Propón qué tareas pasan a condición, cuáles se eliminan y cuáles quedan."
+    ], deliverable:"Tabla modo de fallo → consecuencia → tarea, con tareas candidatas a eliminar." }
+},
+{ id:"w9", title:"El lenguaje estadístico de la fiabilidad", phase:"Fases 5 y 6 · Análisis RAM y control", group:"ev",
+  read:"Cap. IX.1–IX.3 (pp. 171–189) y caso IX.5 (pp. 191–194)", hours:"5 h",
+  objectives:[
+    "Interpretar f(x), F(x), C(x) = R(x), h(x) y MTTF para una variable de tiempo hasta el fallo.",
+    "Ajustar Weibull a tiempos de fallo e interpretar β contra la curva de la bañera.",
+    "Modelar tiempos fuera de servicio con lognormal y obtener el MDT."
+  ],
+  concepts:[
+    {t:"Las cinco funciones", d:"f(x) densidad · F(x) probabilidad acumulada de fallo · C(x) = 1 − F(x), la fiabilidad · h(x) = f(x)/C(x), la tasa de fallos · E(X) = MTTF."},
+    {t:"Weibull", d:"C(x) = exp(−(x/α)^β); MTTF = α·Γ(1 + 1/β). β < 1 infancia (h decrece) · β = 1 aleatorio (h constante) · β > 1 envejecimiento (h crece)."},
+    {t:"Exponencial", d:"Tasa de fallos constante y comportamiento aleatorio; λ = 1/MTTF. Habitual en componentes electrónicos."},
+    {t:"Lognormal", d:"Para variables con alto sesgo hacia valores mínimos, como tiempos de reparación o deterioro. MDT = exp(μl + σl²/2)."},
+    {t:"Media ≠ moda", d:"La media es el centro de gravedad de la distribución, no el valor más probable."}
+  ],
+  tool:"weibull",
+  challenge:{ intro:"Caso del compresor de gas del libro (26 fallos en ~10 años). Con RELEST el libro obtiene α = 5,98 meses y β = 2,54 para los TTF, y μl = 1,9384 y σl = 0,1219 para los DT. El laboratorio de abajo trae esos datos cargados.", kind:"mixed",
+    items:[
+      {label:"MTTF = α·Γ(1 + 1/β)", unit:"meses", a:5.31, tol:0.03, abs:true},
+      {label:"Probabilidad de operar 4 meses sin fallar, C(4)", unit:"%", a:69.8, tol:0.3, abs:true},
+      {label:"MDT lognormal = exp(μl + σl²/2)", unit:"horas", a:7.0, tol:0.03, abs:true},
+      {label:"β = 2,54 indica que el compresor está en…", opts:["Infancia: h(x) decrece","Vida útil: h(x) constante","Envejecimiento: h(x) crece"], a:2}
+    ],
+    solution:"MTTF = 5,98 × Γ(1,394) = 5,98 × 0,888 = 5,31 meses. C(4) = exp(−(4/5,98)^2,54) = 69,8 % (Tabla 9.8: 69,85 %). MDT = exp(1,9384 + 0,1219²/2) = 7,00 h. β > 1: fase de envejecimiento (pp. 181–194)."},
+  quiz:[
+    {q:"En Weibull, un parámetro de forma β < 1 indica…", o:["Tasa de fallos creciente, envejecimiento","Tasa de fallos constante","Tasa de fallos decreciente, período de infancia","Que los datos no son válidos"], a:2, why:"β < 1: h(x) decrece, infancia. β = 1: constante. β > 1: crece, envejecimiento.", ref:"Cap. IX.2.6.2, p. 181"},
+    {q:"¿Cómo se define la función de frecuencia de fallos h(x)?", o:["h(x) = F(x)/f(x)","h(x) = f(x)/C(x) = f(x)/(1 − F(x))","h(x) = 1 − C(x)","h(x) = f(x) × C(x)"], a:1, why:"h(x) = f(x)/C(x) (ec. 9.12): número de fallos de una población por unidad de tiempo, condicionado a haber sobrevivido.", ref:"Ec. 9.12, p. 177"},
+    {q:"La distribución exponencial supone que…", o:["La tasa de fallos crece con el tiempo","La tasa de fallos es constante y el fallo es totalmente aleatorio","Los tiempos de reparación son sesgados","β > 1"], a:1, why:"En la exponencial λ es constante (λ = 1/MTTF) y el comportamiento del fallo es aleatorio.", ref:"Cap. IX.2.6.1, p. 179"},
+    {q:"¿Para qué variable usa el libro la lognormal en el caso del compresor?", o:["Tiempos hasta el fallo","Tiempos fuera de servicio (mantenibilidad)","Costes de fallos","Frecuencia de fallos por año"], a:1, why:"Los DT se modelan con lognormal (μl = 1,9384; σl = 0,1219), con MDT = 7 h. Los TTF se modelan con Weibull.", ref:"Cap. IX.5.2, p. 193"},
+    {q:"¿Qué afirmación sobre la media E(X) es correcta?", o:["Es siempre el valor más probable","Es el centro de gravedad de la distribución y no necesariamente el valor más probable","Solo existe en la distribución normal","Es igual a la mediana"], a:1, why:"El libro advierte que la media no es necesariamente el valor de mayor probabilidad: es el centro de gravedad.", ref:"Cap. IX.2.5, p. 178"}
+  ],
+  field:{ title:"Weibull de tu compresor",
+    steps:[
+      "Exporta los TBF de un compresor desde tu analizador TBF-TTR (un modo de fallo dominante, no todos mezclados).",
+      "Ajusta Weibull en el laboratorio o en R (fitdistrplus) y anota β, η y MTTF.",
+      "Ajusta lognormal a los TTR y obtén el MDT.",
+      "Interpreta β frente al plan actual: si β ≤ 1, el preventivo por tiempo no tiene sustento estadístico para ese modo."
+    ], deliverable:"Ficha Weibull/lognormal del compresor con interpretación para el plan." }
+},
+{ id:"w10", title:"Disponibilidad, riesgo e intervalo óptimo", phase:PHASES[6], group:"ev",
+  read:"Cap. IX.4 y IX.6–IX.8 (pp. 190–200)", hours:"4–5 h",
+  objectives:[
+    "Calcular disponibilidad e indisponibilidad de equipos y de configuraciones en serie y paralelo.",
+    "Expresar el riesgo como probabilidad × consecuencia por unidad de tiempo.",
+    "Encontrar el intervalo de reemplazo preventivo a coste mínimo (modelo de edad constante)."
+  ],
+  concepts:[
+    {t:"Serie y paralelo", d:"Serie: A = A1 · A2. Paralelo: A = A1 + A2 − A1·A2, o UA = UA1 · UA2."},
+    {t:"Riesgo", d:"Ri(x) = F(x) · Co / x, en $/tiempo. Funciona como una balanza entre probabilidad de fallo y consecuencia."},
+    {t:"Reemplazo a edad constante", d:"C(t) = [Cf·F(t) + Cp·(1 − F(t))] / [t(1 − F(t)) + ∫₀ᵗ x f(x) dx]. El mínimo de C(t) define tp."},
+    {t:"No todo se previene", d:"En un avión se evita la consecuencia a toda costa. En una instalación con consecuencias menores se aceptan ciertos fallos buscando el coste global mínimo."}
+  ],
+  tool:"age",
+  challenge:{ intro:"Usa los resultados de la misión anterior y el ejemplo 9.7.2: 14 TTF en semanas, Weibull α = 19,2695 y β = 4,1233, Cf = 1.000 M$ y Cp = 100 M$. La herramienta de reemplazo viene cargada.", kind:"mixed",
+    items:[
+      {label:"Disponibilidad del compresor (MTTF 5,31 meses; MDT 7 h; 730 h/mes)", unit:"%", a:99.81, tol:0.015, abs:true},
+      {label:"Dos compresores en serie con A1 = 98 % y A2 = 95 %", unit:"%", a:93.1, tol:0.05, abs:true},
+      {label:"Los mismos dos compresores en paralelo", unit:"%", a:99.9, tol:0.05, abs:true},
+      {label:"Intervalo óptimo tp del reemplazo preventivo", unit:"semanas", a:8.6, tol:0.7, abs:true},
+      {label:"Si β fuera 0,8 con los mismos costes…", opts:["tp se acorta a la mitad","No existe intervalo óptimo: el reemplazo por tiempo no conviene","tp queda igual","Conviene reemplazar cada semana"], a:1}
+    ],
+    solution:"A = 5,31/(5,31 + 7/730) = 99,81 % (p. 194). Serie: 0,98 × 0,95 = 93,1 %. Paralelo: 0,98 + 0,95 − 0,931 = 99,9 %. El mínimo de C(t) cae entre 8 y 9 semanas (Fig. 9.16; con integración exacta ≈ 8,6 semanas y 15,4 M$/semana). Con β ≤ 1 la tasa de fallos no crece: C(t) baja de forma continua y no hay óptimo finito."},
+  quiz:[
+    {q:"¿Cuál es la disponibilidad de dos equipos en paralelo?", o:["A = A1 · A2","A = A1 + A2 − A1·A2","A = (A1 + A2)/2","A = 1 − A1 · A2"], a:1, why:"En paralelo: A = A1 + A2 − A1·A2, equivalente a UA = UA1·UA2. En serie: A = A1·A2.", ref:"Tabla 9.6, p. 190"},
+    {q:"¿Cómo expresa el libro el indicador de riesgo?", o:["Ri = F(x) · Co / x, en $/tiempo","Ri = f(x) + Co","Ri = C(x) · x","Ri = MTTF / Co"], a:0, why:"Ri(x) = F(x) · Co / x: probabilidad de fallo por consecuencia económica, por unidad de tiempo (ec. 9.62).", ref:"Ec. 9.62, p. 195"},
+    {q:"El modelo de reemplazo preventivo por edad constante busca…", o:["Maximizar la disponibilidad","Minimizar el coste promedio por unidad de tiempo","Igualar Cf y Cp","Minimizar el número de fallos a cualquier coste"], a:1, why:"Se evalúa C(ti) para distintos tiempos hasta encontrar el coste mínimo por unidad de tiempo; ese tiempo es tp.", ref:"Cap. IX.7.1, p. 196"},
+    {q:"En el ejemplo del libro, ¿dónde cae tp?", o:["Entre 2 y 3 semanas","Entre 8 y 9 semanas","Entre 15 y 16 semanas","En la semana 20"], a:1, why:"La Figura 9.16 muestra el mínimo de C(ti) entre 8 y 9 semanas.", ref:"Fig. 9.16, p. 199"},
+    {q:"Para una instalación con consecuencias de fallo menores que las de un avión, el libro propone…", o:["Exigir el mismo rigor que en aviación","Aceptar ciertos fallos buscando equilibrio entre seguridad de funcionamiento y coste","Eliminar todo el mantenimiento preventivo","Duplicar todos los equipos"], a:1, why:"Las políticas deben minimizar los costes globales, aceptando ciertos fallos cuando sus consecuencias lo permiten.", ref:"Cap. IX.8, p. 199"}
+  ],
+  field:{ title:"Defiende o elimina una tarea",
+    steps:[
+      "Elige una tarea de reemplazo por tiempo del plan actual de un compresor.",
+      "Con tu Weibull de la misión 9 y costes reales (Cf con penalización, Cp planificado, desde KSB1) calcula C(t) y tp.",
+      "Compara tp con la frecuencia actual en IP30: mantener, ajustar o eliminar.",
+      "Si β ≤ 1, documenta por qué la tarea por tiempo no se justifica y qué tarea a condición la reemplaza."
+    ], deliverable:"Memo de una página con la curva C(t) y la decisión sobre la tarea." }
+},
+{ id:"w11", title:"Gente, colas y repuestos", phase:PHASES[5], group:"efi",
+  read:"Cap. VIII completo (pp. 153–169) y Anexo II (pp. 297–306)", hours:"4 h",
+  objectives:[
+    "Dimensionar cuadrillas de correctivo con teoría de colas y comparar con simulación Montecarlo.",
+    "Calcular stock de seguridad y punto de pedido con modelos probabilísticos.",
+    "Clasificar repuestos con el método PR-C&V (criticidad y valor)."
+  ],
+  concepts:[
+    {t:"Cola simple", d:"Llegadas y servicio exponenciales, disciplina FIFO. ρ = λ/μ · E[NQ] = ρ²/(1 − ρ) · E[W] = ρ/(μ(1 − ρ)). Ley de Little: E[R] = E[N]/λ."},
+    {t:"Coste de la cola", d:"Coste total por hora = mano de obra + coste de indisponibilidad de los equipos en espera. El óptimo equilibra ambos."},
+    {t:"Stock de seguridad", d:"SS = Z·√(T·σD² + DM²·σL²) · PP = DM·T + SS. Para un nivel de servicio del 95 %, Z = 1,65."},
+    {t:"PR-C&V", d:"Valor X/Y/Z por porcentaje acumulado del inventario (0–60, 60–90, 90–100 %) y criticidad 3/2/1 por lucro cesante (> 10.000, 1.000–10.000, < 1.000). Prioridad: 3X, 3Y, 3Z, 2X, …, 1Z."}
+  ],
+  challenge:{ intro:"Canteras Gerena: fallos de motores cada 10 h en promedio (λ = 1/10 h⁻¹), reparación de 8 h por pareja de mecánicos (μ = 1/8 h⁻¹), mecánico a 30 €/h e indisponibilidad del volquete a 40 €/h. Luego, correas de autobús: demanda 10 ± 2 por semana, entrega 4 ± 1 semanas, servicio 95 %.", kind:"mixed",
+    items:[
+      {label:"Factor de utilización ρ con una pareja", unit:"", a:0.8, tol:0.005, abs:true},
+      {label:"Volquetes en espera E[NQ]", unit:"volquetes", a:3.2, tol:0.02, abs:true},
+      {label:"Tiempo medio de espera E[W]", unit:"horas", a:32, tol:0.2, abs:true},
+      {label:"Con dos parejas: 120 €/h de mano de obra + 0,27 × 40 €/h. El libro imprime 138,8 €/h. ¿Coste total correcto?", opts:["138,8 €/h, como dice el libro","130,8 €/h: el libro tiene un error de suma","148,8 €/h","120,0 €/h"], a:1},
+      {label:"Stock de seguridad SS de correas", unit:"unidades", a:17.77, tol:0.3, abs:true},
+      {label:"Punto de pedido PP (con SS redondeado a 18)", unit:"unidades", a:58, tol:0, abs:true},
+      {label:"Repuesto con lucro cesante de 15.000 que cae en el tramo 60–90 % del valor acumulado. Código PR-C&V", opts:["1X","2Y","3Y","3Z"], a:2}
+    ],
+    solution:"ρ = 0,1/0,125 = 0,8 · E[NQ] = 0,8²/0,2 = 3,2 · E[W] = 0,8/(0,125 × 0,2) = 32 h. Coste con una pareja: 60 + 3,2 × 40 = 188 €/h. Con dos: 120 + 10,8 = 130,8 €/h; el libro imprime 138,8, pero dos parejas siguen siendo el óptimo frente a 188 y 184 €/h (pp. 158–160). SS = 1,65 × √(4·2² + 1²·10²) = 1,65 × 10,77 = 17,77 ≈ 18; PP = 10 × 4 + 18 = 58 (p. 169). Lucro cesante > 10.000 → criticidad 3; tramo 60–90 % → Y: 3Y."},
+  quiz:[
+    {q:"La Ley de Little permite obtener…", o:["La tasa de llegadas a partir del coste","Las variables de tiempo de la cola a partir del número esperado de trabajos, por ejemplo E[R] = E[N]/λ","El nivel de servicio del almacén","El número de mecánicos óptimo directamente"], a:1, why:"Con E[N] y λ, la Ley de Little da E[R] = E[N]/λ y, restando el tiempo de servicio, el tiempo de espera E[W].", ref:"Cap. VIII.3, p. 158"},
+    {q:"¿Qué supuestos usa el modelo de colas del libro?", o:["Llegadas normales y servicio constante","Tiempos entre llegadas y de reparación exponenciales, disciplina FIFO","Llegadas Weibull con β > 1","Servicio por prioridad de criticidad"], a:1, why:"Se supone exponencial negativa para tiempos entre llegadas y de reparación, con disciplina FIFO.", ref:"Cap. VIII.3, p. 157"},
+    {q:"Para un nivel de servicio del 95 % en el ejemplo de stock de seguridad, el factor Z es…", o:["1,28","1,65","1,96","2,33"], a:1, why:"SS = 1,65 × 10,77 = 17,77 ≈ 18 unidades (Tabla 8.3).", ref:"Cap. VIII.5.1, p. 169"},
+    {q:"¿Qué orden de jerarquía recomienda el método PR-C&V?", o:["Primero el valor: 3X, 2X, 1X, 3Y…","Primero la criticidad: 3X, 3Y, 3Z, 2X, 2Y…","Alfabético","Por tiempo de entrega"], a:1, why:"Se recomienda priorizar la criticidad, porque en mantenimiento suele prevalecer el coste por indisponibilidad sobre el de inventario.", ref:"Anexo II, p. 302"},
+    {q:"En PR-C&V, el lucro cesante de un repuesto se calcula como…", o:["Precio unitario × existencia","Pérdida diaria de producción por falta del repuesto × tiempo de entrega","Demanda anual × precio","Stock de seguridad × Z"], a:1, why:"Combina criticidad (tasa diaria de pérdida) y tiempo de entrega, con importancia equivalente. El valor total es existencia × precio unitario.", ref:"Anexo II, p. 303"}
+  ],
+  field:{ title:"PR-C&V del almacén de compresión",
+    steps:[
+      "Extrae de SAP los repuestos asociados a compresores: código, existencia, precio unitario y tiempo de entrega.",
+      "Estima la pérdida diaria de producción si falta cada repuesto y calcula el lucro cesante.",
+      "Clasifica todo el inventario en los 9 códigos PR-C&V.",
+      "Para 3 repuestos 3X, calcula SS y PP y compáralos con el stock actual."
+    ], deliverable:"Inventario codificado PR-C&V y propuesta de SS y PP para los ítems 3X." }
+},
+{ id:"w12", title:"Ciclo de vida y mejora continua", phase:"Fases 7 y 8 · Ciclo de vida y mejora continua", group:"mej",
+  read:"Cap. X (pp. 203–226), Cap. XI (pp. 227–238) y Cap. XII (pp. 239–261)", hours:"5 h",
+  objectives:[
+    "Aplicar el modelo de ACCV de Woodward e incorporar el coste de la fiabilidad en valor presente.",
+    "Comparar alternativas de compra o reemplazo con y sin coste de fallos.",
+    "Conocer las herramientas de mejora continua (gestión autónoma, OPL, índices de mantenibilidad) y los indicadores de los sistemas de soporte."
+  ],
+  concepts:[
+    {t:"Woodward", d:"CTCV(P) = CI + CO + CMP + TCPf + CMM, todo en valor presente. Cf = MTTR × Cpe · TCPf = Cf × λf · PTCPf = TCPf × ((1+i)^T − 1)/(i(1+i)^T)."},
+    {t:"Diseño temprano", d:"Casi dos tercios del coste del ciclo de vida quedan determinados en la fase conceptual y de diseño preliminar. Los costes de operación y soporte pueden superar hasta 10 veces la adquisición."},
+    {t:"OPL", d:"Lección de un punto: una instrucción breve, de no más de una página, impartida a un grupo pequeño durante la jornada."},
+    {t:"Niveles de mantenimiento", d:"1 sin parada · 2 intercambio de componentes · 3 identificación y diagnóstico · 4 revisiones · 5 renovación y reconstrucción."},
+    {t:"Estándares de interoperabilidad", d:"MIMOSA define OSA-EAI para aplicaciones de gestión y OSA-CBM para mantenimiento basado en condición."}
+  ],
+  tool:"lcc",
+  challenge:{ intro:"Compresor del ejemplo X.3.2.1: 24 fallos en 10 años, MTTR = 10 h/fallo, Cpe = 500 $/h, i = 10 % y T = 10 años. Después, la decisión PETRONOX (pp. 216–219).", kind:"mixed",
+    items:[
+      {label:"Frecuencia de fallos λf", unit:"fallos/año", a:2.4, tol:0.01, abs:true},
+      {label:"Coste por fallo Cf = MTTR × Cpe", unit:"$/fallo", a:5000, tol:0.001},
+      {label:"Coste total por fallos por año TCPf", unit:"$/año", a:12000, tol:0.001},
+      {label:"Coste total por fallos en valor presente PTCPf", unit:"$", a:73734.8, tol:0.003},
+      {label:"Sin costes por fallos, B gana por 234.223,67 $. Con PTCPf de 251.000,62 $ (A) y 502.001,25 $ (B), ¿qué opción conviene?", opts:["B, por el mismo margen","A, por 16.776,94 $","Son equivalentes","B, por 251.000 $"], a:1}
+    ],
+    solution:"λf = 24/10 = 2,4 fallos/año · Cf = 10 × 500 = 5.000 $ · TCPf = 5.000 × 2,4 = 12.000 $/año · PTCPf = 12.000 × 6,1446 = 73.734,80 $. Con el coste de fallos, CTCV(A) = 897.438,35 $ y CTCV(B) = 914.215,29 $: A gana por 16.776,94 $. Los fallos pesan 27,9 % del ciclo de vida de A y 54,9 % del de B (Tabla 10.6)."},
+  quiz:[
+    {q:"¿Qué parte del coste del ciclo de vida queda determinada en la fase conceptual y de diseño preliminar?", o:["Menos del 10 %","Cerca de un tercio","Casi dos tercios","La totalidad"], a:2, why:"Casi dos tercios (65–85 % de oportunidades de creación de valor y reducción de costes, Dowlatshahi, 1992).", ref:"Cap. X.2.1, p. 206"},
+    {q:"¿Cuál es la principal limitación del modelo de Woodward?", o:["No usa valor presente","Supone una frecuencia de fallos constante a lo largo del ciclo de vida","No considera la inversión inicial","Solo sirve para equipos eléctricos"], a:1, why:"Asume λ constante durante la vida útil, cuando en la realidad cambia con la operación, el preventivo y los materiales.", ref:"Cap. X.3.2.2, p. 219"},
+    {q:"¿Qué extensión máxima recomienda el libro para una OPL?", o:["Media página","Una página","Tres páginas","Sin límite"], a:1, why:"Una OPL no debe ocupar más de una página, con datos de preparación antes de la instrucción.", ref:"Cap. XI.4.2.1, p. 233"},
+    {q:"Según la norma de mantenibilidad citada, el nivel 3 de mantenimiento corresponde a…", o:["Acciones simples sin parada","Intercambio de componentes funcionales","Identificación y diagnóstico de fallos","Renovación o reconstrucción"], a:2, why:"1 sin parada · 2 intercambio de componentes · 3 identificación y diagnóstico · 4 revisiones · 5 renovación.", ref:"Cap. XI.5.3, p. 236"},
+    {q:"¿Qué estándar de MIMOSA se orienta al mantenimiento basado en condición?", o:["OSA-EAI","OSA-CBM","ISA-SP95","OPC UA"], a:1, why:"MIMOSA define OSA-EAI para aplicaciones empresariales de gestión y OSA-CBM para mantenimiento centrado en condición.", ref:"Cap. XII.4, p. 247"}
+  ],
+  field:{ title:"ACCV de una decisión real",
+    steps:[
+      "Elige una decisión pendiente: overhaul vs reemplazo de un compresor, o selección entre dos alternativas.",
+      "Arma la estructura de costes: CI, CO, CMP, CMM y TCPf con λ y MTTR reales de tus datos.",
+      "Calcula el CTCV(P) de cada opción con y sin el coste de fallos.",
+      "Escribe la recomendación y señala la limitación de λ constante (puedes cruzarla con tu análisis Crow-AMSAA)."
+    ], deliverable:"Comparación ACCV con y sin coste de fallos y recomendación." }
+}
+];
+
+const TASK_OPTS = ["Tarea a condición (predictiva)","Reacondicionamiento (overhaul)","Sustitución programada","Búsqueda de fallos ocultos","Rediseño","Mantenimiento no programado"];
+
+const CAPSTONE = { title:"Proyecto integrador", steps:[
+  "Elige un moto-compresor crítico y recorre el MGM completo en él: criticidad (MCR o AHP) → RCA del modo dominante → FMEA y árbol RCM → Weibull y lognormal → intervalo óptimo → ACCV.",
+  "Mide antes y después con los KPIs de la misión 2: MTTF, FF, MDT, CIF y D.",
+  "Redacta un informe técnico para Gabriel con plan de acción y tareas eliminadas o rediseñadas.",
+  "Presenta el resultado al equipo de activos: es tu puente para consolidar la función de confiabilidad."
+]};
+
+/* Rango = etapas de la Matriz Cualitativa de Excelencia en Mantenimiento (Tabla 4.1) */
+const RANKS = [
+  {name:"Incertidumbre", xp:0,    q:"«Nosotros no tenemos ni idea de por qué los equipos fallan.»"},
+  {name:"Conciencia",    xp:900,  q:"«Nuestros competidores tienen menos problemas que nosotros.»"},
+  {name:"Entendimiento", xp:2200, q:"«Un nuevo enfoque de gestión del mantenimiento nos puede ayudar a identificar los problemas.»"},
+  {name:"Madurez",       xp:3700, q:"«Todo el mundo está comprometido a que la calidad sea parte de nuestra filosofía operacional.»"},
+  {name:"Excelencia",    xp:5200, q:"«No esperamos paros imprevistos; si ocurren, será en equipos definidos como de bajo riesgo.»"}
+];
+const XP = {read:50, calc:100, quiz:100, perfect:50, field:150, final:400, capstone:300};
+
+const BADGES = [
+  {id:"kpi",  name:"Primer tablero",   d:"Desafío de KPIs resuelto", test:s=>wk(s,"w2").calc},
+  {id:"mx",   name:"Matriz dominada",  d:"CTR y MCR sin errores", test:s=>wk(s,"w4").calc},
+  {id:"ahp",  name:"IR bajo 0,1",      d:"Desafío AHP resuelto", test:s=>wk(s,"w5").calc},
+  {id:"rca",  name:"Cazador de causas",d:"Misión RCA completa", test:s=>wk(s,"w6").field},
+  {id:"tree", name:"Árbol RCM",        d:"Escenarios RCM resueltos", test:s=>wk(s,"w8").calc},
+  {id:"wb",   name:"Weibull",          d:"Laboratorio estadístico resuelto", test:s=>wk(s,"w9").calc},
+  {id:"tp",   name:"Intervalo óptimo", d:"Encontraste tp", test:s=>wk(s,"w10").calc},
+  {id:"err",  name:"Ojo de auditor",   d:"Detectaste el error de suma del libro", test:s=>wk(s,"w11").calc},
+  {id:"lcc",  name:"Ciclo cerrado",    d:"ACCV de Woodward resuelto", test:s=>wk(s,"w12").calc},
+  {id:"perf", name:"Cinco de cinco",   d:"Un quiz perfecto", test:s=>WEEKS.some(w=>(wk(s,w.id).best||0)===5)},
+  {id:"fin",  name:"Excelencia",       d:"Auditoría final aprobada", test:s=>!!(s.final&&s.final.passed)}
+];
+
+/* ===================== ESTADO Y PERSISTENCIA ===================== */
+const LKEY = "ruta-confiabilidad-v1";
+function defaultState(){ return {v:1, start:"2026-10-19", free:false, weeks:{}, final:{best:0,passed:false}, capstone:{steps:[],done:false}, updated:0}; }
+function readLocal(){ try{ const r = localStorage.getItem(LKEY); return r ? JSON.parse(r) : null; }catch(e){ return null; } }
+function writeLocal(){ try{ localStorage.setItem(LKEY, JSON.stringify(state)); }catch(e){} }
+let state = Object.assign(defaultState(), readLocal() || {});
+function wk(s, id){ return (s.weeks && s.weeks[id]) || {}; }
+function W(id){ if(!state.weeks[id]) state.weeks[id] = {}; return state.weeks[id]; }
+
+let remote = {db:null, ref:null, owner:false, status:"local"};
+let writeTimer = null, writing = false, pending = false;
+function save(){ state.updated = Date.now(); writeLocal(); if(remote.ref && remote.owner){ clearTimeout(writeTimer); writeTimer = setTimeout(flush, 1200); } }
+async function flush(){
+  if(writing){ pending = true; return; }
+  writing = true;
+  try{ await remote.ref.set(JSON.parse(JSON.stringify(state))); remote.status = "sync"; }
+  catch(e){ remote.status = "error"; }
+  writing = false; renderSync();
+  if(pending){ pending = false; flush(); }
+}
+(async function initRemote(){
+  try{
+    if(!(window.claude && window.claude.use)) return;
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if(!db) return;
+    remote.owner = user ? await user.isOwner() : false;
+    if(!remote.owner) return;
+    remote.db = db; remote.ref = db.doc("progreso/hugo"); remote.status = "sync";
+    remote.ref.onSnapshot(snap=>{
+      if(snap.metadata && snap.metadata.hasPendingWrites) return;
+      if(snap.exists){
+        const d = snap.data();
+        if(d && (d.updated||0) > (state.updated||0)){ state = Object.assign(defaultState(), JSON.parse(JSON.stringify(d))); writeLocal(); render(); }
+        else if(d && (d.updated||0) < (state.updated||0)){ flush(); }
+      } else if(state.updated){ flush(); }
+      renderSync();
+    }, ()=>{ remote.status = "error"; renderSync(); });
+    renderSync();
+  }catch(e){}
+})();
+
+/* ===================== LÓGICA DE JUEGO ===================== */
+function totalXP(s){
+  let x = 0;
+  WEEKS.forEach(w=>{ const d = wk(s,w.id);
+    if(d.read) x += XP.read; if(d.calc) x += XP.calc; if(d.passed) x += XP.quiz; if(d.best===5) x += XP.perfect; if(d.field) x += XP.field; });
+  if(s.final && s.final.passed) x += XP.final;
+  if(s.capstone && s.capstone.done) x += XP.capstone;
+  return x;
+}
+function rankIndex(s){
+  const x = totalXP(s); let i = 0;
+  RANKS.forEach((r,k)=>{ if(x >= r.xp) i = k; });
+  if(i === 4 && !(s.final && s.final.passed)) i = 3;
+  return i;
+}
+function unlocked(i){ if(state.free || i === 0) return true; return !!wk(state, WEEKS[i-1].id).passed; }
+function weekDone(id){ const d = wk(state,id); return !!(d.read && d.calc && d.passed && d.field); }
+function finalUnlocked(){ return state.free || !!wk(state,"w12").passed; }
+function weekDates(i){
+  const s = new Date((state.start||"2026-10-19")+"T12:00:00");
+  if(isNaN(s)) return "";
+  const a = new Date(s.getTime() + i*7*864e5), b = new Date(a.getTime() + 6*864e5);
+  const f = d => d.toLocaleDateString("es-CL",{day:"numeric",month:"short"});
+  return f(a)+" – "+f(b);
+}
+function currentWeekByDate(){
+  const s = new Date((state.start||"2026-10-19")+"T00:00:00"); const n = new Date();
+  const k = Math.floor((n - s)/(7*864e5)) + 1; return k;
+}
+
+/* ===================== UTILIDADES ===================== */
+const $ = (sel, el=document) => el.querySelector(sel);
+const esc = s => String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nf = (n, d=2) => Number(n).toLocaleString("es-CL",{minimumFractionDigits:0, maximumFractionDigits:d});
+function parseNum(s){
+  s = String(s||"").trim().replace(/\s/g,"").replace(/[$%€]/g,"");
+  if(!s) return NaN;
+  if(s.includes(",")) s = s.replace(/\./g,"").replace(",",".");
+  else if((s.match(/\./g)||[]).length > 1) s = s.replace(/\./g,"");
+  return parseFloat(s);
+}
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(()=>t.hidden = true, 2600); }
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
+function gamma(z){ // Lanczos
+  if(z < 0.5) return Math.PI/(Math.sin(Math.PI*z)*gamma(1-z));
+  z -= 1; const g = 7, c = [0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61503916999185,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  let x = c[0]; for(let i=1;i<g+2;i++) x += c[i]/(z+i);
+  const t = z + g + 0.5; return Math.sqrt(2*Math.PI)*Math.pow(t,z+0.5)*Math.exp(-t)*x;
+}
+function svgChart(series, opts){
+  const Wd = 560, Ht = 220, L = 46, R = 12, T = 12, B = 30;
+  const xs = series.flatMap(s=>s.pts.map(p=>p[0])), ys = series.flatMap(s=>s.pts.map(p=>p[1])).filter(Number.isFinite);
+  const x0 = opts.x0 ?? Math.min(...xs), x1 = opts.x1 ?? Math.max(...xs);
+  const y0 = opts.y0 ?? 0, y1 = opts.y1 ?? (Math.max(...ys)*1.08 || 1);
+  const sx = x => L + (x - x0)/(x1 - x0)*(Wd - L - R), sy = y => T + (1 - (y - y0)/(y1 - y0))*(Ht - T - B);
+  let g = "";
+  for(let k=0;k<=4;k++){ const yv = y0 + (y1-y0)*k/4, yy = sy(yv); g += `<line class="grid" x1="${L}" x2="${Wd-R}" y1="${yy}" y2="${yy}"/><text x="${L-6}" y="${yy+3}" text-anchor="end">${nf(yv, opts.yd ?? 2)}</text>`; }
+  for(let k=0;k<=5;k++){ const xv = x0 + (x1-x0)*k/5, xx = sx(xv); g += `<text x="${xx}" y="${Ht-B+16}" text-anchor="middle">${nf(xv,1)}</text>`; }
+  g += `<line class="ax" x1="${L}" x2="${Wd-R}" y1="${Ht-B}" y2="${Ht-B}"/><line class="ax" x1="${L}" x2="${L}" y1="${T}" y2="${Ht-B}"/>`;
+  series.forEach(s=>{
+    if(s.type === "pts") s.pts.forEach(p=>{ g += `<circle class="pt" cx="${sx(p[0])}" cy="${sy(p[1])}" r="3"/>`; });
+    else { const d = s.pts.filter(p=>Number.isFinite(p[1]) && p[1] <= y1*1.02).map((p,k)=>(k?"L":"M")+sx(p[0]).toFixed(1)+" "+sy(p[1]).toFixed(1)).join(""); g += `<path class="${s.cls||"l1"}" d="${d}"/>`; }
+  });
+  if(opts.mark){ g += `<circle class="mk" cx="${sx(opts.mark[0])}" cy="${sy(opts.mark[1])}" r="5"/><line class="ax" x1="${sx(opts.mark[0])}" x2="${sx(opts.mark[0])}" y1="${sy(opts.mark[1])}" y2="${Ht-B}" stroke-dasharray="3 3"/>`; }
+  if(opts.xl) g += `<text x="${Wd-R}" y="${Ht-4}" text-anchor="end">${esc(opts.xl)}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${Wd} ${Ht}" role="img" aria-label="${esc(opts.label||"Gráfico")}">${g}</svg>`;
+}
+
+/* ===================== HERRAMIENTAS ===================== */
+const TOOLS = {};
+
+TOOLS.mes = { title:"Calculadora MES", sub:"5 áreas · 12 preguntas · escala 1–5",
+  html(){ const areas = ["Recursos gerenciales","Gerencia de la información","Equipos y técnicas de MP","Planificación y ejecución","Soporte, calidad y motivación"];
+    return `<div class="grid-in">${areas.map((a,i)=>`<label class="field">${a}<input id="mes${i}" type="number" min="12" max="60" value="${[48,44,52,40,46][i]}"></label>`).join("")}</div><div id="mesOut"></div>`; },
+  run(el){ const f = ()=>{ let t = 0; for(let i=0;i<5;i++){ t += Math.min(60, Math.max(12, +$("#mes"+i,el).value || 12)); }
+      const cat = t>=261?"Clase mundial":t>=201?"Muy buena":t>=141?"Por arriba del promedio":t>=81?"Por debajo del promedio":"Muy por debajo del promedio";
+      $("#mesOut",el).innerHTML = `<div class="readout"><div><small>Total</small><b>${t} / 300</b></div><div><small>Categoría</small><b style="font-size:14px">${cat}</b></div></div>`; };
+    el.querySelectorAll("input").forEach(i=>i.addEventListener("input",f)); f(); } };
+
+const CTR_M = [["MC","MC","C","C","C"],["MC","MC","MC","C","C"],["NC","NC","MC","C","C"],["NC","NC","NC","MC","C"]]; // filas FF 4..1, columnas C 1–10..41–50
+const MCR_M = { // [FF][C] desde Figura 5.4
+  5:["A","MA","MA","MA","MA"], 4:["A","A","A","A","MA"], 3:["M","M","M","A","MA"], 2:["B","B","B","M","M"], 1:["B","B","B","M","M"] };
+TOOLS.crit = { title:"Criticidad CTR y MCR", sub:"Figuras 5.3 y 5.4",
+  html(){ const sel = (id, vals, v) => `<select id="${id}">${vals.map(x=>`<option ${x==v?"selected":""}>${x}</option>`).join("")}</select>`;
+    return `<b>CTR = FF × ((IO × FO) + CM + SHA)</b>
+    <div class="grid-in">
+      <label class="field">FF (1–4)${sel("cFF",[1,2,3,4],3)}</label><label class="field">IO (1–10)${sel("cIO",[1,3,5,7,10],7)}</label>
+      <label class="field">FO${sel("cFO",[1,2,4],2)}</label><label class="field">CM${sel("cCM",[1,2],2)}</label><label class="field">SHA${sel("cSHA",[1,3,6,8],3)}</label></div>
+    <div id="ctrOut"></div>
+    <b>MCR = FF × 0,2 × (SHA + IC + IP + BM + CM)</b>
+    <div class="grid-in">
+      <label class="field">FF (1–5)${sel("mFF",[1,2,3,4,5],4)}</label><label class="field">SHA${sel("mSHA",[1,3,5],3)}</label><label class="field">IC${sel("mIC",[1,2,3,4,5],1)}</label>
+      <label class="field">IP${sel("mIP",[1,2,3,4,5],4)}</label><label class="field">BM${sel("mBM",[1,3,5],3)}</label><label class="field">CM${sel("mCM",[1,2,3,4,5],4)}</label></div>
+    <div id="mcrOut"></div><p class="note">En el MCR, la consecuencia se ubica en la columna del entero más cercano.</p>`; },
+  run(el){ const v = id => +$("#"+id, el).value;
+    const f = ()=>{
+      const C = v("cIO")*v("cFO") + v("cCM") + v("cSHA"), ff = v("cFF"), col = Math.min(4, Math.max(0, Math.ceil(C/10)-1));
+      let t = `<div class="readout"><div><small>Consecuencia C</small><b>${C}</b></div><div><small>CTR</small><b>${ff*C}</b></div><div><small>Zona</small><b>${CTR_M[4-ff][col]}</b></div></div>`;
+      t += `<div class="scroll"><table class="mx"><tr><th>FF \\ C</th>${["1–10","11–20","21–30","31–40","41–50"].map(h=>`<th>${h}</th>`).join("")}</tr>${CTR_M.map((r,ri)=>`<tr><th>${4-ri}</th>${r.map((z,ci)=>`<td class="z-${z} ${(4-ri)===ff&&ci===col?"hit":""}">${z}</td>`).join("")}</tr>`).join("")}</table></div>`;
+      $("#ctrOut",el).innerHTML = t;
+      const Cm = 0.2*(v("mSHA")+v("mIC")+v("mIP")+v("mBM")+v("mCM")), fm = v("mFF"), cc = Math.min(5, Math.max(1, Math.round(Cm)));
+      let u = `<div class="readout"><div><small>Consecuencia C</small><b>${nf(Cm,1)}</b></div><div><small>Riesgo</small><b>${nf(fm*Cm,1)}</b></div><div><small>Zona</small><b>${MCR_M[fm][cc-1]}</b></div></div>`;
+      u += `<div class="scroll"><table class="mx"><tr><th>FF \\ C</th>${[1,2,3,4,5].map(h=>`<th>${h}</th>`).join("")}</tr>${[5,4,3,2,1].map(r=>`<tr><th>${r}</th>${MCR_M[r].map((z,ci)=>`<td class="z-${z} ${r===fm&&ci===cc-1?"hit":""}">${z}</td>`).join("")}</tr>`).join("")}</table></div>`;
+      $("#mcrOut",el).innerHTML = u; };
+    el.querySelectorAll("select").forEach(s=>s.addEventListener("change",f)); f(); } };
+
+const SAATY = [["1/9",1/9],["1/7",1/7],["1/5",1/5],["1/3",1/3],["1/2",1/2],["1",1],["2",2],["3",3],["4",4],["5",5],["6",6],["7",7],["8",8],["9",9]];
+const RI = {1:0,2:0,3:0.52,4:0.89,5:1.11,6:1.25,7:1.35};
+TOOLS.ahp = { title:"Laboratorio AHP", sub:"Matriz de la Tabla 5.4 · RI de la Tabla 5.2",
+  html(){ const names = ["Frecuencia","Detección","Severidad","Costes"], up = {"0-1":"3","0-2":"1","0-3":"1","1-2":"1/2","1-3":"1/3","2-3":"1/2"};
+    let t = `<div class="scroll"><table class="mx ahp"><tr><th></th>${names.map(n=>`<th>${n}</th>`).join("")}</tr>`;
+    for(let i=0;i<4;i++){ t += `<tr><th>${names[i]}</th>`; for(let j=0;j<4;j++){
+      if(i===j) t += `<td>1</td>`; else if(j>i) t += `<td><select id="a${i}${j}" aria-label="${names[i]} frente a ${names[j]}">${SAATY.map(s=>`<option ${s[0]===up[i+"-"+j]?"selected":""}>${s[0]}</option>`).join("")}</select></td>`;
+      else t += `<td id="r${i}${j}" class="muted"></td>`; } t += `</tr>`; }
+    return t + `</table></div><div id="ahpOut"></div><p class="note">Elige el juicio de la fila frente a la columna; la celda recíproca se completa sola.</p>`; },
+  run(el){ const names = ["Frecuencia","Detección","Severidad","Costes"];
+    const f = ()=>{ const n = 4, A = [...Array(n)].map(()=>Array(n).fill(1));
+      for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){ const s = $("#a"+i+j,el).value, val = SAATY.find(x=>x[0]===s)[1]; A[i][j] = val; A[j][i] = 1/val;
+        const r = $("#r"+j+i,el); r.textContent = val >= 1 ? (val===1?"1":"1/"+val) : String(Math.round(1/val)); }
+      let w = Array(n).fill(1/n);
+      for(let it=0; it<200; it++){ const nw = A.map(r=>r.reduce((a,x,k)=>a + x*w[k],0)); const s = nw.reduce((a,b)=>a+b,0); w = nw.map(x=>x/s); }
+      const Aw = A.map(r=>r.reduce((a,x,k)=>a + x*w[k],0)); const lmax = Aw.reduce((a,x,k)=>a + x/w[k],0)/n;
+      const CI = (lmax - n)/(n - 1), IR = CI/RI[n];
+      $("#ahpOut",el).innerHTML = `<div class="readout">${names.map((nm,k)=>`<div><small>Peso ${nm}</small><b>${nf(w[k],3)}</b></div>`).join("")}<div><small>λmax</small><b>${nf(lmax,3)}</b></div><div><small>CI</small><b>${nf(CI,3)}</b></div><div><small>IR</small><b style="color:${IR<=0.1?"var(--ok)":"var(--bad)"}">${nf(IR,3)}</b></div></div>`; };
+    el.querySelectorAll("select").forEach(s=>s.addEventListener("change",f)); f(); } };
+
+const BOOK_TTF = "2, 2, 3, 2, 3, 3, 4, 3, 4, 4, 5, 6, 6, 7, 7, 7, 8, 8, 9, 8, 9, 8, 6, 5, 5, 5";
+const BOOK_DT  = "7, 7, 8, 6, 7, 8, 6, 7, 6, 7, 7, 8, 6, 7, 6, 6, 9, 7, 7, 7, 8, 7, 6, 9, 7, 6";
+function nums(s){ return String(s).split(/[\s;,\n]+/).map(x=>parseFloat(x.replace(",","."))).filter(x=>Number.isFinite(x) && x>0); }
+TOOLS.weibull = { title:"Laboratorio Weibull y lognormal", sub:"Pega tus TBF y TTR desde Excel o R",
+  html(){ return `<div class="grid-in" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+      <label class="field">Tiempos hasta el fallo (TTF)<textarea id="wbT">${BOOK_TTF}</textarea></label>
+      <label class="field">Tiempos fuera de servicio (DT)<textarea id="wbD">${BOOK_DT}</textarea></label></div>
+      <div class="grid-in"><label class="field">Evaluar C(t) en t =<input id="wbX" type="text" value="4"></label>
+      <label class="field">Método<select id="wbM"><option value="book">Parámetros del libro (RELEST: α 5,98; β 2,54)</option><option value="rr">Ajustar a mis datos (rangos medianos de Bernard)</option></select></label></div>
+      <div id="wbOut"></div>
+      <p class="note">El libro estima con RELEST (α = 5,98; β = 2,54). La regresión de rangos medianos da valores cercanos; la diferencia viene del método de estimación, no de un error.</p>`; },
+  run(el){ const f = ()=>{
+      const t = nums($("#wbT",el).value).sort((a,b)=>a-b), d = nums($("#wbD",el).value), x = parseNum($("#wbX",el).value);
+      if(t.length < 3){ $("#wbOut",el).innerHTML = `<p class="feedback bad">Ingresa al menos 3 tiempos hasta el fallo.</p>`; return; }
+      let beta, eta, r2 = null; const n = t.length;
+      if($("#wbM",el).value === "book"){ eta = 5.98; beta = 2.54; }
+      else { const X = [], Y = []; t.forEach((ti,k)=>{ const F = (k+1-0.3)/(n+0.4); X.push(Math.log(ti)); Y.push(Math.log(-Math.log(1-F))); });
+        const mx = X.reduce((a,b)=>a+b,0)/n, my = Y.reduce((a,b)=>a+b,0)/n; let sxy = 0, sxx = 0, syy = 0;
+        X.forEach((xi,k)=>{ sxy += (xi-mx)*(Y[k]-my); sxx += (xi-mx)**2; syy += (Y[k]-my)**2; });
+        beta = sxy/sxx; const a = my - beta*mx; eta = Math.exp(-a/beta); r2 = sxy*sxy/(sxx*syy); }
+      const mttf = eta*gamma(1+1/beta), Cx = Number.isFinite(x) ? Math.exp(-Math.pow(x/eta,beta)) : NaN;
+      const phase = beta < 0.95 ? "Infancia: h(t) decrece" : beta <= 1.05 ? "Aleatorio: h(t) constante" : "Envejecimiento: h(t) crece";
+      let ln = "";
+      if(d.length >= 2){ const L = d.map(Math.log), mu = L.reduce((a,b)=>a+b,0)/L.length, sg = Math.sqrt(L.reduce((a,b)=>a+(b-mu)**2,0)/L.length);
+        ln = `<div><small>μl (DT)</small><b>${nf(mu,4)}</b></div><div><small>σl (DT)</small><b>${nf(sg,4)}</b></div><div><small>MDT</small><b>${nf(Math.exp(mu+sg*sg/2),2)}</b></div><div><small>Disponibilidad*</small><b>${nf(100*mttf/(mttf + Math.exp(mu+sg*sg/2)/730),2)} %</b></div>`; }
+      const tmax = Math.max(t[n-1]*1.6, eta*2), pts = [], hp = [];
+      for(let k=0;k<=80;k++){ const tt = tmax*k/80; pts.push([tt, Math.exp(-Math.pow(tt/eta,beta))]); if(tt>0) hp.push([tt, (beta/eta)*Math.pow(tt/eta,beta-1)]); }
+      const emp = t.map((ti,k)=>[ti, 1-(k+1-0.3)/(n+0.4)]);
+      const hmax = Math.max(...hp.map(p=>p[1]).filter(Number.isFinite)); const hs = hp.map(p=>[p[0], p[1]/hmax]);
+      $("#wbOut",el).innerHTML = `<div class="readout"><div><small>β (forma)</small><b>${nf(beta,3)}</b></div><div><small>η = α (escala)</small><b>${nf(eta,3)}</b></div><div><small>MTTF</small><b>${nf(mttf,2)}</b></div><div><small>C(${nf(x,2)})</small><b>${Number.isFinite(Cx)?nf(100*Cx,2)+" %":"–"}</b></div>${r2!==null?`<div><small>R²</small><b>${nf(r2,3)}</b></div>`:""}<div><small>Fase</small><b style="font-size:13px">${phase}</b></div>${ln}</div>
+      ${svgChart([{pts, cls:"l1"},{pts:hs, cls:"l2"},{pts:emp, type:"pts"}],{x0:0, x1:tmax, y0:0, y1:1.02, label:"Fiabilidad C(t) y tasa de fallos relativa", xl:"tiempo"})}
+      <p class="note">Línea continua: C(t) ajustada. Puntos: fiabilidad empírica. Línea discontinua: h(t) relativa (forma de la curva). *Disponibilidad suponiendo TTF en meses y DT en horas (730 h/mes).</p>`; };
+    el.querySelectorAll("textarea,input,select").forEach(i=>i.addEventListener("input",f)); f(); } };
+
+TOOLS.age = { title:"Reemplazo preventivo a edad constante", sub:"Ec. 9.64 · Weibull",
+  html(){ return `<div class="grid-in"><label class="field">α (escala)<input id="agA" type="text" value="19,2695"></label><label class="field">β (forma)<input id="agB" type="text" value="4,1233"></label>
+      <label class="field">Cf, coste por fallo<input id="agF" type="text" value="1000"></label><label class="field">Cp, coste preventivo<input id="agP" type="text" value="100"></label></div><div id="agOut"></div>`; },
+  run(el){ const f = ()=>{
+      const a = parseNum($("#agA",el).value), b = parseNum($("#agB",el).value), Cf = parseNum($("#agF",el).value), Cp = parseNum($("#agP",el).value);
+      if(!(a>0 && b>0 && Cf>0 && Cp>=0)){ $("#agOut",el).innerHTML = `<p class="feedback bad">Revisa los parámetros: α, β y Cf deben ser positivos.</p>`; return; }
+      const R = t => Math.exp(-Math.pow(t/a,b)); const tmax = a*2.2, N = 220, pts = [];
+      let integ = 0, prev = 1, best = null;
+      for(let k=1;k<=N;k++){ const t = tmax*k/N, h = tmax/N, mid = R(t - h/2); integ += h*(prev + 4*mid + R(t))/6; prev = R(t);
+        const C = (Cf*(1-R(t)) + Cp*R(t))/integ; pts.push([t,C]); if(t > a*0.05 && (!best || C < best[1])) best = [t,C]; }
+      const run = Cf/(a*gamma(1+1/b)); const atEdge = best && best[0] > tmax*0.97;
+      const yMax = Math.min(Math.max(...pts.map(p=>p[1]).slice(Math.floor(N*0.1))), run*3);
+      $("#agOut",el).innerHTML = `<div class="readout"><div><small>tp (coste mínimo)</small><b>${atEdge?"no existe":nf(best[0],2)}</b></div><div><small>C(tp) por unidad de tiempo</small><b>${atEdge?"–":nf(best[1],2)}</b></div><div><small>Correr hasta fallar: Cf/MTTF</small><b>${nf(run,2)}</b></div><div><small>Ahorro vs correr a fallo</small><b>${atEdge?"0 %":nf(100*(1-best[1]/run),1)+" %"}</b></div></div>
+        ${svgChart([{pts, cls:"l1"},{pts:[[0,run],[tmax,run]], cls:"l2"}],{x0:0,x1:tmax,y0:0,y1:yMax*1.1,mark:atEdge?null:best,label:"Coste por unidad de tiempo C(t)",xl:"intervalo t"})}
+        <p class="note">${atEdge ? "Con β ≤ 1 (o Cp cercano a Cf) el coste baja de forma continua: el reemplazo preventivo por tiempo no aporta. Busca una tarea a condición o acepta el correctivo." : "Línea discontinua: coste de dejar que el equipo falle. El libro tabula el mínimo entre 8 y 9 semanas; aquí se integra con Simpson."}</p>`; };
+    el.querySelectorAll("input").forEach(i=>i.addEventListener("input",f)); f(); } };
+
+TOOLS.lcc = { title:"Coste de la fiabilidad (Woodward)", sub:"Ecs. 10.5–10.8",
+  html(){ return `<div class="grid-in"><label class="field">Fallos totales N<input id="lcN" type="text" value="24"></label><label class="field">Años de vida T<input id="lcT" type="text" value="10"></label>
+    <label class="field">MTTR (h/fallo)<input id="lcM" type="text" value="10"></label><label class="field">Cpe ($/h)<input id="lcC" type="text" value="500"></label><label class="field">Tasa i (%)<input id="lcI" type="text" value="10"></label></div><div id="lcOut"></div>`; },
+  run(el){ const f = ()=>{ const N = parseNum($("#lcN",el).value), T = parseNum($("#lcT",el).value), M = parseNum($("#lcM",el).value), C = parseNum($("#lcC",el).value), i = parseNum($("#lcI",el).value)/100;
+      if(![N,T,M,C,i].every(Number.isFinite) || T<=0 || i<=0){ $("#lcOut",el).innerHTML = `<p class="feedback bad">Completa todos los campos con números positivos.</p>`; return; }
+      const lam = N/T, cf = M*C, tcp = cf*lam, pa = (Math.pow(1+i,T)-1)/(i*Math.pow(1+i,T));
+      $("#lcOut",el).innerHTML = `<div class="readout"><div><small>λf</small><b>${nf(lam,2)} fallos/año</b></div><div><small>Cf</small><b>${nf(cf,2)} $</b></div><div><small>TCPf</small><b>${nf(tcp,2)} $/año</b></div><div><small>Factor P/A</small><b>${nf(pa,4)}</b></div><div><small>PTCPf</small><b>${nf(tcp*pa,2)} $</b></div></div>`; };
+    el.querySelectorAll("input").forEach(i=>i.addEventListener("input",f)); f(); } };
+
+function toolHTML(key){ const t = TOOLS[key]; return `<div class="tool" id="tool-${key}"><div class="tool-h"><b>${t.title}</b><span>${t.sub}</span></div><div class="tool-b">${t.html()}</div></div>`; }
+
+/* ===================== RENDER ===================== */
+let view = {screen:"map", week:null, tab:"brief"};
+try{ const v = JSON.parse(localStorage.getItem(LKEY+"-view")||"null"); if(v && v.screen) view = v; }catch(e){}
+function setView(v){ view = Object.assign(view, v); try{ localStorage.setItem(LKEY+"-view", JSON.stringify(view)); }catch(e){} render(); window.scrollTo({top: v.screen==="map"?0:$("#app").offsetTop-12, behavior:"smooth"}); }
+
+function renderPlayer(){
+  const x = totalXP(state), ri = rankIndex(state), r = RANKS[ri], nxt = RANKS[ri+1];
+  const pct = nxt ? Math.min(100, 100*(x - r.xp)/(nxt.xp - r.xp)) : 100;
+  $("#player").innerHTML = `<span class="eyebrow">Tu etapa · Matriz MCEM</span>
+    <div><div class="rank-name">${r.name}</div><div class="rank-sub">Etapa ${ri+1} de 5</div></div>
+    <div class="stages">${RANKS.map((s,k)=>`<div class="stage ${k<=ri?"on":""}"><i></i><span>${s.name}</span></div>`).join("")}</div>
+    <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><b style="width:${pct}%"></b></div>
+    <div class="xprow"><span>${nf(x,0)} XP</span><span>${nxt ? (ri===3 && x>=RANKS[4].xp ? "Aprueba la auditoría final para llegar a Excelencia" : "Siguiente: "+nxt.name+" en "+nf(nxt.xp,0)+" XP") : "Etapa máxima alcanzada"}</span></div>
+    <p class="quote">${r.q}</p>`;
+  const done = WEEKS.filter(w=>weekDone(w.id)).length, qp = WEEKS.filter(w=>wk(state,w.id).passed).length, bd = BADGES.filter(b=>b.test(state)).length;
+  const cw = currentWeekByDate();
+  $("#stats").innerHTML = `<div class="stat"><b>${done}/12</b><span>Misiones completas</span></div><div class="stat"><b>${qp}/12</b><span>Quizzes aprobados</span></div>
+    <div class="stat"><b>${bd}/${BADGES.length}</b><span>Insignias</span></div><div class="stat"><b>${cw<1?"–":cw>12?"12+":cw}</b><span>${cw<1?"Comienza el "+new Date((state.start||"2026-10-19")+"T12:00:00").toLocaleDateString("es-CL",{day:"numeric",month:"long"}):"Semana según calendario"}</span></div>`;
+}
+function renderSync(){ const el = $("#syncState"); if(!el) return;
+  el.textContent = remote.status==="sync" ? "Progreso guardado en tu cuenta" : remote.status==="error" ? "No se pudo guardar en tu cuenta; queda guardado en este navegador" : "Progreso guardado en este navegador"; }
+
+function renderMap(){
+  const cur = WEEKS.findIndex((w,i)=>unlocked(i) && !weekDone(w.id));
+  const tiles = WEEKS.map((w,i)=>{ const d = wk(state,w.id), ok = unlocked(i), dn = weekDone(w.id);
+    const chip = !ok ? `<span class="chip lock">Bloqueada</span>` : dn ? `<span class="chip done">Completa</span>` : `<span class="chip now">${(d.read||d.calc||d.passed||d.field)?"En curso":"Disponible"}</span>`;
+    return `<button class="tile ${!ok?"locked":""} ${i===cur?"current":""}" data-week="${i}" ${!ok?'aria-disabled="true"':""}>
+      <div class="wk"><span class="eyebrow"><span class="dot" style="background:${GROUP_COLOR[w.group]}"></span>&nbsp;Semana ${i+1}</span>${chip}</div>
+      <h3>${w.title}</h3><div class="meta">${weekDates(i)} · ${w.hours}</div>
+      <div class="segs" aria-label="Lectura, desafío, quiz y misión en planta">${["read","calc","passed","field"].map(k=>`<i class="${d[k]?"on":""}"></i>`).join("")}</div></button>`; }).join("");
+  const fu = finalUnlocked(), fd = state.final && state.final.passed;
+  const fin = `<button class="tile final ${!fu?"locked":""}" data-final="1" ${!fu?'aria-disabled="true"':""}>
+      <div class="wk"><span class="eyebrow">Cierre</span>${!fu?`<span class="chip lock">Aprueba el quiz 12</span>`:fd?`<span class="chip done">Aprobada</span>`:`<span class="chip now">Disponible</span>`}</div>
+      <h3>Auditoría final y proyecto integrador</h3><div class="meta">15 preguntas al azar de todo el libro · aprueba con 12 · +${XP.final} XP · proyecto +${XP.capstone} XP</div></button>`;
+  const badges = BADGES.map(b=>{ const on = b.test(state); return `<div class="badge ${on?"":"off"}">${badgeSVG(on)}<div><b>${b.name}</b><small>${b.d}</small></div></div>`; }).join("");
+  $("#app").innerHTML = `<section><div class="sec-head"><div><span class="eyebrow">Campaña</span><h2>Mapa de misiones</h2></div>
+      <div class="legend"><span><i class="dot" style="background:var(--steel)"></i>Eficacia (fases 1–3)</span><span><i class="dot" style="background:var(--accent-strong)"></i>Eficiencia (4–5)</span><span><i class="dot" style="background:var(--ok)"></i>Evaluación (5–6)</span><span><i class="dot" style="background:var(--bad)"></i>Ciclo de vida y mejora (7–8)</span></div></div>
+      <div class="map">${tiles}${fin}</div>
+      <p class="note" style="margin-top:10px">Cada misión tiene 4 tareas: lectura (+${XP.read} XP), desafío (+${XP.calc}), quiz (+${XP.quiz}, +${XP.perfect} si es perfecto) y misión en planta (+${XP.field}). Aprobar el quiz con 4 de 5 desbloquea la semana siguiente.</p></section>
+    <section><span class="eyebrow">Logros</span><h2>Insignias</h2><div class="badges">${badges}</div></section>
+    <section class="settings">
+      <label for="startDate">Inicio del programa <input id="startDate" type="date" value="${esc(state.start||"2026-10-19")}"></label>
+      <label class="check" style="align-items:center"><input id="freeMode" type="checkbox" ${state.free?"checked":""}> Modo libre: desbloquear todas las misiones</label>
+      <span class="sync" id="syncState"></span>
+      <span id="resetWrap"><button class="btn small ghost" id="resetBtn">Reiniciar progreso</button></span>
+    </section>`;
+  document.querySelectorAll("[data-week]").forEach(b=>b.addEventListener("click",()=>{ const i = +b.dataset.week; if(!unlocked(i)){ toast("Aprueba el quiz de la semana "+i+" para desbloquear esta misión."); return; } setView({screen:"week", week:i, tab:"brief"}); }));
+  $("[data-final]").addEventListener("click",()=>{ if(!finalUnlocked()){ toast("Aprueba el quiz de la semana 12 para abrir la auditoría final."); return; } setView({screen:"final", week:null}); });
+  $("#startDate").addEventListener("change",e=>{ state.start = e.target.value || "2026-10-19"; save(); render(); });
+  $("#freeMode").addEventListener("change",e=>{ state.free = e.target.checked; save(); render(); });
+  $("#resetBtn").addEventListener("click",()=>{ $("#resetWrap").innerHTML = `<span class="confirm">¿Borrar todo el progreso? <button class="btn small" id="rsYes">Sí, borrar</button><button class="btn small ghost" id="rsNo">Cancelar</button></span>`;
+    $("#rsYes").onclick = ()=>{ const st = state.start; state = defaultState(); state.start = st; save(); render(); toast("Progreso reiniciado"); };
+    $("#rsNo").onclick = ()=>render(); });
+  renderSync();
+}
+function badgeSVG(on){ return `<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 2 30 9.5v15L17 32 4 24.5v-15Z" fill="${on?"var(--accent-soft)":"var(--surface-2)"}" stroke="${on?"var(--accent-strong)":"var(--line)"}" stroke-width="1.5"/>${on?`<path d="M11 17.5l4 4 8-9" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`:`<circle cx="17" cy="17" r="3" fill="var(--line)"/>`}</svg>`; }
+
+function renderWeek(){
+  const i = view.week, w = WEEKS[i]; if(!w || !unlocked(i)){ view.screen = "map"; return renderMap(); }
+  const d = wk(state,w.id);
+  const tabs = [["brief","Briefing",d.read],["calc","Desafío",d.calc],["quiz","Quiz",d.passed],["field","Misión en planta",d.field]];
+  $("#app").innerHTML = `<section class="mission">
+    <div><button class="btn small ghost" id="backBtn">← Mapa de misiones</button></div>
+    <div class="m-head"><span class="eyebrow">Semana ${i+1} · ${weekDates(i)}</span><h2>${w.title}</h2>
+      <div class="m-tags"><span class="tag">${w.phase}</span><span class="tag">${w.hours}</span><span class="tag">${w.read}</span></div></div>
+    <div class="tabs" role="tablist">${tabs.map(t=>`<button class="tab" role="tab" data-tab="${t[0]}" aria-selected="${view.tab===t[0]}"><span class="tick ${t[2]?"on":""}">${t[2]?"✓":""}</span>${t[1]}</button>`).join("")}</div>
+    <div class="panel" id="panel"></div>
+    <div class="actions" style="justify-content:space-between">${i>0?`<button class="btn small ghost" data-go="${i-1}">← Semana ${i}</button>`:"<span></span>"}${i<11&&unlocked(i+1)?`<button class="btn small" data-go="${i+1}">Semana ${i+2} →</button>`:""}</div>
+  </section>`;
+  $("#backBtn").onclick = ()=>setView({screen:"map"});
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick = ()=>{ view.tab = b.dataset.tab; try{ localStorage.setItem(LKEY+"-view", JSON.stringify(view)); }catch(e){} renderWeek(); });
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick = ()=>setView({screen:"week", week:+b.dataset.go, tab:"brief"}));
+  const p = $("#panel");
+  if(view.tab === "brief") panelBrief(p, w, i);
+  else if(view.tab === "calc") panelCalc(p, w);
+  else if(view.tab === "quiz") panelQuiz(p, w, i);
+  else panelField(p, w);
+}
+
+function panelBrief(p, w, i){
+  const d = wk(state,w.id);
+  p.innerHTML = `<div class="read-row"><p><b>Lectura:</b> ${w.read}</p>
+      <label class="check"><input type="checkbox" id="readChk" ${d.read?"checked":""}> <span>Leí y subrayé el material (+${XP.read} XP)</span></label></div>
+    <div class="cols"><div class="box"><h3>Al terminar la semana podrás…</h3><ul class="clean">${w.objectives.map(o=>`<li>${o}</li>`).join("")}</ul></div>
+      <div class="box"><h3>Plan sugerido</h3><ul class="clean"><li>Lectura con apuntes: ${i>=8?"2 h":"1,5 h"}</li><li>Desafío de cálculo: 45 min</li><li>Quiz: 10 min</li><li>Misión en planta: 1–1,5 h con tus datos</li></ul></div></div>
+    <div><span class="eyebrow">Conceptos clave</span><div class="concepts" style="margin-top:8px">${w.concepts.map(c=>`<div class="concept"><b>${c.t}</b><p>${c.d}</p></div>`).join("")}</div></div>
+    <div class="actions"><button class="btn primary" id="toCalc">Ir al desafío →</button></div>`;
+  $("#readChk").onchange = e=>{ const was = !!W(w.id).read; W(w.id).read = e.target.checked; save(); if(!was && e.target.checked) toast("+"+XP.read+" XP · Lectura completada"); renderPlayer(); renderWeekTabsOnly(); };
+  $("#toCalc").onclick = ()=>{ view.tab = "calc"; renderWeek(); };
+}
+function renderWeekTabsOnly(){ const w = WEEKS[view.week], d = wk(state,w.id); const map = {brief:d.read, calc:d.calc, quiz:d.passed, field:d.field};
+  document.querySelectorAll("[data-tab]").forEach(b=>{ const t = b.querySelector(".tick"); const on = !!map[b.dataset.tab]; t.classList.toggle("on",on); t.textContent = on?"✓":""; }); }
+
+function optList(it){ return it.opts === "phases" ? Object.values(PHASES) : it.opts === "tasks" ? TASK_OPTS : it.opts; }
+function panelCalc(p, w){
+  const c = w.challenge, d = wk(state,w.id), saved = d.ans || {};
+  const items = c.items.map((it,k)=>{ const sv = saved[k] ?? "";
+    if(it.opts){ const o = optList(it); return `<div class="item" data-k="${k}"><label for="it${k}">${it.label}</label><div class="ctl"><select id="it${k}"><option value="">Elige…</option>${o.map((x,j)=>`<option value="${j}" ${String(sv)===String(j)?"selected":""}>${esc(x)}</option>`).join("")}</select></div></div>`; }
+    return `<div class="item" data-k="${k}"><label for="it${k}">${it.label}</label><div class="ctl"><input id="it${k}" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="${esc(sv)}"><span class="unit">${it.unit||""}</span></div></div>`; }).join("");
+  p.innerHTML = `<div class="scenario">${c.intro}</div>${w.tool?toolHTML(w.tool):""}
+    <div><span class="eyebrow">Responde</span></div><div class="items">${items}</div>
+    <div class="actions"><button class="btn primary" id="chkBtn">Comprobar</button><button class="btn ghost" id="solBtn" ${d.tries||d.calc?"":"hidden"}>Ver la solución del libro</button><span class="feedback" id="fb" aria-live="polite"></span></div>
+    <div class="solution" id="sol" hidden><b>Solución</b><p>${c.solution}</p></div>`;
+  if(w.tool) TOOLS[w.tool].run($("#tool-"+w.tool));
+  if(d.calc){ markItems(p, c, true); $("#fb").textContent = "Desafío resuelto."; $("#fb").className = "feedback ok"; }
+  p.querySelectorAll(".item input,.item select").forEach(el=>el.addEventListener("input",()=>el.closest(".item").classList.remove("ok","bad")));
+  $("#chkBtn").onclick = ()=>{
+    const ans = {}; let all = true;
+    c.items.forEach((it,k)=>{ const el = $("#it"+k,p); ans[k] = el.value; const ok = checkItem(it, el.value); all = all && ok; el.closest(".item").classList.toggle("ok",ok); el.closest(".item").classList.toggle("bad",!ok); });
+    const S = W(w.id); S.ans = ans; S.tries = (S.tries||0) + 1; const was = !!S.calc; if(all) S.calc = true; save();
+    const nOk = c.items.filter((it,k)=>checkItem(it, ans[k])).length;
+    $("#fb").textContent = all ? (was ? "Todo correcto." : "Desafío resuelto · +"+XP.calc+" XP") : nOk+" de "+c.items.length+" correctas. Revisa las marcadas en rojo.";
+    $("#fb").className = "feedback " + (all?"ok":"bad");
+    $("#solBtn").hidden = false; if(all && !was){ renderPlayer(); renderWeekTabsOnly(); }
+  };
+  $("#solBtn").onclick = ()=>{ $("#sol").hidden = !$("#sol").hidden; };
+}
+function checkItem(it, v){
+  if(it.opts){ const a = it.opts === "phases" ? it.a - 1 : it.a; return v !== "" && v !== undefined && v !== null && +v === a; }
+  const x = parseNum(v); if(!Number.isFinite(x)) return false;
+  const tol = it.tol ?? 0.01; return it.abs ? Math.abs(x - it.a) <= tol + 1e-9 : Math.abs(x - it.a) <= Math.abs(it.a)*tol + 1e-9;
+}
+function markItems(p, c, ok){ p.querySelectorAll(".item").forEach(el=>el.classList.toggle("ok", ok)); }
+
+/* Quiz */
+let Q = null;
+function startQuiz(pool, n, key){ const qs = shuffle(pool).slice(0, n).map(q=>{ const order = shuffle(q.o.map((t,k)=>k)); return {...q, order}; }); Q = {key, qs, k:0, score:0, answered:false, res:[]}; }
+function panelQuiz(p, w, i){
+  const d = wk(state,w.id);
+  if(!Q || Q.key !== w.id){
+    p.innerHTML = `<div class="result"><span class="eyebrow">Quiz semana ${i+1}</span><div class="big">5 preguntas</div>
+      <p class="muted">Aprueba con 4 de 5 para desbloquear ${i<11?"la semana "+(i+2):"la auditoría final"}. ${d.best?`Tu mejor resultado: ${d.best}/5.`:""}</p>
+      <button class="btn primary" id="qStart">${d.best?"Intentar de nuevo":"Comenzar"}</button></div>`;
+    $("#qStart").onclick = ()=>{ startQuiz(w.quiz, 5, w.id); panelQuiz(p, w, i); }; return;
+  }
+  drawQuiz(p, ()=>finishWeekQuiz(p, w, i));
+}
+function drawQuiz(p, onEnd){
+  if(Q.res[Q.k] !== undefined){ Q.answered = false; if(Q.k < Q.qs.length-1) Q.k++; else return onEnd(); }
+  const q = Q.qs[Q.k];
+  p.innerHTML = `<div class="quiz"><div class="qprog">${Q.qs.map((_,k)=>`<i class="${k<Q.k?(Q.res[k]?"ok":"bad"):k===Q.k?"cur":""}"></i>`).join("")}</div>
+    <span class="eyebrow">Pregunta ${Q.k+1} de ${Q.qs.length}</span><p class="qtext">${q.q}</p>
+    <div class="opts">${q.order.map((oi,j)=>`<button class="opt" data-oi="${oi}"><span class="k">${"ABCD"[j]}</span><span>${q.o[oi]}</span></button>`).join("")}</div>
+    <div id="qWhy"></div></div>`;
+  p.querySelectorAll(".opt").forEach(b=>b.onclick = ()=>{
+    if(Q.answered) return; Q.answered = true; const oi = +b.dataset.oi, ok = oi === q.a; Q.res[Q.k] = ok; if(ok) Q.score++;
+    p.querySelectorAll(".opt").forEach(x=>{ x.disabled = true; if(+x.dataset.oi === q.a) x.classList.add("right"); });
+    if(!ok) b.classList.add("wrong");
+    $("#qWhy",p).innerHTML = `<div class="why"><b>${ok?"Correcto.":"No es esa."}</b> ${q.why}<span class="ref">${q.ref}</span></div>
+      <div class="actions" style="margin-top:12px"><button class="btn primary" id="qNext">${Q.k < Q.qs.length-1 ? "Siguiente →" : "Ver resultado"}</button></div>`;
+    $("#qNext",p).onclick = ()=>{ Q.answered = false; if(Q.k < Q.qs.length-1){ Q.k++; drawQuiz(p, onEnd); } else onEnd(); };
+    $("#qNext",p).focus();
+  });
+}
+function finishWeekQuiz(p, w, i){
+  const S = W(w.id), sc = Q.score, wasPassed = !!S.passed, wasPerfect = S.best === 5; S.best = Math.max(S.best||0, sc); if(sc >= 4) S.passed = true; save();
+  let gain = 0; if(!wasPassed && S.passed) gain += XP.quiz; if(!wasPerfect && sc === 5) gain += XP.perfect;
+  Q = null;
+  p.innerHTML = `<div class="result"><span class="eyebrow">Resultado</span><div class="big">${sc}/5</div>
+    <p>${sc>=4 ? (i<11 ? "Aprobado. La semana "+(i+2)+" está desbloqueada." : "Aprobado. La auditoría final está abierta.") : "Necesitas 4 de 5. Repasa las explicaciones y vuelve a intentarlo: las preguntas cambian de orden."}${gain?` <b>+${gain} XP</b>`:""}</p>
+    <div class="actions"><button class="btn" id="qAgain">Repetir quiz</button>${sc>=4?`<button class="btn primary" id="qField">Ir a la misión en planta →</button>`:""}</div></div>`;
+  $("#qAgain").onclick = ()=>{ startQuiz(w.quiz, 5, w.id); panelQuiz(p, w, i); };
+  if(sc>=4) $("#qField").onclick = ()=>{ view.tab = "field"; renderWeek(); };
+  renderPlayer(); renderWeekTabsOnly();
+}
+
+function panelField(p, w){
+  const S = wk(state,w.id), st = S.steps || [];
+  p.innerHTML = `<div class="box"><span class="eyebrow">Misión en planta · +${XP.field} XP</span><h3>${w.field.title}</h3>
+      <div class="steps">${w.field.steps.map((s,k)=>`<label class="check"><input type="checkbox" data-st="${k}" ${st[k]?"checked":""}><span>${s}</span></label>`).join("")}</div>
+      <p><b>Entregable:</b> ${w.field.deliverable}</p></div>
+    <label class="field" for="notes" style="font-size:14px;color:var(--ink)"><b>Bitácora</b><span class="muted">Hallazgos, cifras clave y dónde guardaste el entregable.</span></label>
+    <textarea class="notes" id="notes" placeholder="Ej.: β = 1,3 para el modo «válvulas» del AJAX 2; el PM de 2.000 h se ajusta a 3.500 h…"></textarea>
+    <div class="actions"><button class="btn primary" id="fDone" ${S.field?"disabled":""}>${S.field?"Misión completada":"Marcar misión completada"}</button><span class="feedback" id="ffb" aria-live="polite"></span></div>`;
+  $("#notes").value = S.notes || "";
+  let nt = null; $("#notes").addEventListener("input", e=>{ clearTimeout(nt); nt = setTimeout(()=>{ W(w.id).notes = e.target.value; save(); }, 700); });
+  p.querySelectorAll("[data-st]").forEach(c=>c.onchange = ()=>{ const s = W(w.id); s.steps = s.steps || []; s.steps[+c.dataset.st] = c.checked; save(); });
+  $("#fDone").onclick = ()=>{ const s = W(w.id), all = w.field.steps.every((_,k)=>s.steps && s.steps[k]);
+    if(!all){ $("#ffb").textContent = "Marca todos los pasos antes de cerrar la misión."; $("#ffb").className = "feedback bad"; return; }
+    s.field = true; save(); toast("+"+XP.field+" XP · Misión en planta completada"); renderPlayer(); panelField(p, w); renderWeekTabsOnly(); };
+}
+
+function renderFinal(){
+  if(!finalUnlocked()){ view.screen = "map"; return renderMap(); }
+  const F = state.final || {best:0,passed:false}, C = state.capstone || {steps:[],done:false};
+  $("#app").innerHTML = `<section class="mission"><div><button class="btn small ghost" id="backBtn">← Mapa de misiones</button></div>
+    <div class="m-head"><span class="eyebrow">Cierre del programa</span><h2>Auditoría final</h2><div class="m-tags"><span class="tag">15 preguntas al azar de las 60</span><span class="tag">Aprueba con 12</span><span class="tag">+${XP.final} XP</span></div></div>
+    <div class="panel" id="panel"></div>
+    <div class="box"><span class="eyebrow">Proyecto integrador · +${XP.capstone} XP</span><h3>${CAPSTONE.title}</h3>
+      <div class="steps">${CAPSTONE.steps.map((s,k)=>`<label class="check"><input type="checkbox" data-cs="${k}" ${C.steps&&C.steps[k]?"checked":""}><span>${s}</span></label>`).join("")}</div>
+      <div class="actions"><button class="btn primary" id="capDone" ${C.done?"disabled":""}>${C.done?"Proyecto completado":"Marcar proyecto completado"}</button><span class="feedback" id="cfb"></span></div></div></section>`;
+  $("#backBtn").onclick = ()=>setView({screen:"map"});
+  const p = $("#panel"), pool = WEEKS.flatMap(w=>w.quiz);
+  const intro = ()=>{ p.innerHTML = `<div class="result"><div class="big">${F.best?F.best+"/15":"15 preguntas"}</div><p class="muted">${F.passed?"Auditoría aprobada. Tu etapa sube a Excelencia cuando sumes "+nf(RANKS[4].xp,0)+" XP.":"Mezcla de las 12 semanas. Cada intento sortea preguntas distintas."}</p><button class="btn primary" id="fStart">${F.best?"Nuevo intento":"Comenzar auditoría"}</button></div>`;
+    $("#fStart").onclick = ()=>{ startQuiz(pool, 15, "final"); drawQuiz(p, endFinal); }; };
+  const endFinal = ()=>{ const sc = Q.score; Q = null; state.final = state.final || {best:0,passed:false}; const was = state.final.passed; state.final.best = Math.max(state.final.best||0, sc); if(sc >= 12) state.final.passed = true; save();
+    p.innerHTML = `<div class="result"><span class="eyebrow">Resultado</span><div class="big">${sc}/15</div><p>${sc>=12?"Auditoría aprobada."+(!was?` <b>+${XP.final} XP</b> e insignia Excelencia.`:""):"Necesitas 12 de 15. Repasa las semanas donde fallaste."}</p><button class="btn" id="fAgain">Nuevo intento</button></div>`;
+    $("#fAgain").onclick = ()=>{ startQuiz(pool, 15, "final"); drawQuiz(p, endFinal); }; renderPlayer(); };
+  if(Q && Q.key === "final") drawQuiz(p, endFinal); else intro();
+  document.querySelectorAll("[data-cs]").forEach(c=>c.onchange = ()=>{ state.capstone = state.capstone || {steps:[],done:false}; state.capstone.steps[+c.dataset.cs] = c.checked; save(); });
+  $("#capDone").onclick = ()=>{ const cs = state.capstone || {steps:[]}; if(!CAPSTONE.steps.every((_,k)=>cs.steps && cs.steps[k])){ $("#cfb").textContent = "Marca los 4 pasos antes de cerrar el proyecto."; $("#cfb").className = "feedback bad"; return; }
+    state.capstone.done = true; save(); toast("+"+XP.capstone+" XP · Proyecto integrador completado"); renderPlayer(); renderFinal(); };
+}
+
+function render(){ renderPlayer(); if(view.screen === "week") renderWeek(); else if(view.screen === "final") renderFinal(); else renderMap(); }
+render();
+</script>
+
+</body>
+</html>

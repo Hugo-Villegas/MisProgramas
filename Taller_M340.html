@@ -1,0 +1,1196 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>[hidden]{display:none!important}</style>
+<title>Taller Unity M340</title>
+<style>
+/* Layout: ventana de aplicación Windows tipo Control Expert. Título, menús, iconos; explorador | documentos con pestañas | panel de entrenamiento; ventana de resultados; barra de estado. Tema claro único, deliberado (así se ve el IDE real). */
+:root{
+  color-scheme:light;
+  --desk:#c9d1d7; --chrome:#f0f0f0; --chrome2:#e6e6e6; --win:#ffffff; --ink:#1a1a1a; --muted:#5f6368;
+  --edge:#a0a0a0; --edge2:#d2d2d2; --sel:#cce8ff; --selb:#99d1ff; --hov:#e5f3ff;
+  --title:#ffffff; --accent:#0a64ad;
+  --ok:#128a2c; --okbg:#4cbb5a; --warnbg:#ffe36b; --errbg:#ff5a4a; --err:#c42b1c;
+  --ledoff:#b9c1c6; --ledg:#1fae48; --ledr:#e2392d; --leda:#f0a313;
+  --grid:#c8c8c8; --wire:#1a1a1a; --lit:#1d1d9b;
+  --f-ui:"Segoe UI",Tahoma,"Noto Sans",Arial,sans-serif;
+  --f-mono:Consolas,"Cascadia Mono","Courier New",monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--desk);color:var(--ink);font:13px/1.35 var(--f-ui);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px}
+button,input,select{font:inherit;color:inherit}
+.mono{font-family:var(--f-mono)}
+
+/* ventana */
+.win{height:100%;min-height:700px;max-width:1500px;margin:0 auto;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto auto;background:var(--chrome);border:1px solid #707070;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.titlebar{display:flex;align-items:center;gap:8px;background:var(--title);height:30px;padding-left:8px;border-bottom:1px solid var(--edge2);min-width:0}
+.titlebar .app-ico{width:16px;height:16px;flex:0 0 16px}
+.titlebar .ttl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.wbtn{width:44px;height:30px;display:grid;place-items:center;color:#333;font-size:14px}
+.wbtn.x:hover{background:#e81123;color:#fff}
+
+/* menús */
+.menubar{display:flex;flex-wrap:wrap;background:var(--win);border-bottom:1px solid var(--edge2);position:relative;z-index:30}
+.menubar>button{border:1px solid transparent;background:none;padding:3px 8px;cursor:default}
+.menubar>button:hover,.menubar>button.open{background:var(--hov);border-color:var(--selb)}
+.dropdown{position:fixed;background:#f2f2f2;border:1px solid #ccc;box-shadow:2px 3px 6px rgba(0,0,0,.25);padding:2px;min-width:270px;z-index:60}
+.dropdown button{display:grid;grid-template-columns:22px 1fr auto;gap:6px;width:100%;text-align:left;border:1px solid transparent;background:none;padding:4px 10px 4px 4px;cursor:default}
+.dropdown button:hover:not(:disabled){background:#91c9f7;border-color:#91c9f7}
+.dropdown button:disabled{color:#9a9a9a}
+.dropdown .sc{color:#555;font-size:12px;padding-left:24px}
+.dropdown button:disabled .sc{color:#aaa}
+.dropdown hr{border:0;border-top:1px solid #d7d7d7;margin:3px 2px 3px 28px}
+
+/* barra de iconos */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:1px;padding:3px 4px;background:var(--chrome);border-bottom:1px solid var(--edge2)}
+.toolbar .sep{width:1px;height:20px;background:#c4c4c4;margin:0 5px}
+.tb{width:26px;height:24px;display:grid;place-items:center;border:1px solid transparent;background:none;border-radius:2px;cursor:default;padding:0}
+.tb:hover:not(:disabled){background:var(--hov);border-color:var(--selb)}
+.tb:disabled{opacity:.35}
+.tb svg{width:16px;height:16px}
+.tb.txt{width:auto;padding:0 6px;font-size:11px;font-weight:700;letter-spacing:.02em}
+
+/* cuerpo */
+.body{display:grid;grid-template-columns:240px minmax(0,1fr) 310px;gap:4px;padding:4px;min-height:0}
+.dock{background:var(--win);border:1px solid var(--edge);display:flex;flex-direction:column;min-height:0;min-width:0}
+.dockh{display:flex;justify-content:space-between;align-items:center;background:#dbe3ea;border-bottom:1px solid var(--edge);padding:2px 6px;font-weight:600;font-size:12px;min-height:22px}
+.dockh .x{color:#666;font-weight:400}
+.dockbody{overflow:auto;min-height:0;flex:1}
+
+/* árbol */
+.viewsel{display:flex;align-items:center;gap:5px;padding:3px 6px;border-bottom:1px solid var(--edge2);font-size:12px;color:#333}
+.tree{list-style:none;margin:0;padding:3px 0;white-space:nowrap}
+.tree ul{list-style:none;margin:0;padding-left:16px}
+.node{display:flex;align-items:center;gap:3px;padding:1px 4px;cursor:default;border:1px solid transparent;user-select:none}
+.node:hover{background:var(--hov)}
+.node.sel{background:var(--sel);border-color:var(--selb)}
+.node .tw{width:11px;height:11px;border:1px solid #9a9a9a;font-size:9px;line-height:9px;text-align:center;color:#333;background:#fff;flex:0 0 11px}
+.node .tw.none{border-color:transparent;background:none}
+.node svg{width:16px;height:16px;flex:0 0 16px}
+.node b{font-weight:600}
+.node.dim{color:#8a8a8a}
+
+/* documentos */
+.mdi{display:flex;flex-direction:column;min-height:0;min-width:0;background:#8c949a;border:1px solid var(--edge)}
+.doc{flex:1;min-height:0;overflow:auto;background:var(--win);margin:0}
+.doctabs{display:flex;flex-wrap:wrap;gap:1px;background:var(--chrome2);border-top:1px solid var(--edge);padding:2px 2px 0}
+.doctabs button{display:flex;align-items:center;gap:6px;border:1px solid var(--edge2);border-top:0;background:#e9e9e9;padding:2px 6px 3px;font-size:12px;cursor:default;max-width:240px}
+.doctabs button.on{background:var(--win);border-color:var(--edge);font-weight:600}
+.doctabs button span.t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doctabs .cl{color:#777;padding:0 2px}
+.doctabs .cl:hover{color:#fff;background:#c42b1c}
+.pad{padding:14px 16px}
+.pad h2{font-size:18px;font-weight:600;margin:0 0 4px}
+.pad p{max-width:72ch}
+.gbox{border:1px solid #c9c9c9;border-radius:2px;padding:14px 12px 10px;position:relative;margin-top:16px;max-width:720px}
+.gbox>legend,.gbox>.lg{position:absolute;top:-9px;left:8px;background:var(--win);padding:0 4px;color:#0b4f8a}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:6px 0}
+.row label.k{min-width:150px;color:#222}
+.inp,select.inp{border:1px solid #7a7a7a;background:#fff;padding:2px 4px;height:23px;min-width:0}
+.inp:disabled,select.inp:disabled{background:#f0f0f0;color:#888;border-color:#c2c2c2}
+.ipbox{display:inline-flex;align-items:center;border:1px solid #7a7a7a;background:#fff;height:23px;padding:0 3px}
+.ipbox.dis{background:#f0f0f0;border-color:#c2c2c2;color:#888}
+.ipbox input{width:30px;border:0;text-align:center;font:inherit;background:transparent;padding:0;height:20px}
+.ipbox i{font-style:normal;padding:0 1px}
+.wbtn2{min-width:80px;height:24px;border:1px solid #adadad;background:#e1e1e1;padding:0 12px;cursor:default}
+.wbtn2:hover:not(:disabled){background:#e5f1fb;border-color:#0078d7}
+.wbtn2.def{border-color:#0078d7;box-shadow:inset 0 0 0 1px #0078d7}
+.wbtn2:disabled{color:#a0a0a0;border-color:#cfcfcf;background:#ececec}
+.note{color:var(--muted);font-size:12px;max-width:72ch}
+.wtabs{display:flex;flex-wrap:wrap;border-bottom:1px solid #adadad;margin-top:10px}
+.wtabs span{padding:4px 10px;border:1px solid transparent;border-bottom:0;color:#8a8a8a;font-size:12px}
+.wtabs span.on{border-color:#adadad;background:#fff;color:#111;margin-bottom:-1px;font-weight:600}
+.wtabpanel{border:1px solid #adadad;border-top:0;padding:10px 12px;max-width:760px}
+.dirty{color:var(--err);font-weight:600}
+
+/* tablas estilo grilla */
+.tblw{overflow-x:auto}
+table.grid{border-collapse:collapse;font-size:12px;min-width:100%}
+table.grid th{background:#f0f0f0;font-weight:400;text-align:left;border:1px solid #c8c8c8;padding:3px 6px;white-space:nowrap}
+table.grid td{border:1px solid #e0e0e0;padding:2px 6px;white-space:nowrap}
+table.grid tr.sel td{background:var(--sel)}
+table.grid td.v{font-family:var(--f-mono)}
+table.grid td.bad{color:var(--err);font-weight:600}
+table.grid tr.click{cursor:default}
+table.grid tr.click:hover td{background:var(--hov)}
+
+/* bastidor */
+.busbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--edge2);background:#fafafa}
+.rackarea{padding:24px 16px 16px;overflow-x:auto}
+.rack{display:inline-flex;gap:2px;background:linear-gradient(#a9b0b4,#8c9498);padding:26px 10px 10px;border-radius:3px;position:relative}
+.slotc{position:relative;width:62px;height:190px}
+.slotc .num{position:absolute;top:-22px;left:0;width:18px;height:16px;background:#fff;border:1px solid #333;font-size:11px;text-align:center;line-height:14px}
+.mod{position:absolute;inset:0;background:linear-gradient(90deg,#eceeea,#f8f8f6 40%,#e3e5e1);border:1px solid #6f777b;display:flex;flex-direction:column;align-items:center;cursor:default}
+.mod .strip{height:7px;width:100%;background:var(--mc,#d9b600)}
+.mod .face{background:#21282c;color:#fff;width:100%;text-align:center;padding:3px 0;font-weight:700;font-size:12px;line-height:1.1}
+.mod .face small{display:block;font-weight:400;font-size:11px}
+.mod .lines{flex:1;width:72%;margin:8px 0;background:repeating-linear-gradient(#e7e9e6 0 3px,#d4d8d3 3px 4px);border:1px solid #c9cdc8}
+.mod:hover{outline:2px solid #0078d7}
+.mod.sel{outline:2px solid #0078d7;box-shadow:0 0 0 4px rgba(0,120,215,.25)}
+.empty{position:absolute;inset:0;border:1px dashed #5d666b;background:rgba(255,255,255,.12);display:grid;place-items:center;color:#2f383c;font-size:20px;cursor:default}
+.empty:hover{background:rgba(255,255,255,.45)}
+.mod.ps{--mc:#d9b600}.mod.cpu{--mc:#2b78c4}
+
+/* LD */
+.ldwrap{overflow:auto}
+.ld{position:relative;margin:0;background-color:#fff;background-image:radial-gradient(#b7b7b7 1px,transparent 1.2px);background-size:10px 10px;background-position:5px 5px}
+.ldhead{display:flex;position:sticky;top:0;z-index:3;background:#f0f0f0;border-bottom:1px solid #c8c8c8;margin-left:28px}
+.ldhead span{flex:0 0 96px;border-right:1px solid #c8c8c8;text-align:center;font-size:11px;color:#444}
+.ldrows{position:absolute;left:0;top:0;width:28px;bottom:0;background:#f0f0f0;border-right:1px solid #c8c8c8}
+.ldrows span{position:absolute;left:0;width:28px;text-align:center;font-size:11px;color:#444}
+.fb{position:absolute;border:1.5px solid var(--wire);background:#fff;font-family:var(--f-ui);font-size:11px}
+.fb .ty{position:absolute;left:0;right:0;top:3px;text-align:center;font-weight:600}
+.fb .ix{position:absolute;right:3px;top:1px;font-size:10px}
+.inst{position:absolute;font-size:11px;font-family:var(--f-ui)}
+.pinl,.pinr{position:absolute;font-size:11px;line-height:12px}
+.pinl{left:3px}.pinr{right:3px;text-align:right}
+.lit{position:absolute;font-family:var(--f-mono);font-size:11.5px;color:var(--lit);text-align:right}
+.lit input{width:100%;border:1px solid transparent;background:transparent;text-align:right;font:inherit;color:inherit;padding:0 2px;height:16px}
+.lit input:hover{border-color:#9ab}
+.lit input:focus{border-color:#0078d7;background:#fff;outline:none}
+.lit input.bad{border-color:var(--err);background:#ffe6e3}
+.varl{position:absolute;font-size:11px;white-space:nowrap}
+.aval{position:absolute;font-family:var(--f-mono);font-size:11px;background:#fff36b;border:1px solid #c9b800;padding:0 3px;white-space:nowrap}
+
+/* entrenamiento */
+.scorebar{display:flex;align-items:baseline;gap:8px;padding:6px 8px;border-bottom:1px solid var(--edge2)}
+.scorebar b{font-size:24px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.ms{list-style:none;margin:0;padding:4px 6px}
+.ms li{display:grid;grid-template-columns:18px 1fr auto;gap:5px;align-items:start;padding:2px 3px;font-size:12px}
+.ms li .ck{width:13px;height:13px;border:1px solid #7a7a7a;background:#fff;margin-top:2px;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff}
+.ms li.done .ck{background:var(--ok);border-color:var(--ok)}
+.ms li.done .tx{color:#888}
+.ms li.cur{background:var(--sel);outline:1px solid var(--selb)}
+.ms li.ph{display:block;font-weight:600;color:#0b4f8a;padding-top:6px;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.ms .pts{color:#888;font-size:11px}
+.hint{margin:4px 8px 8px;padding:6px 8px;background:#fffbe5;border:1px solid #e6d36b;font-size:12px}
+.sect{border-top:1px solid var(--edge2);padding:8px}
+.sect h4{margin:0 0 6px;font-size:12px;font-weight:600;color:#0b4f8a}
+.plate{display:grid;grid-template-columns:auto 1fr;gap:1px 8px;font-size:11.5px;border:1px solid #b3b3b3;background:#f7f7f2;padding:5px 7px}
+.plate dt{color:#666}.plate dd{margin:0;font-family:var(--f-mono)}
+.prack{display:flex;gap:2px;background:#9aa2a6;padding:6px 4px;border-radius:2px;margin-top:8px;overflow-x:auto}
+.pm{flex:1 1 0;min-width:32px;height:118px;background:#eef0ec;border:1px solid #6f777b;display:flex;flex-direction:column;align-items:center;position:relative;font-size:10px}
+.pm .f{background:#21282c;color:#fff;width:100%;text-align:center;font-weight:700;line-height:1.05;padding:2px 0;font-size:10px}
+.pm.e{background:transparent;border-style:dashed}
+.pm .ls{display:grid;gap:2px;margin-top:4px;font-family:var(--f-mono);font-size:8px;color:#444}
+.pm .ls span{display:flex;align-items:center;gap:2px}
+.pm .rj{width:14px;height:11px;background:#59666c;border:2px solid #3b474d;margin-top:auto;margin-bottom:6px}
+.led{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ledoff);box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
+.led.g{background:var(--ledg);box-shadow:0 0 5px var(--ledg)}
+.led.r{background:var(--ledr);box-shadow:0 0 5px var(--ledr)}
+.led.a{background:var(--leda);box-shadow:0 0 5px var(--leda)}
+.led.blink{animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{background:var(--ledoff);box-shadow:none}}
+.outs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px}
+.outs .blk{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;border:1px solid #c8c8c8;padding:3px 2px;background:#fafafa}
+.outs .o{display:grid;justify-items:center;font-family:var(--f-mono);font-size:9px;color:#555}
+.outs .o .led{width:10px;height:10px}
+.chk{display:flex;gap:6px;align-items:center;font-size:12px;margin:2px 0}
+
+/* ventana de resultados */
+.output{display:grid;grid-template-rows:minmax(0,1fr) auto;height:150px;margin:0 4px 4px;border:1px solid var(--edge);background:var(--win)}
+#log{overflow:auto;padding:3px 6px;font-family:var(--f-mono);font-size:12px}
+#log div{white-space:pre-wrap}
+#log .ok{color:#0d6b22}#log .err{color:#b3261e}#log .warn{color:#8a5a00}#log .info{color:#1a1a1a}
+.otabs{display:flex;flex-wrap:wrap;gap:1px;background:var(--chrome2);border-top:1px solid var(--edge2);padding:0 2px 2px}
+.otabs button{border:1px solid var(--edge2);border-top:0;background:#e9e9e9;padding:1px 8px;font-size:12px;cursor:default}
+.otabs button.on{background:#fff;border-color:var(--edge)}
+
+/* barra de estado */
+.statusbar{display:flex;flex-wrap:wrap;background:var(--chrome);border-top:1px solid var(--edge2);font-size:12px;min-height:22px}
+.statusbar span{padding:2px 8px;border-left:1px solid #c6c6c6;white-space:nowrap}
+.statusbar span:first-child{flex:1;border-left:0;min-width:60px}
+.statusbar .g{background:var(--okbg);color:#062b0e}
+.statusbar .y{background:var(--warnbg);color:#3d3000}
+.statusbar .r{background:var(--errbg);color:#fff}
+
+/* diálogos */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.18);display:grid;place-items:center;z-index:80;padding:16px}
+.dlg{background:var(--chrome);border:1px solid #6e6e6e;box-shadow:0 10px 35px rgba(0,0,0,.35);width:min(560px,100%);max-height:92vh;display:flex;flex-direction:column}
+.dlg.wide{width:min(720px,100%)}
+.dlgt{display:flex;justify-content:space-between;align-items:center;background:#fff;height:30px;padding-left:10px;font-size:12px;border-bottom:1px solid #e3e3e3}
+.dlgt .x{width:44px;height:30px;display:grid;place-items:center;border:0;background:none;cursor:default}
+.dlgt .x:hover{background:#e81123;color:#fff}
+.dlgb{padding:12px 14px;overflow:auto}
+.dlgf{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:10px 14px;border-top:1px solid #dedede}
+.mbox{display:grid;grid-template-columns:36px 1fr;gap:12px;align-items:start;background:#fff;margin:-12px -14px;padding:16px 14px}
+.mbox svg{width:32px;height:32px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp .gbox{margin-top:10px;background:var(--chrome)}
+.cmp .gbox .lg{background:var(--chrome)}
+.cmp dl{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;margin:0;font-size:12px}
+.cmp dd{margin:0;border:1px solid #c2c2c2;background:#f9f9f9;padding:0 4px;font-family:var(--f-mono);font-size:11.5px}
+.pbar{height:18px;border:1px solid #bcbcbc;background:#e6e6e6;margin-top:10px}
+.pbar i{display:block;height:100%;width:0;background:repeating-linear-gradient(90deg,#06b025 0 9px,#e6e6e6 9px 11px)}
+.cat{height:260px;overflow:auto;border:1px solid #828790;background:#fff}
+.ctx{position:fixed;z-index:90}
+.big{font-size:40px;font-weight:700;color:var(--accent)}
+
+/* ejercicio tipos de datos */
+.tdtabs{display:flex;flex-wrap:wrap;border-bottom:1px solid #adadad;padding:8px 12px 0;background:#fafafa}
+.tdtabs button{border:1px solid transparent;border-bottom:0;background:none;padding:4px 12px;font-size:12px;color:#555;cursor:default}
+.tdtabs button.on{border-color:#adadad;background:#fff;color:#111;font-weight:600;margin-bottom:-1px}
+table.td td{vertical-align:middle}
+table.td td.cmt{white-space:normal;min-width:260px;max-width:420px;color:#333}
+table.td td.st{width:20px;text-align:center;font-weight:700}
+table.td tr.okrow td{background:#e7f5e9}table.td tr.okrow td.st{color:var(--ok)}
+table.td tr.badrow td{background:#fde9e7}table.td tr.badrow td.st{color:var(--err)}
+.tderr{margin:0;padding-left:18px;font-size:12px;display:grid;gap:3px}
+.tdref summary{cursor:default;color:#0b4f8a;font-weight:600}
+.tdcode{margin:4px 0;background:#fff;border:1px solid #c8c8c8;padding:8px 10px;font-family:var(--f-mono);font-size:12px;white-space:pre-wrap;overflow-x:auto}
+.tdopts{display:flex;flex-wrap:wrap;gap:6px}
+.tdopt{border:1px solid #adadad;background:#f4f4f4;padding:4px 12px;cursor:default;font-family:var(--f-mono);font-size:12px}
+.tdopt:hover:not(:disabled){background:#e5f1fb;border-color:#0078d7}
+.tdopt:disabled{color:#333}
+.tdopt.right{background:#dff3e2;border-color:var(--ok)}
+.tdopt.wrong{background:#fde2df;border-color:var(--err)}
+.tdopt .rb{color:#0b4f8a}
+.tdexp{font-size:12px;margin:8px 0 0;padding:6px 8px;border:1px solid}
+.tdexp.ok{background:#eaf7ec;border-color:#9fd4a8}.tdexp.bad{background:#fdeceb;border-color:#efb1aa}
+
+@media (max-width:1150px){
+  .win{height:auto}
+  .body{grid-template-columns:220px minmax(0,1fr)}
+  .body>.dock.right{grid-column:1 / -1}
+  .mdi{min-height:560px}
+}
+@media (max-width:760px){
+  body{padding-block:8px}
+  .body{grid-template-columns:minmax(0,1fr)}
+  .dock.left .dockbody{max-height:230px}
+  .titlebar .wbtn{width:32px}
+  .cmp{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){.led.blink{animation:none}}
+</style>
+
+</head>
+<body>
+<div class="win" id="win">
+  <div class="titlebar">
+    <svg class="app-ico" viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="12" rx="1" fill="#2b78c4"/><rect x="3" y="4" width="3" height="8" fill="#fff"/><rect x="7" y="4" width="2" height="8" fill="#d9e8f6"/><rect x="10" y="4" width="3" height="8" fill="#fff"/></svg>
+    <span class="ttl" id="ttl"></span>
+    <span class="wbtn" aria-hidden="true">&#8211;</span><span class="wbtn" aria-hidden="true">&#9633;</span><span class="wbtn x" aria-hidden="true">&#10005;</span>
+  </div>
+  <nav class="menubar" id="menubar"></nav>
+  <div class="toolbar" id="toolbar"></div>
+  <div class="body">
+    <section class="dock left">
+      <div class="dockh">Explorador de proyectos <span class="x">&#10005;</span></div>
+      <div class="viewsel"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 2h5v4H2zM9 10h5v4H9zM4.5 6v6H9" fill="#dbe8f5" stroke="#3b6a9b"/></svg> Vista estructural</div>
+      <div class="dockbody"><ul class="tree" id="tree"></ul></div>
+    </section>
+    <section class="mdi">
+      <div class="doc" id="doc"></div>
+      <div class="doctabs" id="doctabs"></div>
+    </section>
+    <section class="dock right">
+      <div class="dockh">Entrenamiento <span class="mono" id="mcount"></span></div>
+      <div class="dockbody">
+        <div class="scorebar"><span>Puntaje</span><b id="score">0</b><span>/ 100</span><span class="note" id="errs"></span></div>
+        <ul class="ms" id="missions"></ul>
+        <div class="hint" id="hint"></div>
+        <div class="sect" id="tdpanel"></div>
+        <div class="sect" id="phys"></div>
+      </div>
+    </section>
+  </div>
+  <div class="output">
+    <div id="log" role="log"></div>
+    <div class="otabs" id="otabs"></div>
+  </div>
+  <div class="statusbar" id="statusbar"></div>
+</div>
+
+<div class="scrim" id="scrim" hidden><div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT"><div class="dlgt"><span id="dlgT"></span><button class="x" id="dlgX" aria-label="Cerrar">&#10005;</button></div><div class="dlgb" id="dlgB"></div><div class="dlgf" id="dlgF"></div></div></div>
+<div class="dropdown ctx" id="ctx" hidden></div>
+<div class="dropdown" id="drop" hidden></div>
+
+<script>
+/* ================= catálogos ================= */
+const CPUS={'BMX P34 1000':'CPU 340-10 Modbus','BMX P34 2010':'CPU 340-20 Modbus CANopen','BMX P34 2020':'CPU 340-20 Modbus Ethernet','BMX P34 2030':'CPU 340-20 Ethernet CANopen'};
+const CAT={
+  'Analógico':{'AMI 0410':'4 entradas analógicas U/I con separación de potencial','AMO 0210':'2 salidas analógicas U/I con separación de potencial','ART 0414':'4 entradas TC/RTD con separación de potencial'},
+  'Binario':{'DDI 1602':'16 entradas digitales de 24 VCC común positivo','DDO 1602':'16 salidas digitales transistor común negativo','DDM 3202K':'16 entradas 24 VCC y 16 salidas transistor'},
+  'Comunicación':{'NOE 0100':'Ethernet 1 puerto 10/100 RJ45'},
+  'Contaje':{'EHC 0200':'Contador genérico de 2 canales, 60 kHz'}
+};
+const MODS={};Object.values(CAT).forEach(g=>Object.assign(MODS,g));
+const MCOL={'NOE 0100':'#3aa0d8','DDM 3202K':'#d9b600','DDI 1602':'#d9b600','DDO 1602':'#d9b600','AMI 0410':'#3fae4a','AMO 0210':'#3fae4a','ART 0414':'#3fae4a','EHC 0200':'#7a4fc2'};
+const MUX0=['16#0000','16#000F','16#00F0','16#0F00','16#F000','16#0000'];
+function makeScenario(n){
+  if(n===2){const o=20+Math.floor(Math.random()*180);
+    return {n:2,name:'Paletizadora línea 2',cpu:'BMX P34 2010',rack:['NOE 0100','DDM 3202K','DDI 1602','AMO 0210',''],ip:'192.168.10.'+o,mask:'255.255.255.0',mac:'00-80-F4-02-1B-77',modbus:1,ipLabel:null,projName:'PALETIZ_L2',version:'0.1.12',built:'14/03/2026 09:41:07',interval:'t#2s'}}
+  return {n:1,name:'Maleta MQTBMX340',cpu:'BMX P34 2010',rack:['NOE 0100','DDM 3202K','AMI 0410','AMO 0210','EHC 0200'],ip:'120.23.3.1',mask:'255.255.255.0',mac:'00-80-F4-01-6C-2A',modbus:1,ipLabel:'120.23.3.1',projName:'MALETA_V1',version:'0.0.83',built:'30/10/2007 17:05:10',interval:'t#1s'};
+}
+
+/* ================= utilidades ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+function parseIp(s){const m=String(s||'').trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);if(!m)return null;const a=m.slice(1).map(Number);return a.every(x=>x<=255)?a:null}
+const ipNum=a=>(((a[0]<<24)>>>0)+(a[1]<<16)+(a[2]<<8)+a[3])>>>0;
+function validMask(s){const a=parseIp(s);if(!a)return false;const n=ipNum(a);if(n===0)return false;const inv=(~n)>>>0;return ((inv+1)&inv)===0}
+const sameNet=(a,b,m)=>((ipNum(parseIp(a))&ipNum(parseIp(m)))>>>0)===((ipNum(parseIp(b))&ipNum(parseIp(m)))>>>0);
+function hostOk(ip,m){const n=ipNum(parseIp(ip)),k=ipNum(parseIp(m)),h=(n&~k)>>>0;return h!==0&&h!==((~k)>>>0)}
+function parseTime(s){let t=String(s||'').trim().toLowerCase();const m=t.match(/^(t|time)#(.+)$/);if(!m)return null;t=m[2].replace(/_/g,'');const re=/(\d+(?:\.\d+)?)(ms|d|h|m|s)/g;let tot=0,u='',x;while((x=re.exec(t))){tot+=parseFloat(x[1])*({d:864e5,h:36e5,m:6e4,s:1e3,ms:1}[x[2]]);u+=x[0]}if(!u||u!==t)return null;return Math.round(tot)}
+const hexOk=s=>/^16#[0-9a-f]{1,4}$/i.test(String(s).trim());
+const hexVal=s=>hexOk(s)?parseInt(String(s).trim().slice(3),16):0;
+const bump=v=>{const p=String(v||'0.0.0').split('.').map(Number);p[2]=(p[2]||0)+1;return p.join('.')};
+function stamp(){const d=new Date(),z=n=>String(n).padStart(2,'0');return `${z(d.getDate())}/${z(d.getMonth()+1)}/${d.getFullYear()} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`}
+const cfgSig=p=>JSON.stringify([p.cpu,p.rack,p.net]);
+const sig=p=>cfgSig(p)+JSON.stringify(p.prog);
+const defaultIp=mac=>'84.'+mac.split('-').slice(3).map(h=>parseInt(h,16)).join('.');
+const netOn=n=>n&&n.exists&&n.func==='ETH TCP IP'&&n.linked;
+
+/* ================= iconos ================= */
+const I={
+ new:'<path d="M3 1.5h6l4 4v9H3z" fill="#fff" stroke="#555"/><path d="M9 1.5v4h4" fill="none" stroke="#555"/>',
+ open:'<path d="M1.5 4h5l1 1.5h7v8h-13z" fill="#f3c74f" stroke="#a5822a"/>',
+ save:'<rect x="2" y="2" width="12" height="12" fill="#5b7fb5" stroke="#34507a"/><rect x="4.5" y="2" width="7" height="4" fill="#fff"/><rect x="4" y="9" width="8" height="5" fill="#dfe6ee"/>',
+ valid:'<rect x="1.5" y="1.5" width="13" height="13" fill="#fff" stroke="#555"/><path d="M4 8l3 3 5-6" stroke="#1a7f2e" stroke-width="2" fill="none"/>',
+ analyze:'<circle cx="6.5" cy="6.5" r="4" fill="#fff" stroke="#3a5d8f" stroke-width="1.6"/><path d="M9.5 9.5l5 5" stroke="#3a5d8f" stroke-width="2"/>',
+ build:'<rect x="1.5" y="3.5" width="13" height="10" fill="#fff" stroke="#555"/><path d="M4 6.5h3M4 8.5h3M4 10.5h3M9 6.5h3M9 8.5h3" stroke="#2b78c4"/><path d="M9 10.5h3" stroke="#1a9e3a" stroke-width="1.6"/>',
+ rebuild:'<rect x="3.5" y="1.5" width="11" height="9" fill="#e9eef4" stroke="#555"/><rect x="1.5" y="5.5" width="11" height="9" fill="#fff" stroke="#555"/><path d="M3.5 8.5h7M3.5 10.5h7M3.5 12.5h7" stroke="#2b78c4"/>',
+ conn:'<path d="M1 8h4M11 8h4" stroke="#333" stroke-width="1.5"/><rect x="4.5" y="5" width="3.5" height="6" fill="#3a9a5a" stroke="#215c36"/><rect x="8" y="5" width="3.5" height="6" fill="#3a9a5a" stroke="#215c36"/>',
+ disc:'<path d="M1 8h3M12 8h3" stroke="#333" stroke-width="1.5"/><rect x="3.5" y="5" width="3.5" height="6" fill="#c9534a" stroke="#7e2a24"/><rect x="9" y="5" width="3.5" height="6" fill="#c9534a" stroke="#7e2a24"/>',
+ addr:'<circle cx="8" cy="8" r="5.5" fill="#fff" stroke="#2b78c4" stroke-width="1.4"/><circle cx="8" cy="8" r="2" fill="#2b78c4"/><path d="M8 0.5v3M8 12.5v3M0.5 8h3M12.5 8h3" stroke="#2b78c4"/>',
+ toplc:'<rect x="0.5" y="1.5" width="7" height="5.5" fill="#dfe9f5" stroke="#345"/><rect x="10" y="7.5" width="5.5" height="7" fill="#e8e8e0" stroke="#555"/><path d="M4 9.5v2.5h4.5" stroke="#1a9e3a" stroke-width="1.6" fill="none"/><path d="M7.5 10.5l1.8 1.5-1.8 1.5" fill="#1a9e3a"/>',
+ frplc:'<rect x="8.5" y="1.5" width="7" height="5.5" fill="#dfe9f5" stroke="#345"/><rect x="0.5" y="7.5" width="5.5" height="7" fill="#e8e8e0" stroke="#555"/><path d="M3.5 7v-3h4" stroke="#2b78c4" stroke-width="1.6" fill="none"/><path d="M7 2.5l1.8 1.5L7 5.5" fill="#2b78c4"/>',
+ run:'<rect x="1" y="2" width="14" height="12" rx="1" fill="#fff" stroke="#555"/><path d="M6 5l5 3-5 3z" fill="#1a9e3a"/>',
+ stop:'<rect x="1" y="2" width="14" height="12" rx="1" fill="#fff" stroke="#555"/><rect x="5" y="5" width="6" height="6" fill="#d23a2a"/>',
+ cmp:'<rect x="1.5" y="1.5" width="7" height="10" fill="#fff" stroke="#555"/><rect x="7.5" y="4.5" width="7" height="10" fill="#eef4fb" stroke="#555"/><path d="M9 8h4M9 10h4M9 12h3" stroke="#c42b1c"/>',
+ anim:'<rect x="1.5" y="2.5" width="13" height="11" fill="#fff" stroke="#555"/><path d="M1.5 5.5h13M6 2.5v11" stroke="#555"/><rect x="7" y="7" width="6" height="2" fill="#fff36b" stroke="#b9a800" stroke-width=".6"/>',
+ folder:'<path d="M1.5 3.5h5l1 1.5h7v8.5h-13z" fill="#f3c74f" stroke="#a5822a"/>',
+ station:'<rect x="2" y="2.5" width="12" height="9" fill="#dfe9f5" stroke="#345"/><path d="M5 14h6M8 11.5V14" stroke="#345"/>',
+ rack:'<rect x="1" y="3" width="14" height="10" fill="#9aa2a6" stroke="#4d5559"/><rect x="2.5" y="4.5" width="2.5" height="7" fill="#f3f3ef"/><rect x="5.5" y="4.5" width="2.5" height="7" fill="#2b78c4"/><rect x="8.5" y="4.5" width="2.5" height="7" fill="#f3f3ef"/><rect x="11.5" y="4.5" width="2.5" height="7" fill="#f3f3ef"/>',
+ module:'<rect x="5" y="1.5" width="6" height="13" fill="#f3f3ef" stroke="#555"/><rect x="5" y="1.5" width="6" height="3" fill="#2b2f33"/>',
+ net:'<circle cx="8" cy="3.5" r="2" fill="#2b78c4"/><circle cx="3" cy="12.5" r="2" fill="#2b78c4"/><circle cx="13" cy="12.5" r="2" fill="#2b78c4"/><path d="M8 5.5v3M3 10.5V8.5h10v2" stroke="#345" fill="none"/>',
+ ld:'<rect x="1.5" y="1.5" width="13" height="13" fill="#fff" stroke="#555"/><text x="8" y="11" text-anchor="middle" font-size="7" font-weight="700" fill="#2b78c4" font-family="Arial">LD</text>',
+ var:'<circle cx="8" cy="8" r="5" fill="#3fbf4a" stroke="#1f7a28"/>',
+ task:'<rect x="2" y="2" width="12" height="12" rx="2" fill="#e9eef4" stroke="#345"/><path d="M5 8h6M8 5v6" stroke="#345"/>',
+ warn:'<path d="M16 3L30 28H2z" fill="#ffd400" stroke="#9a7c00"/><rect x="14.8" y="11" width="2.4" height="9" fill="#222"/><rect x="14.8" y="22" width="2.4" height="2.6" fill="#222"/>',
+ info:'<circle cx="16" cy="16" r="14" fill="#1a73c9"/><rect x="14.6" y="13" width="2.8" height="11" fill="#fff"/><circle cx="16" cy="9" r="1.8" fill="#fff"/>',
+ error:'<circle cx="16" cy="16" r="14" fill="#d93025"/><path d="M11 11l10 10M21 11L11 21" stroke="#fff" stroke-width="3"/>',
+ question:'<circle cx="16" cy="16" r="14" fill="#1a73c9"/><text x="16" y="22" text-anchor="middle" font-size="18" font-weight="700" fill="#fff" font-family="Arial">?</text>'
+};
+const svg=(k,vb='0 0 16 16')=>`<svg viewBox="${vb}" aria-hidden="true">${I[k]}</svg>`;
+
+/* ================= estado ================= */
+let S,PLC;
+const PLCip=()=>{const p=PLC.project;return (p&&netOn(p.net)&&p.rack.includes('NOE 0100')&&parseIp(p.net.ip)&&p.net.ip!=='0.0.0.0')?p.net.ip:defaultIp(PLC.mac)};
+const PLCmask=()=>{const p=PLC.project;return (p&&netOn(p.net)&&validMask(p.net.mask))?p.net.mask:'255.0.0.0'};
+const pcIp=()=>S.pc.dhcp?'169.254.23.77':S.pc.ip;
+const pcMask=()=>S.pc.dhcp?'255.255.0.0':S.pc.mask;
+
+function init(n){
+  const sc=makeScenario(n);
+  PLC={cpu:sc.cpu,rack:sc.rack.slice(),mac:sc.mac,modbus:sc.modbus,mode:'RUN',err:null,errSlot:-1,
+    project:{name:sc.projName,version:sc.version,built:sc.built,origin:'plc',cpu:sc.cpu,rack:sc.rack.slice(),
+      net:{exists:true,ip:sc.ip,mask:sc.mask,gw:'0.0.0.0',func:'ETH TCP IP',linked:true},
+      prog:{enable:'Lenguaje_LD',interval:sc.interval,pv:5,mux:MUX0.slice()}},
+    vars:{en:true,cv:0,acc:0,word:0}};
+  PLC.project.genSig=sig(PLC.project);
+  S={scn:sc,proj:null,draft:null,
+    conn:{media:'USB',addr:'SYS',baud:'19200',parity:'Par',set:false,online:false},
+    pc:{dhcp:true,ip:'',mask:'255.255.255.0',gw:''},
+    cables:{usb:false,eth:true,ser:false},done:{},penalties:[],uploaded:false,
+    docs:['welcome'],view:'welcome',sel:'welcome',open:{est:1,cfg:1,bus:1,com:1,red:1,prg:1,tar:1,mast:1,sec:1,tab:1,vars:0},
+    log:[],otab:'gen',t0:Date.now(),finished:false,slotSel:-1};
+  log('info',`Escenario "${sc.name}" cargado. El PLC está en RUN ejecutando ${sc.projName} v${sc.version}.`);
+  log('info','OT: cambiar la velocidad de la secuencia de salidas sin perder la aplicación del PLC.');
+  renderAll(true);renderPhys();
+}
+
+/* ================= registro ================= */
+function log(type,msg){const d=new Date(),z=n=>String(n).padStart(2,'0');S.log.push({t:`${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`,type,msg});if(S.log.length>150)S.log.shift();renderLog()}
+function penalty(pts,msg){S.penalties.push({pts,msg});log('err',`${msg} (−${pts} pts)`)}
+function renderLog(){
+  const el=$('#log');const L=S.otab==='err'?S.log.filter(l=>l.type==='err'):S.otab==='gen'?S.log:[];
+  el.innerHTML=L.length?L.map(l=>`<div class="${l.type}">${l.t}  ${esc(l.msg)}</div>`).join(''):'<div class="info" style="color:#888">(sin mensajes)</div>';
+  el.scrollTop=el.scrollHeight;
+  $('#otabs').innerHTML=[['gen','Generar'],['imp','Importar/exportar'],['err','Errores usuario'],['bus','Buscar/Reemplazar']].map(([k,t])=>`<button class="${S.otab===k?'on':''}" data-act="otab" data-k="${k}">${t}</button>`).join('');
+}
+
+/* ================= misiones ================= */
+const isGen=()=>S.proj&&S.proj.genSig===sig(S.proj);
+const isEqual=()=>S.conn.online&&S.proj&&PLC.project&&isGen()&&S.proj.name===PLC.project.name&&sig(S.proj)===sig(PLC.project);
+const MISSIONS=[
+ {ph:'A · Configuración fuera de línea'},
+ {id:'m1',t:'Crear el proyecto con la CPU correcta',h:'Fichero › Nuevo proyecto. Elige la misma CPU que está instalada (mira la placa en Equipo de terreno).',ok:()=>S.proj&&S.proj.origin==='nuevo'&&S.proj.cpu===PLC.cpu},
+ {id:'m2',t:'Configurar el bastidor, slots 1 a 5',h:'Abre 0 : Bus PLC y haz clic en cada posición vacía para insertar el módulo que ves instalado en el equipo.',ok:()=>S.proj&&S.proj.origin==='nuevo'&&S.proj.rack.every((r,i)=>r===PLC.rack[i])},
+ {id:'m3',t:'Ethernet_1 configurada y vinculada al NOE',h:()=>S.scn.ipLabel?'Clic derecho en Comunicación › Redes › Nueva red. En Ethernet_1 escribe IP y máscara y Valida (✓). Luego abre el NOE en el bastidor, Canal 0: Función ETH TCP IP, Conexión de red Ethernet_1, y Valida.':'La IP no figura en la placa. Conéctate por USB, transfiere desde el PLC y léela en Ethernet_1. Después crea un proyecto nuevo y configúrala.',ok:()=>S.proj&&S.proj.origin==='nuevo'&&netOn(S.proj.net)&&S.proj.net.ip===S.scn.ip&&S.proj.net.mask===S.scn.mask},
+ {ph:'B · Conexión y respaldo'},
+ {id:'m4',t:'Ingresar los datos de conexión',h:'PLC › Establecer dirección. Para TCPIP, además fija la IP del PC en Herramientas › Red del PC (Windows): sin DHCP el portátil queda en 169.254.x.x.',ok:()=>S.conn.set},
+ {id:'m5',t:'Conectarse al PLC',h:'PLC › Conectar (Ctrl+K). Si falla, usa "Probar conexión" en Establecer dirección y revisa cables y subred.',ok:()=>S.conn.online},
+ {id:'m6',t:'Transferir proyecto desde PLC',h:'Antes de tocar nada, respalda lo que corre en terreno: PLC › Transferir proyecto desde PLC (Ctrl+Mayús+L).',ok:()=>S.uploaded},
+ {ph:'C · Modificación y descarga'},
+ {id:'m7',t:'Cambiar SAMPLETM.INTERVAL a t#500ms',h:'Programa › Tareas › MAST › Secciones › MiProgramaConLader. Haz clic en el literal t#… del pin INTERVAL y escribe t#500ms.',ok:()=>S.uploaded&&S.proj&&parseTime(S.proj.prog.interval)===500},
+ {id:'m8',t:'Generar el proyecto',h:'Generar › Analizar y luego Generar cambios (Ctrl+B), o Regenerar todo el proyecto estando desconectado.',ok:()=>S.uploaded&&isGen()&&parseTime(S.proj.prog.interval)===500},
+ {id:'m9',t:'Transferir proyecto a PLC',h:'PLC › Transferir proyecto a PLC (Ctrl+L). La barra de estado debe quedar en IGUAL.',ok:()=>S.uploaded&&PLC.project&&!PLC.err&&parseTime(PLC.project.prog.interval)===500&&S.proj&&sig(PLC.project)===sig(S.proj)},
+ {id:'m10',t:'RUN y secuencia de salidas activa',h:'PLC › Ejecutar (Ctrl+R). En Tablas de animación › Tabla, pon Lenguaje_LD a 1 y mira %Q0.2.16–31 cambiar cada 500 ms.',ok:()=>S.conn.online&&PLC.mode==='RUN'&&!PLC.err&&PLC.vars.en&&PLC.project&&parseTime(PLC.project.prog.interval)===500&&S.done.m9}
+];
+const MLIST=MISSIONS.filter(m=>m.id);
+function checkMissions(){let ch=false;for(const m of MLIST)if(!S.done[m.id]&&m.ok()){S.done[m.id]=true;ch=true;log('ok',`Misión cumplida: ${m.t} (+10 pts)`)}
+  if(ch){renderMissions();renderScore()}
+  if(!S.finished&&MLIST.every(m=>S.done[m.id])){S.finished=true;setTimeout(showFinal,700)}}
+const score=()=>Math.max(0,MLIST.filter(m=>S.done[m.id]).length*10-S.penalties.reduce((a,p)=>a+p.pts,0));
+function renderScore(){$('#score').textContent=score();const n=S.penalties.length;$('#errs').textContent=n?`${n} error${n>1?'es':''}`:''}
+function renderMissions(){
+  const cur=MLIST.find(m=>!S.done[m.id]);
+  $('#missions').innerHTML=MISSIONS.map(m=>m.ph?`<li class="ph">${m.ph}</li>`:`<li class="${S.done[m.id]?'done':''} ${cur===m?'cur':''}"><span class="ck">${S.done[m.id]?'✓':''}</span><span class="tx">${esc(m.t)}</span><span class="pts">10</span></li>`).join('');
+  $('#mcount').textContent=`${MLIST.filter(m=>S.done[m.id]).length}/${MLIST.length}`;
+  $('#hint').innerHTML=`<b>Siguiente paso:</b> ${esc(cur?(typeof cur.h==='function'?cur.h():cur.h):'Todas las misiones cumplidas.')}`;
+}
+
+/* ================= menús ================= */
+const MENU={
+  'Fichero':()=>[
+    {l:'Nuevo proyecto...',sc:'Ctrl+N',a:'newproj',i:'new'},{l:'Abrir...',sc:'Ctrl+O',dis:1,i:'open'},{l:'Cerrar proyecto',a:'closeproj',dis:!S.proj||S.conn.online},{l:'Guardar',sc:'Ctrl+S',dis:1,i:'save'},{sep:1},
+    {l:'Escenario 1: Maleta MQTBMX340',a:'scenario',n:1},{l:'Escenario 2: IP desconocida',a:'scenario',n:2},{l:'Reiniciar escenario',a:'reset'}],
+  'Edición':()=>[{l:'Deshacer',sc:'Ctrl+Z',dis:1},{l:'Rehacer',sc:'Ctrl+Y',dis:1},{sep:1},{l:'Validar',sc:'Ctrl+W',a:'validate',i:'valid',dis:!dirty()}],
+  'Ver':()=>[{l:'Explorador de proyectos',a:'nop',chk:1},{l:'Ventana de resultados',a:'nop',chk:1},{l:'Panel de entrenamiento',a:'nop',chk:1}],
+  'Servicios':()=>[{l:'Importar...',dis:1},{l:'Exportar proyecto...',dis:1}],
+  'Herramientas':()=>[{l:'Explorador de proyectos',a:'nop'},{l:'Editor de tipos de datos',dis:1},{l:'Ejercicio: Tipos de datos...',a:'opendoc',v:'tipos',i:'var'},{sep:1},{l:'Red del PC (Windows: TCP/IPv4)...',a:'pcnet',i:'net'},{l:'Opciones del proyecto...',dis:1}],
+  'Generar':()=>[{l:'Analizar',sc:'Ctrl+Mayús+B',a:'analyze',dis:!S.proj,i:'analyze'},{l:'Analizar proyecto',a:'analyze',dis:!S.proj},{sep:1},{l:'Generar cambios',sc:'Ctrl+B',a:'build',dis:!S.proj,i:'build'},{l:'Regenerar todo el proyecto',a:'rebuild',dis:!S.proj,i:'rebuild'}],
+  'PLC':()=>[
+    S.conn.online?{l:'Desconectar',sc:'Ctrl+K',a:'disconnect',i:'disc'}:{l:'Conectar',sc:'Ctrl+K',a:'connect',i:'conn'},
+    {l:'Establecer dirección...',a:'setaddr',dis:S.conn.online,i:'addr'},{sep:1},
+    {l:'Modalidad estándar',chk:1,a:'nop'},{l:'Modalidad de simulación',dis:1},{sep:1},
+    {l:'Comparar...',a:'compare',dis:!(S.conn.online&&S.proj),i:'cmp'},
+    {l:'Transferir proyecto a PLC',sc:'Ctrl+L',a:'download',dis:!(S.conn.online&&S.proj),i:'toplc'},
+    {l:'Transferir proyecto desde PLC',sc:'Ctrl+Mayús+L',a:'upload',dis:!S.conn.online,i:'frplc'},{sep:1},
+    PLC.mode==='RUN'&&S.conn.online?{l:'Detener',sc:'Ctrl+R',a:'stop',i:'stop'}:{l:'Ejecutar',sc:'Ctrl+R',a:'run',dis:!S.conn.online,i:'run'},
+    {l:'Inicializar',dis:1},{sep:1},{l:'Backup del proyecto',dis:1}],
+  'Depuración':()=>[{l:'Tabla de animación',a:'opendoc',v:'anim',dis:!S.proj,i:'anim'},{l:'Animación LD',chk:1,a:'nop'}],
+  'Ventana':()=>[...S.docs.map(d=>({l:docName(d),a:'opendoc',v:d,chk:d===S.view})),{sep:1},{l:'Cerrar todas las ventanas',a:'closeall'}],
+  'Ayuda':()=>[{l:'Orden de trabajo y guía',a:'opendoc',v:'welcome'},{l:'Pista de la misión actual',a:'hintbox'},{l:'Ejercicio: Tipos de datos',a:'opendoc',v:'tipos'},{sep:1},{l:'Acerca de...',a:'about'}]
+};
+let openMenu=null;
+function renderMenubar(){$('#menubar').innerHTML=Object.keys(MENU).map(k=>`<button data-menu="${k}" class="${openMenu===k?'open':''}">${k}</button>`).join('')}
+function showMenu(k,btn){
+  openMenu=k;renderMenubar();const b=document.querySelector(`[data-menu="${k}"]`)||btn;const r=b.getBoundingClientRect();
+  const d=$('#drop');d.innerHTML=menuHtml(MENU[k]());d.hidden=false;
+  const w=d.offsetWidth;d.style.left=Math.max(4,Math.min(r.left,innerWidth-w-4))+'px';d.style.top=r.bottom+'px';
+}
+function menuHtml(items){return items.map(it=>it.sep?'<hr>':`<button ${it.dis?'disabled':''} data-act="${it.a||'nop'}" ${it.n?`data-n="${it.n}"`:''} ${it.v?`data-v="${it.v}"`:''}><span>${it.chk?'✓':it.i?`<svg viewBox="0 0 16 16" width="16" height="16">${I[it.i]}</svg>`:''}</span><span>${esc(it.l)}</span><span class="sc">${it.sc||''}</span></button>`).join('')}
+function closeMenus(){if(openMenu){openMenu=null;renderMenubar()}$('#drop').hidden=true;$('#ctx').hidden=true}
+function ctxMenu(x,y,items){const c=$('#ctx');c.innerHTML=menuHtml(items);c.hidden=false;c.style.left=Math.min(x,innerWidth-c.offsetWidth-4)+'px';c.style.top=Math.min(y,innerHeight-c.offsetHeight-4)+'px'}
+
+/* ================= barra de iconos ================= */
+function renderToolbar(){
+  const p=!!S.proj,on=S.conn.online,b=(ic,a,t,dis)=>`<button class="tb" data-act="${a}" title="${t}" aria-label="${t}" ${dis?'disabled':''}>${svg(ic)}</button>`,sep='<span class="sep"></span>';
+  $('#toolbar').innerHTML=b('new','newproj','Nuevo proyecto')+b('open','nop','Abrir',1)+b('save','nop','Guardar',1)+sep+
+    b('valid','validate','Validar (Ctrl+W)',!dirty())+sep+
+    b('analyze','analyze','Analizar (Ctrl+Mayús+B)',!p)+b('build','build','Generar cambios (Ctrl+B)',!p)+b('rebuild','rebuild','Regenerar todo el proyecto',!p)+sep+
+    b('addr','setaddr','Establecer dirección',on)+(on?b('disc','disconnect','Desconectar (Ctrl+K)'):b('conn','connect','Conectar (Ctrl+K)'))+
+    b('toplc','download','Transferir proyecto a PLC (Ctrl+L)',!(on&&p))+b('frplc','upload','Transferir proyecto desde PLC (Ctrl+Mayús+L)',!on)+b('cmp','compare','Comparar',!(on&&p))+sep+
+    `<button class="tb txt" data-act="run" title="Ejecutar (Ctrl+R)" ${on&&PLC.mode!=='RUN'?'':'disabled'} style="color:#128a2c">RUN</button><button class="tb txt" data-act="stop" title="Detener (Ctrl+R)" ${on&&PLC.mode==='RUN'?'':'disabled'} style="color:#c42b1c">STOP</button>`+sep+
+    b('anim','opendoc','Tabla de animación',!p).replace('data-act="opendoc"','data-act="opendoc" data-v="anim"');
+}
+
+/* ================= barra de estado y título ================= */
+function renderStatus(){
+  const c=S.conn,on=c.online,seg=(t,k)=>`<span class="${k||''}">${t}</span>`;
+  const addr=!c.set?'':c.media==='USB'?'USB:SYS':c.media==='MODBUS01'?`MODBUS01:${c.addr}`:`TCPIP:${c.addr}`;
+  $('#statusbar').innerHTML=seg('Listo')+seg('Modalidad HMI R/W')+
+    seg(on?(PLC.err?'FALLO E/S':PLC.mode):'OFFLINE',on?(PLC.err?'r':PLC.mode==='RUN'?'g':'y'):'')+
+    (on&&S.proj?seg(isEqual()?'IGUAL':'DIFERENTE',isEqual()?'g':'r'):seg('&nbsp;'))+
+    (S.proj?seg(isGen()?'GENERADO':'NO GENERADO',isGen()?'g':'y'):seg('&nbsp;'))+
+    seg(addr||'&nbsp;');
+  $('#ttl').textContent=`Taller M340 (entrenamiento) : ${S.proj?S.proj.name+(isGen()?'':'*'):'<Sin nombre>'} - [${docName(S.view)}]`;
+}
+
+/* ================= explorador ================= */
+const DOCN={welcome:'Orden de trabajo',rack:'Bus PLC',noe:'0.1 : BMX NOE 0100',eth:'Ethernet_1',prog:'MiProgramaConLader : [MAST]',anim:'Tabla',vars:'Editor de datos',tipos:'Ejercicio: Tipos de datos'};
+const docName=d=>DOCN[d]||d;
+function renderTree(){
+  const p=S.proj,o=S.open;
+  const node=(key,ic,label,{kids,doc,dim,bold,ctx}={})=>{
+    const has=kids!==undefined&&kids!=='';const op=o[key];
+    return `<li><div class="node ${S.sel===(doc||key)?'sel':''} ${dim?'dim':''}" data-node="${key}" ${doc?`data-doc="${doc}"`:''} ${ctx?`data-ctx="${ctx}"`:''}><span class="tw ${has?'':'none'}" ${has?`data-tw="${key}"`:''}>${has?(op?'−':'+'):''}</span>${svg(ic)}<span>${bold?`<b>${label}</b>`:label}</span></div>${has&&op?`<ul>${kids}</ul>`:''}</li>`};
+  if(!p){$('#tree').innerHTML=`<li><div class="node dim"><span class="tw none"></span>${svg('station')}<span>(sin proyecto abierto)</span></div></li>`+node('ot','ld','Orden de trabajo',{doc:'welcome'});return}
+  const mods=[`<li><div class="node"><span class="tw none"></span>${svg('module')}<span>(P) : BMX CPS 2010</span></div></li>`,`<li><div class="node" data-ctx="cpu"><span class="tw none"></span>${svg('module')}<span>0 : ${esc(p.cpu)}</span></div></li>`]
+    .concat(p.rack.map((m,i)=>m?`<li><div class="node ${S.sel==='noe'&&m==='NOE 0100'?'sel':''}" data-node="m${i}" ${m==='NOE 0100'?'data-doc="noe"':'data-doc="rack"'}><span class="tw none"></span>${svg('module')}<span>${i+1} : BMX ${esc(m)}</span></div></li>`:'')).join('');
+  const bus=node('bus','rack','0 : Bus PLC',{kids:mods,doc:'rack'});
+  const red=node('red','folder','Redes',{kids:p.net.exists?node('e1','net','Ethernet_1',{doc:'eth'}):'',ctx:'red'});
+  const sec=node('sec','folder','Secciones',{kids:node('s1','ld','MiProgramaConLader',{doc:'prog'})});
+  $('#tree').innerHTML=node('est','station',`Estación`,{bold:1,kids:
+    node('cfg','folder','Configuración',{kids:bus})+
+    node('ddt','folder','Tipos de datos derivados')+node('dfb','folder','Tipos de FB derivados')+
+    node('vars','folder','Variables e instancias FB',{kids:node('ve','var','Variables elementales',{doc:'vars'})+node('vd','var','Variables derivadas',{dim:1})+node('vio','var','Variables de E/S derivadas',{dim:1})+node('ife','var','Instancias FB elementales',{doc:'vars'})})+
+    node('mov','folder','Movimiento')+
+    node('com','folder','Comunicación',{kids:red})+
+    node('prg','folder','Programa',{kids:node('tar','folder','Tareas',{kids:node('mast','task','MAST',{kids:sec})})+node('evt','folder','Eventos')})+
+    node('tab','folder','Tablas de animación',{kids:node('t1','anim','Tabla',{doc:'anim'})})+
+    node('pan','folder','Pantallas de operador')+node('docu','folder','Documentación')});
+}
+
+/* ================= documentos ================= */
+function openDoc(d){
+  if(d!=='welcome'&&d!=='tipos'&&!S.proj)return;
+  if(d==='eth'&&!S.proj.net.exists)return;
+  if(!S.docs.includes(d))S.docs.push(d);S.view=d;S.sel=d;renderAll(true);
+}
+function closeDoc(d){S.docs=S.docs.filter(x=>x!==d);if(S.view===d)S.view=S.docs[S.docs.length-1]||'';renderAll(true)}
+function renderTabs(){$('#doctabs').innerHTML=S.docs.map(d=>`<button class="${d===S.view?'on':''}" data-act="opendoc" data-v="${d}"><span class="t">${esc(docName(d))}${(d==='eth'||d==='noe')&&dirty()?' *':''}</span><span class="cl" data-act="closedoc" data-v="${d}" title="Cerrar">✕</span></button>`).join('')}
+const dirty=()=>!!(S.proj&&S.draft&&JSON.stringify(S.draft)!==JSON.stringify(S.proj.net));
+function ipBoxes(pre,val,dis){const a=(String(val||'').split('.').concat(['','','',''])).slice(0,4);
+  return `<span class="ipbox ${dis?'dis':''}">${a.map((x,i)=>`<input class="oct" id="${pre}${i}" data-ipg="${pre}" data-i="${i}" value="${esc(x)}" maxlength="3" inputmode="numeric" ${dis?'disabled':''} aria-label="${pre} octeto ${i+1}">${i<3?'<i>.</i>':''}`).join('')}</span>`}
+const readIp=pre=>[0,1,2,3].map(i=>(document.getElementById(pre+i)||{}).value||'').join('.');
+
+function renderDoc(){
+  const e=$('#doc'),p=S.proj,v=S.view;
+  if(!v){e.innerHTML='';return}
+  if(v!=='welcome'&&v!=='tipos'&&!p){S.docs=['welcome'];S.view='welcome';return renderDoc()}
+  if(v==='welcome'){
+    const sc=S.scn;
+    e.innerHTML=`<div class="pad"><h2>Orden de trabajo OT-M340-${sc.n===1?'0147':'0233'}</h2>
+    <p>Equipo: <b>${esc(sc.name)}</b>. Cambiar la velocidad de la secuencia de salidas del programa <span class="mono">${esc(sc.projName)}</span> de <span class="mono">${esc(sc.interval)}</span> a <span class="mono">t#500ms</span> sin perder la aplicación que hoy corre en el PLC.</p>
+    <fieldset class="gbox"><span class="lg">Cómo se juega</span>
+      <p style="margin:0">El panel <b>Entrenamiento</b> muestra las 10 misiones en tres fases y la pista del paso actual. Todo se hace como en el software real: menús, iconos, clic derecho en el explorador y atajos de teclado. Los errores de terreno descuentan puntos y se explican en la ventana de resultados (pestaña <i>Errores usuario</i>).</p></fieldset>
+    <fieldset class="gbox"><span class="lg">Escenario</span>
+      <div class="row"><label class="chk"><input type="radio" name="scn" data-act="scenario" data-n="1" ${sc.n===1?'checked':''}> 1 · Maleta MQTBMX340: equipo del tutorial, IP visible en la placa.</label></div>
+      <div class="row"><label class="chk"><input type="radio" name="scn" data-act="scenario" data-n="2" ${sc.n===2?'checked':''}> 2 · IP desconocida: placa ilegible y bastidor distinto; hay que entrar por USB.</label></div></fieldset>
+    <fieldset class="gbox"><span class="lg">Ejercicio extra</span>
+      <div class="row" style="margin:0"><span>Tipos de datos: declarar variables (BOOL, EBOOL, INT, REAL, WORD, TIME…) y resolver conversiones y desbordes. Tiene puntaje propio.</span><button class="wbtn2" data-act="opendoc" data-v="tipos">Abrir ejercicio</button></div></fieldset>
+    <div class="row" style="margin-top:14px"><button class="wbtn2 def" data-act="newproj">Nuevo proyecto...</button><button class="wbtn2" data-act="setaddr">Establecer dirección...</button></div>
+    <p class="note">Atajos: Ctrl+K conectar · Ctrl+L transferir a PLC · Ctrl+Mayús+L desde PLC · Ctrl+B generar cambios · Ctrl+R ejecutar/detener · Ctrl+W validar.</p></div>`;
+  }
+  else if(v==='rack'){
+    const cell=(i)=>{const m=p.rack[i];return `<div class="slotc"><span class="num">${i+1}</span>${m?`<div class="mod ${S.slotSel===i?'sel':''}" style="--mc:${MCOL[m]}" data-slot="${i}" title="BMX ${m}"><div class="strip"></div><div class="face">${m.split(' ')[0]}<small>${m.split(' ')[1]}</small></div><div class="lines"></div></div>`:`<div class="empty" data-empty="${i}" title="Insertar módulo en 0.${i+1}">+</div>`}</div>`};
+    e.innerHTML=`<div class="busbar">Bus: <input class="inp" value="0" disabled style="width:40px"> <select class="inp" disabled><option>${esc(p.cpu)}  01.00</option></select><span class="note">Bastidor BMX XBP 0600. Clic en una posición vacía para insertar; clic en un módulo para abrirlo, reemplazarlo o eliminarlo.</span></div>
+    <div class="rackarea"><div class="rack">
+      <div class="slotc" style="width:74px"><span class="num" style="width:auto;padding:0 3px">P</span><div class="mod ps"><div class="strip"></div><div class="face">CPS<small>2010</small></div><div class="lines"></div></div></div>
+      <div class="slotc" style="width:66px"><span class="num">0</span><div class="mod cpu" data-cpu="1" title="${esc(p.cpu)}"><div class="strip"></div><div class="face">P34<small>${p.cpu.slice(-4)}</small></div><div class="lines"></div></div></div>
+      ${[0,1,2,3,4].map(cell).join('')}
+    </div></div>
+    <div class="pad" style="padding-top:0"><div class="tblw"><table class="grid"><thead><tr><th>Dirección</th><th>Referencia</th><th>Descripción</th></tr></thead><tbody>
+    <tr><td class="v">P</td><td>BMX CPS 2010</td><td>Fuente de alimentación 24 VCC</td></tr><tr><td class="v">0.0</td><td>${esc(p.cpu)}</td><td>${esc(CPUS[p.cpu])}</td></tr>
+    ${p.rack.map((m,i)=>`<tr><td class="v">0.${i+1}</td><td>${m?'BMX '+esc(m):'—'}</td><td>${m?esc(MODS[m]):''}</td></tr>`).join('')}</tbody></table></div>
+    <p class="note">Out_0…Out_15 del programa están en <span class="mono">%Q0.2.16–31</span>: el slot 2 debe ser un BMX DDM 3202K (vías 0–15 entradas, 16–31 salidas).</p></div>`;
+  }
+  else if(v==='noe'){
+    const d=S.draft,hasNoe=p.rack.includes('NOE 0100'),slot=p.rack.indexOf('NOE 0100')+1;
+    if(!hasNoe){e.innerHTML='<div class="pad"><p>No hay un BMX NOE 0100 en el bastidor.</p></div>';return}
+    e.innerHTML=`<div class="busbar"><b>Ethernet 1 puerto 10/100 RJ45</b><span class="note">0.${slot} : BMX NOE 0100</span>${dirty()?'<span class="dirty">Modificado, sin validar</span>':''}</div>
+    <div style="display:grid;grid-template-columns:minmax(150px,200px) minmax(0,1fr);min-height:300px">
+      <div style="border-right:1px solid var(--edge2);padding:6px"><div class="node">${svg('module')}<span>BMX NOE 0100</span></div><div class="node sel" style="margin-left:14px">${svg('module')}<span>Canal 0</span></div></div>
+      <div class="pad">
+        <div class="row"><label class="k" for="noeFunc">Función</label><select class="inp" id="noeFunc"><option value="" ${!d.func?'selected':''}>Ninguno</option><option ${d.func==='ETH TCP IP'?'selected':''}>ETH TCP IP</option></select></div>
+        <div class="row"><label class="k">Tarea</label><select class="inp" disabled><option>MAST</option></select></div>
+        <div class="row"><label class="k" for="noeLink">Conexión de red</label><select class="inp" id="noeLink" ${d.func?'':'disabled'}><option value="0" ${!d.linked?'selected':''}>Sin conexión</option>${p.net.exists?`<option value="1" ${d.linked?'selected':''}>Ethernet_1</option>`:''}</select></div>
+        ${!p.net.exists?'<p class="note">No hay redes lógicas. Crea Ethernet_1 con clic derecho en Comunicación › Redes › Nueva red.</p>':''}
+        <p class="note">Sin conexión de red, el módulo arranca con su IP por defecto 84.x.x.x derivada de la MAC.</p>
+        <div class="row"><button class="wbtn2 def" data-act="validate" ${dirty()?'':'disabled'}>✓ Validar</button></div>
+      </div></div>`;
+  }
+  else if(v==='eth'){
+    const d=S.draft;
+    e.innerHTML=`<div class="busbar"><b>Ethernet_1</b><span class="note">Familia del modelo: NOE 0100 · Ethernet II</span>${dirty()?'<span class="dirty">Modificado, sin validar</span>':''}</div>
+    <div class="pad">
+      <fieldset class="gbox" style="margin-top:6px"><span class="lg">Funciones del módulo</span>
+        <div class="row"><select class="inp" disabled><option>NO</option></select> Exploración de E/S <select class="inp" disabled><option>NO</option></select> Datos globales <select class="inp" disabled><option>NO</option></select> Servidor de dirección</div></fieldset>
+      <div class="wtabs"><span class="on">Configuración IP</span><span>Mensajes</span><span>Exploración de E/S</span><span>Datos globales</span><span>SNMP</span><span>Servidor de dirección</span><span>Ancho de banda</span></div>
+      <div class="wtabpanel">
+        <fieldset class="gbox" style="margin-top:8px"><span class="lg">Configuración de la dirección IP</span>
+          <div class="row"><label class="chk"><input type="radio" checked> Configurada</label></div>
+          <div class="row" style="padding-left:20px"><label class="k">Dirección IP</label>${ipBoxes('ip',d.ip)}</div>
+          <div class="row" style="padding-left:20px"><label class="k">Máscara de subred</label>${ipBoxes('mk',d.mask)}</div>
+          <div class="row" style="padding-left:20px"><label class="k">Dirección de gateway</label>${ipBoxes('gw',d.gw)}</div>
+          <div class="row"><label class="chk"><input type="radio" disabled> De un servidor</label></div></fieldset>
+        <fieldset class="gbox"><span class="lg">Configuración Ethernet</span><div class="row"><label class="chk"><input type="radio" checked> Ethernet II</label><label class="chk"><input type="radio" disabled> 802.3</label></div></fieldset>
+        <div class="row" style="margin-top:12px"><button class="wbtn2 def" data-act="validate" ${dirty()?'':'disabled'}>✓ Validar</button><span class="note">Los cambios no cuentan hasta validar (✓ en la barra de iconos o Ctrl+W).</span></div>
+      </div></div>`;
+  }
+  else if(v==='prog')renderLD();
+  else if(v==='tipos')renderTipos();
+  else if(v==='vars'){
+    const g=p.prog;
+    e.innerHTML=`<div class="busbar"><b>Variables</b><span class="note">Variables elementales e instancias FB de la aplicación</span></div><div class="pad"><div class="tblw"><table class="grid"><thead><tr><th>Nombre</th><th>Tipo</th><th>Dirección</th><th>Valor</th><th>Comentario</th></tr></thead><tbody>
+      <tr><td>${esc(g.enable)}</td><td>BOOL</td><td></td><td></td><td>Habilita la secuencia</td></tr>
+      <tr><td>RESET</td><td>BOOL</td><td></td><td></td><td>Q del contador</td></tr>
+      ${Array.from({length:16},(_,i)=>`<tr><td>Out_${i}</td><td>EBOOL</td><td class="v">%Q0.2.${16+i}</td><td></td><td></td></tr>`).join('')}
+      <tr><td>FBI_1</td><td>SAMPLETM</td><td></td><td></td><td>Instancia FB elemental</td></tr><tr><td>FBI_2</td><td>CTU</td><td></td><td></td><td>Instancia FB elemental</td></tr>
+    </tbody></table></div></div>`;
+  }
+  else if(v==='anim'){
+    e.innerHTML=`<div class="busbar"><button class="wbtn2" data-act="force" data-val="1">Poner a 1</button><button class="wbtn2" data-act="force" data-val="0">Poner a 0</button><span class="note">Modificación sobre la variable seleccionada: Lenguaje_LD. ${S.conn.online?'':'Requiere estar en línea.'}</span></div>
+    <div class="pad"><div class="tblw"><table class="grid"><thead><tr><th>Nombre</th><th>Valor</th><th>Tipo</th><th>Comentario</th></tr></thead><tbody>
+      <tr class="sel"><td>Lenguaje_LD</td><td class="v" id="aEn"></td><td>BOOL</td><td>Habilitación de la secuencia</td></tr>
+      <tr><td>FBI_1.INTERVAL</td><td class="v" id="aInt"></td><td>TIME</td><td>SAMPLETM</td></tr>
+      <tr><td>FBI_2.CV</td><td class="v" id="aCv"></td><td>INT</td><td>CTU</td></tr>
+      <tr><td>MUX.OUT</td><td class="v" id="aOut"></td><td>WORD</td><td></td></tr>
+      ${Array.from({length:16},(_,i)=>`<tr><td>Out_${i}</td><td class="v" id="aQ${i}"></td><td>EBOOL</td><td>%Q0.2.${16+i}</td></tr>`).join('')}
+    </tbody></table></div></div>`;
+    renderLive();
+  }
+}
+
+/* --- editor LD --- */
+function renderLD(){
+  const g=S.proj.prog,ti=parseTime(g.interval),W=900,H=480;
+  const L=(x1,y1,x2,y2)=>`<path d="M${x1} ${y1}H${x2}V${y2}" />`;
+  // coordenadas (x desde el borde izquierdo del área de dibujo, sin la columna de filas)
+  const wires=[
+    'M0 70H26','M54 70H130','M250 70H330','M250 95H330','M440 70H470V140H500','M440 145H460V165H500',
+    'M610 140H660','M610 165H660'
+  ].map(d=>`<path id="${'w'+d.replace(/\W/g,'')}" d="${d}"/>`).join('');
+  const outs=Array.from({length:16},(_,i)=>`<span class="pinr" style="top:${56+i*18}px">BIT${i}</span>`).join('');
+  const outv=Array.from({length:16},(_,i)=>`<span class="varl" style="left:${790}px;top:${172+i*18-7}px">Out_${i}</span><svg style="position:absolute;left:770px;top:${172+i*18}px;width:20px;height:2px;overflow:visible"><path d="M0 0H18" stroke="#1a1a1a"/></svg>`).join('');
+  $('#doc').innerHTML=`<div class="busbar"><b>MiProgramaConLader</b><span class="note">Tarea MAST · Lenguaje LD · Clic en un literal azul para editarlo.</span></div>
+  <div class="ldwrap"><div class="ldhead">${Array.from({length:10},(_,i)=>`<span>${i+1}</span>`).join('')}</div>
+  <div class="ld" style="width:${W+28}px;height:${H}px">
+   <div class="ldrows">${Array.from({length:12},(_,i)=>`<span style="top:${i*40+8}px">${i+1}</span>`).join('')}</div>
+   <div style="position:absolute;left:28px;top:0;width:${W}px;height:${H}px" id="ldc">
+    <div style="position:absolute;left:0;top:10px;width:3px;height:${H-20}px;background:#1a1a1a"></div>
+    <svg style="position:absolute;inset:0;width:${W}px;height:${H}px;overflow:visible" fill="none" stroke="#1a1a1a" stroke-width="1.4" id="ldsvg">${wires}
+      <path d="M26 58V82M54 58V82" stroke-width="2" id="ldContact"/></svg>
+    <span class="varl" style="left:6px;top:40px">${esc(g.enable)}</span>
+    <span class="aval" id="avEn" style="left:6px;top:88px" hidden></span>
+
+    <span class="inst" style="left:130px;top:22px">FBI_1</span>
+    <div class="fb" style="left:130px;top:40px;width:120px;height:90px"><span class="ty">SAMPLETM</span><span class="ix">1</span>
+      <span class="pinl" style="top:24px">EN</span><span class="pinl" style="top:49px">INTERVAL</span><span class="pinl" style="top:74px">DELSCANS</span>
+      <span class="pinr" style="top:24px">ENO</span><span class="pinr" style="top:49px">Q</span></div>
+    <span class="lit" style="left:54px;top:87px;width:76px"><input id="pInt" class="${ti===null?'bad':''}" value="${esc(g.interval)}" spellcheck="false" aria-label="SAMPLETM INTERVAL"></span>
+    <svg style="position:absolute;left:118px;top:95px;width:14px;height:2px;overflow:visible"><path d="M0 0H12" stroke="#1a1a1a"/></svg>
+    <span class="lit" style="left:104px;top:112px;width:24px">0</span>
+
+    <span class="inst" style="left:330px;top:22px">FBI_2</span>
+    <div class="fb" style="left:330px;top:40px;width:110px;height:130px"><span class="ty">CTU</span><span class="ix">2</span>
+      <span class="pinl" style="top:24px">EN</span><span class="pinl" style="top:49px">CU</span><span class="pinl" style="top:74px">R</span><span class="pinl" style="top:99px">PV</span>
+      <span class="pinr" style="top:24px">ENO</span><span class="pinr" style="top:49px">Q</span><span class="pinr" style="top:99px">CV</span></div>
+    <span class="varl" style="left:278px;top:112px">RESET</span>
+    <span class="lit" style="left:276px;top:137px;width:52px"><input id="pPv" value="${esc(g.pv)}" inputmode="numeric" aria-label="CTU PV"></span>
+    <span class="varl" style="left:446px;top:88px">RESET</span>
+    <span class="aval" id="avCv" style="left:446px;top:128px" hidden></span>
+
+    <span class="inst" style="left:500px;top:92px">.1</span>
+    <div class="fb" style="left:500px;top:110px;width:110px;height:200px"><span class="ty">MUX</span><span class="ix">3</span>
+      <span class="pinl" style="top:24px">EN</span><span class="pinl" style="top:49px">K</span>
+      ${g.mux.map((m,i)=>`<span class="pinl" style="top:${74+i*20}px">IN${i}</span>`).join('')}
+      <span class="pinr" style="top:24px">ENO</span><span class="pinr" style="top:49px">OUT</span></div>
+    ${g.mux.map((m,i)=>`<span class="lit" style="left:420px;top:${182+i*20}px;width:78px"><input id="pMux${i}" data-mux="${i}" class="${hexOk(m)?'':'bad'}" value="${esc(m)}" spellcheck="false" aria-label="MUX IN${i}"></span>`).join('')}
+    <span class="aval" id="avOut" style="left:614px;top:170px" hidden></span>
+
+    <span class="inst" style="left:660px;top:92px">.2</span>
+    <div class="fb" style="left:660px;top:110px;width:110px;height:356px"><span class="ty">WORD_TO_BIT</span><span class="ix">4</span>
+      <span class="pinl" style="top:24px">EN</span><span class="pinl" style="top:49px">IN</span>
+      <span class="pinr" style="top:24px">ENO</span>${outs}</div>
+    ${outv}
+   </div></div></div>`;
+}
+
+/* ================= equipo físico ================= */
+function renderPhys(){
+  const sc=S.scn;
+  const mods=PLC.rack.map((m,i)=>m?`<div class="pm"><div class="f">${m.split(' ')[0]}<br>${m.split(' ')[1]}</div>${m==='NOE 0100'
+      ?`<div class="ls"><span><i class="led" id="Lnr"></i>RUN</span><span><i class="led" id="Lne"></i>ERR</span><span><i class="led" id="Lnl"></i>LNK</span></div><div class="rj"></div>`
+      :`<div class="ls"><span><i class="led" data-mr="${i}"></i>RUN</span><span><i class="led" data-me="${i}"></i>ERR</span></div>`}</div>`:`<div class="pm e"></div>`).join('');
+  $('#phys').innerHTML=`<h4>Equipo de terreno · Esc. ${sc.n}</h4>
+   <dl class="plate"><dt>Equipo</dt><dd>${esc(sc.name)}</dd><dt>CPU</dt><dd>${esc(PLC.cpu)}</dd><dt>MAC NOE</dt><dd>${esc(PLC.mac)}</dd><dt>IP</dt><dd>${sc.ipLabel?esc(sc.ipLabel)+' (etiqueta)':'ilegible'}</dd></dl>
+   <div class="prack"><div class="pm"><div class="f">CPS<br>2010</div><div class="ls"><span><i class="led g"></i>OK</span></div></div>
+     <div class="pm"><div class="f">P34<br>${PLC.cpu.slice(-4)}</div><div class="ls"><span><i class="led" id="Lrun"></i>RUN</span><span><i class="led" id="Lerr"></i>ERR</span><span><i class="led" id="Lio"></i>I/O</span><span><i class="led" id="Lser"></i>SER</span></div><div class="rj" style="width:10px;height:8px"></div></div>${mods}</div>
+   <div class="note" style="margin-top:6px">Salidas DDM 3202K (slot 2) · %Q0.2.16–31</div>
+   <div class="outs">${[0,1,2,3].map(b=>`<div class="blk">${[0,1,2,3].map(k=>{const n=b*4+k;return `<div class="o"><i class="led" id="Q${n}"></i>${16+n}</div>`}).join('')}</div>`).join('')}</div>
+   <h4 style="margin-top:10px">Cables al PC portátil</h4>
+   <label class="chk"><input type="checkbox" id="cabUsb" ${S.cables.usb?'checked':''}> USB al puerto de la CPU</label>
+   <label class="chk"><input type="checkbox" id="cabEth" ${S.cables.eth?'checked':''}> Ethernet al switch de la red</label>
+   <label class="chk"><input type="checkbox" id="cabSer" ${S.cables.ser?'checked':''}> Serie Modbus (RJ45 de la CPU)</label>
+   <h4 style="margin-top:10px">Adaptador Ethernet del PC</h4>
+   <div class="note mono" id="pcInfo"></div>
+   <div class="row"><button class="wbtn2" data-act="pcnet">Configurar TCP/IPv4...</button></div>`;
+  renderPcInfo();renderLive();
+}
+const renderPcInfo=()=>{const el=$('#pcInfo');if(el)el.textContent=`${S.pc.dhcp?'DHCP (sin servidor) → ':''}${pcIp()} / ${pcMask()}`};
+function setLed(el,c){if(!el)return;c='led '+(c||'');if(el.className!==c)el.className=c}
+const outWord=()=>(!PLC.project||PLC.mode!=='RUN'||PLC.err||PLC.rack[1]!=='DDM 3202K')?0:PLC.vars.word;
+function renderLive(){
+  const run=PLC.mode==='RUN',w=outWord(),on=S.conn.online;
+  setLed($('#Lrun'),run?'g':'g blink');setLed($('#Lerr'),PLC.err&&run?'r':'');setLed($('#Lio'),PLC.err?'r':'');
+  setLed($('#Lser'),on&&S.conn.media!=='TCPIP'&&(Date.now()/180|0)%2?'a':'');
+  setLed($('#Lnr'),'g');setLed($('#Lne'),'');
+  setLed($('#Lnl'),S.cables.eth?(on&&S.conn.media==='TCPIP'&&(Date.now()/150|0)%3?'a':'g'):'');
+  document.querySelectorAll('[data-mr]').forEach(el=>setLed(el,'g'));
+  document.querySelectorAll('[data-me]').forEach(el=>setLed(el,+el.dataset.me===PLC.errSlot&&PLC.err?'r':''));
+  for(let i=0;i<16;i++)setLed(document.getElementById('Q'+i),(w>>i)&1?'g':'');
+  const t=(id,v)=>{const el=document.getElementById(id);if(el&&el.textContent!==v)el.textContent=v};
+  if(S.view==='anim'){
+    t('aEn',on?(PLC.vars.en?'1':'0'):'');t('aInt',on&&PLC.project?PLC.project.prog.interval:'');t('aCv',on?String(PLC.vars.cv):'');
+    t('aOut',on?'16#'+PLC.vars.word.toString(16).toUpperCase().padStart(4,'0'):'');
+    for(let i=0;i<16;i++)t('aQ'+i,on?String((w>>i)&1):'');
+  }
+  if(S.view==='prog'){
+    const anim=isEqual(),en=PLC.vars.en&&run&&!PLC.err;
+    ['avEn','avCv','avOut'].forEach(id=>{const el=document.getElementById(id);if(el)el.hidden=!anim});
+    if(anim){t('avEn',PLC.vars.en?'1':'0');t('avCv',String(PLC.vars.cv));t('avOut','16#'+PLC.vars.word.toString(16).toUpperCase().padStart(4,'0'))}
+    const sv=$('#ldsvg');if(sv){const c=anim?(en?'#0d9b2c':'#d0281c'):'#1a1a1a';if(sv.getAttribute('stroke')!==c)sv.setAttribute('stroke',c)}
+  }
+}
+
+/* ================= ciclo del PLC ================= */
+let last=performance.now();
+setInterval(()=>{
+  const now=performance.now(),dt=now-last;last=now;
+  if(PLC.mode==='RUN'&&PLC.project&&!PLC.err&&PLC.vars.en){
+    const g=PLC.project.prog,iv=Math.max(20,parseTime(g.interval)||1000),pv=Math.max(1,parseInt(g.pv)||5);
+    PLC.vars.acc+=dt;while(PLC.vars.acc>=iv){PLC.vars.acc-=iv;PLC.vars.cv++;if(PLC.vars.cv>=pv)PLC.vars.cv=0}
+    PLC.vars.word=PLC.vars.cv<g.mux.length?hexVal(g.mux[PLC.vars.cv]):0;
+  }
+  renderLive();if(S.conn.online)checkMissions();
+},50);
+
+/* ================= diálogos ================= */
+function dialog(title,body,buttons,wide){
+  $('#dlgT').textContent=title;$('#dlgB').innerHTML=body;$('#dlg').className='dlg'+(wide?' wide':'');
+  const f=$('#dlgF');f.innerHTML='';(buttons||[]).forEach(b=>{const x=document.createElement('button');x.className='wbtn2'+(b.def?' def':'');x.textContent=b.l;x.onclick=b.f;f.appendChild(x)});
+  f.hidden=!(buttons&&buttons.length);$('#scrim').hidden=false;const d=f.querySelector('.def')||f.querySelector('button');if(d)d.focus();
+}
+const closeDlg=()=>{$('#scrim').hidden=true};
+function msgbox(type,title,text,buttons){dialog(title,`<div class="mbox"><svg viewBox="0 0 32 32">${I[type]}</svg><div>${text}</div></div>`,buttons||[{l:'Aceptar',def:1,f:closeDlg}])}
+function progress(title,total,ms,label,done){
+  dialog(title,`<div id="pgL">…</div><div class="pbar"><i id="pgB"></i></div>`,[{l:'Cancelar',f:()=>{}}]);
+  const t0=performance.now();const tick=()=>{const k=Math.min(1,(performance.now()-t0)/ms),n=Math.max(1,Math.round(k*total));
+    $('#pgL').textContent=label(n,total);$('#pgB').style.width=(k*100)+'%';if(k<1)requestAnimationFrame(tick);else setTimeout(()=>{closeDlg();done()},250)};
+  requestAnimationFrame(tick);
+}
+function projBox(p,h){return `<fieldset class="gbox"><span class="lg">${h}</span>${p?`<dl><dt>Nombre:</dt><dd>${esc(p.name)}</dd><dt>Versión:</dt><dd>${esc(p.version)}</dd><dt>Última compilación:</dt><dd>${esc(p.built)}</dd></dl>`:'<p class="note" style="margin:0">Ninguno</p>'}</fieldset>`}
+
+/* ================= proyecto ================= */
+function newProject(){
+  if(S.conn.online){msgbox('warn','Control','Desconéctese del PLC antes de crear un proyecto nuevo.');return}
+  const rows=Object.keys(CPUS).map((k,i)=>`<tr class="click ${i===1?'sel':''}" data-cpu="${k}"><td style="padding-left:28px">${k}</td><td>01.00</td><td>${CPUS[k]}</td></tr>`).join('');
+  dialog('Nuevo proyecto',`<div class="row"><label class="chk"><input type="checkbox" disabled> Mostrar todas las versiones</label></div>
+   <div class="cat"><table class="grid" style="min-width:420px"><thead><tr><th>PLC</th><th>Versión SO mín.</th><th>Descripción</th></tr></thead><tbody>
+   <tr><td>− Modicon M340</td><td></td><td></td></tr>${rows}<tr><td class="note">+ Premium</td><td></td><td></td></tr><tr><td class="note">+ Quantum</td><td></td><td></td></tr></tbody></table></div>
+   <div class="row"><label class="k" for="npName">Nombre de la estación</label><input class="inp" id="npName" value="ESTACION_1"></div>
+   ${S.proj?'<p class="note">Se cerrará el proyecto abierto.</p>':''}`,
+   [{l:'Aceptar',def:1,f:()=>{const sel=document.querySelector('#dlgB tr.sel');const cpu=sel?sel.dataset.cpu:'BMX P34 2010';
+      const name=($('#npName').value.trim()||'ESTACION_1').toUpperCase().replace(/[^A-Z0-9_]/g,'_');closeDlg();
+      S.proj={name,version:'0.0.0',built:'—',origin:'nuevo',cpu,rack:['','','','',''],net:{exists:false,ip:'0.0.0.0',mask:'0.0.0.0',gw:'0.0.0.0',func:'',linked:false},
+        prog:{enable:'Lenguaje_LD',interval:'t#1s',pv:5,mux:MUX0.slice()},genSig:null};
+      S.draft=clone(S.proj.net);S.docs=['welcome','rack'];S.slotSel=-1;
+      log('info',`Proyecto ${name} creado con ${cpu}. Bastidor generado con fuente y CPU; posiciones 1 a 5 vacías.`);openDoc('rack')}},
+    {l:'Cancelar',f:closeDlg},{l:'Ayuda',f:()=>log('info','Elige la CPU indicada en la placa del equipo de terreno.')}],true);
+  $('#dlgB').querySelectorAll('tr[data-cpu]').forEach(tr=>tr.onclick=()=>{$('#dlgB').querySelectorAll('tr.sel').forEach(x=>x.classList.remove('sel'));tr.classList.add('sel')});
+}
+function catalogDlg(slot){
+  let pick=null;
+  const rows=Object.entries(CAT).map(([g,m])=>`<tr><td>− ${g}</td><td></td></tr>`+Object.entries(m).map(([k,d])=>`<tr class="click" data-m="${k}"><td style="padding-left:28px">BMX ${k}</td><td>${d}</td></tr>`).join('')).join('');
+  dialog('Nuevo dispositivo',`<div class="row"><label class="k">Dirección topológica:</label><input class="inp" value="0.${slot+1}" disabled style="width:60px"></div>
+    <div class="cat"><table class="grid" style="min-width:460px"><thead><tr><th>Número de referencia</th><th>Descripción</th></tr></thead><tbody><tr><td>− Estación local Modicon M340</td><td></td></tr>${rows}</tbody></table></div>`,
+    [{l:'Aceptar',def:1,f:()=>{if(!pick)return;S.proj.rack[slot]=pick;closeDlg();log('info',`Módulo BMX ${pick} insertado en 0.${slot+1}.`);afterRack()}},{l:'Cancelar',f:closeDlg}],true);
+  $('#dlgB').querySelectorAll('tr[data-m]').forEach(tr=>{tr.onclick=()=>{$('#dlgB').querySelectorAll('tr.sel').forEach(x=>x.classList.remove('sel'));tr.classList.add('sel');pick=tr.dataset.m};tr.ondblclick=()=>{pick=tr.dataset.m;$('#dlgF .def').click()}});
+}
+function cpuDlg(){
+  let pick=S.proj.cpu;
+  dialog('Reemplazar procesador',`<div class="cat" style="height:170px"><table class="grid"><thead><tr><th>PLC</th><th>Descripción</th></tr></thead><tbody>${Object.keys(CPUS).map(k=>`<tr class="click ${k===pick?'sel':''}" data-cpu="${k}"><td>${k}</td><td>${CPUS[k]}</td></tr>`).join('')}</tbody></table></div>`,
+   [{l:'Aceptar',def:1,f:()=>{closeDlg();if(pick!==S.proj.cpu){S.proj.cpu=pick;log('info',`Procesador reemplazado por ${pick}.`);afterRack()}}},{l:'Cancelar',f:closeDlg}]);
+  $('#dlgB').querySelectorAll('tr[data-cpu]').forEach(tr=>tr.onclick=()=>{$('#dlgB').querySelectorAll('tr.sel').forEach(x=>x.classList.remove('sel'));tr.classList.add('sel');pick=tr.dataset.cpu});
+}
+function afterRack(){if(!S.proj.rack.includes('NOE 0100')){S.proj.net.linked=false;S.proj.net.func='';if(S.draft){S.draft.linked=false;S.draft.func=''}S.docs=S.docs.filter(d=>d!=='noe');if(S.view==='noe')S.view='rack'}renderAll(true)}
+
+/* ================= análisis y generación ================= */
+function analyze(p){
+  const E=[],W=[],g=p.prog,ti=parseTime(g.interval);
+  if(ti===null)E.push(`{MiProgramaConLader : [MAST]} : (r: 4, c: 1) SAMPLETM.INTERVAL: "${g.interval}" no es un literal TIME válido. Use t#500ms o t#1s.`);
+  else if(ti<10)E.push(`SAMPLETM.INTERVAL = ${g.interval}: menor que 10 ms.`);
+  else if(ti>60000)W.push(`SAMPLETM.INTERVAL = ${g.interval}: intervalo muy largo.`);
+  const pv=Number(g.pv);
+  if(!Number.isInteger(pv)||pv<1||pv>32767)E.push(`{MiProgramaConLader : [MAST]} : CTU.PV = "${g.pv}": se esperaba un INT entre 1 y 32767.`);
+  else if(pv>g.mux.length-1)W.push(`CTU.PV = ${pv} supera las entradas del MUX (IN0–IN${g.mux.length-1}); con CV fuera de rango la salida será 0.`);
+  g.mux.forEach((m,i)=>{if(!hexOk(m))E.push(`{MiProgramaConLader : [MAST]} : MUX.IN${i} = "${m}": se esperaba un WORD, p. ej. 16#00F0.`)});
+  if(p.rack[1]!=='DDM 3202K')E.push(`Out_0…Out_15 (%Q0.2.16–31): no hay un BMX DDM 3202K en la posición 0.2.`);
+  if(p.net.exists&&netOn(p.net)){
+    if(!parseIp(p.net.ip)||p.net.ip==='0.0.0.0')E.push(`{Ethernet_1}: dirección IP "${p.net.ip}" no válida.`);
+    if(!validMask(p.net.mask))E.push(`{Ethernet_1}: máscara de subred "${p.net.mask}" no válida.`);
+  }
+  if(p.rack.includes('NOE 0100')&&!netOn(p.net))W.push('{0.x : BMX NOE 0100} canal 0 sin conexión de red: el módulo usará su IP por defecto 84.x.x.x.');
+  if(dirty())W.push('Ethernet_1 / NOE tienen modificaciones sin validar; no se incluyen en la generación.');
+  return {E,W};
+}
+function runAnalyze(p,quiet){const r=analyze(p);r.W.forEach(w=>log('warn','Advertencia: '+w));r.E.forEach(x=>log('err','Error: '+x));
+  if(!quiet||r.E.length)log(r.E.length?'err':'ok',`Proceso ${r.E.length?'fallido':'satisfactorio'} : ${r.E.length} Errores, ${r.W.length} Advertencias`);return r}
+function doBuild(full){
+  const p=S.proj;if(!p)return;
+  if(full&&S.conn.online){msgbox('warn','Generar','Regenerar todo el proyecto no está disponible en modo conectado.<br>Desconéctese o use Generar cambios para una modificación en línea.');return}
+  log('info',full?'Regenerar todo el proyecto…':'Generar cambios…');
+  const r=runAnalyze(p,true);if(r.E.length)return;
+  if(S.conn.online){const pp=PLC.project;
+    if(pp&&cfgSig(pp)===cfgSig(p)&&pp.name===p.name){p.version=bump(p.version);p.built=stamp();p.genSig=sig(p);PLC.project=clone(p);PLC.vars.acc=0;
+      log('ok',`Modificación en línea: cambios generados y transferidos sin detener el PLC (v${p.version}).`)}
+    else{msgbox('error','Generar cambios','Las modificaciones de configuración (CPU, bastidor o red) o un proyecto distinto no se pueden aplicar en línea.<br>Desconéctese, Regenere todo el proyecto y transfiéralo al PLC.');return}}
+  else{p.version=bump(p.version);p.built=stamp();p.genSig=sig(p);log('ok',`Proceso satisfactorio : 0 Errores, ${r.W.length} Advertencias. ${p.name} v${p.version} GENERADO.`)}
+  renderAll(false);
+}
+
+/* ================= conexión ================= */
+function reach(c){
+  const F=m=>({ok:false,msg:m});
+  if(c.media==='USB')return S.cables.usb?{ok:true}:F('No se detecta ningún equipo en USB. El cable USB debe ir del PC al puerto de la CPU.');
+  if(c.media==='MODBUS01'){if(!S.cables.ser)return F('Sin respuesta en el puerto COM. Conecte el cable serie al RJ45 de la CPU.');
+    if(c.baud!=='19200'||c.parity!=='Par')return F('Tramas con error de CRC/paridad: velocidad o paridad distintas a las del puerto de la CPU.');
+    if(Number(c.addr)!==PLC.modbus)return F(`Tiempo de espera agotado: ningún esclavo responde en la dirección ${c.addr}.`);return {ok:true}}
+  if(!S.cables.eth)return F('El adaptador Ethernet del PC no tiene enlace (cable desconectado).');
+  const ip=PLCip(),me=pcIp(),mk=pcMask();
+  if(!sameNet(me,c.addr,mk))return F(`El destino ${c.addr} no está en la subred del PC (${me} / ${mk})${S.pc.dhcp?'. El PC está en DHCP sin servidor (169.254.x.x): fije una IP estática':''}.`);
+  if(!hostOk(me,mk))return F(`${me} es la dirección de red o de broadcast de la subred del PC.`);
+  if(me===ip)return F(`Conflicto de IP: el PC usa ${me}, la misma dirección del NOE.`);
+  if(c.addr!==ip)return F(`Tiempo de espera agotado: nadie responde en ${c.addr}. ¿Es la IP real del NOE?`);
+  if(!sameNet(me,ip,PLCmask()))return F(`El NOE (${ip} / ${PLCmask()}) no ve al PC en su subred.`);
+  return {ok:true};
+}
+const addrStr=c=>c.media==='USB'?'USB:SYS':c.media==='MODBUS01'?`MODBUS01:${c.addr}`:`TCPIP:${c.addr}`;
+function setAddrDlg(){
+  const c=S.conn;
+  dialog('Establecer dirección',`<div class="cmp">
+    <fieldset class="gbox"><span class="lg">PLC</span>
+      <div class="row"><label class="k" style="min-width:70px" for="saAddr">Dirección</label><input class="inp" id="saAddr" value="${esc(c.media==='USB'?'SYS':c.addr)}" style="width:150px" spellcheck="false"></div>
+      <div class="row"><label class="k" style="min-width:70px" for="saMedia">Medio</label><select class="inp" id="saMedia">${['USB','TCPIP','MODBUS01'].map(m=>`<option ${m===c.media?'selected':''}>${m}</option>`).join('')}</select></div>
+      <div id="saMb" ${c.media==='MODBUS01'?'':'hidden'}>
+        <div class="row"><label class="k" style="min-width:70px" for="saBaud">Velocidad</label><select class="inp" id="saBaud">${['9600','19200','38400','115200'].map(b=>`<option ${b===c.baud?'selected':''}>${b}</option>`).join('')}</select></div>
+        <div class="row"><label class="k" style="min-width:70px" for="saPar">Paridad</label><select class="inp" id="saPar">${['Par','Impar','Ninguna'].map(b=>`<option ${b===c.parity?'selected':''}>${b}</option>`).join('')}</select></div></div>
+      <div class="row"><button class="wbtn2" id="saTest">Probar conexión</button></div></fieldset>
+    <fieldset class="gbox"><span class="lg">Simulador</span>
+      <div class="row"><label class="k" style="min-width:70px">Dirección</label><input class="inp" value="127.0.0.1" disabled style="width:120px"></div>
+      <div class="row"><label class="k" style="min-width:70px">Medio</label><select class="inp" disabled><option>TCPIP</option></select></div>
+      <p class="note">El simulador no está disponible en este entrenamiento.</p></fieldset></div>
+    <div class="row" id="saRes" style="min-height:22px"></div>
+    <p class="note">Formatos: USB → SYS · TCPIP → IP del módulo NOE (ej. 120.23.3.1) · MODBUS01 → número de esclavo.</p>`,
+   [{l:'Aceptar',def:1,f:()=>{const t=read(),er=check(t);if(er){res(false,er);return}
+      Object.assign(c,t);c.set=true;closeDlg();log('info',`Dirección establecida: ${addrStr(c)}${c.media==='MODBUS01'?` (${c.baud}, paridad ${c.parity})`:''}.`);renderAll(false)}},
+    {l:'Cancelar',f:closeDlg},{l:'Ayuda',f:()=>res(null,'Con TCPIP la dirección es la IP del NOE, y el PC debe estar en su misma subred (Herramientas › Red del PC).')}],true);
+  function read(){return {media:$('#saMedia').value,addr:$('#saAddr').value.trim(),baud:$('#saBaud').value,parity:$('#saPar').value}}
+  function check(t){if(t.media==='USB'){if(t.addr&&t.addr.toUpperCase()!=='SYS')return 'En USB la dirección es SYS.';t.addr='SYS'}
+    if(t.media==='TCPIP'&&!parseIp(t.addr))return `"${t.addr||'(vacío)'}" no es una dirección IP válida.`;
+    if(t.media==='MODBUS01'){const a=Number(t.addr);if(!Number.isInteger(a)||a<1||a>247)return 'La dirección esclavo Modbus debe estar entre 1 y 247.'}return null}
+  function res(ok,msg){$('#saRes').innerHTML=`<svg viewBox="0 0 32 32" width="18" height="18">${I[ok===true?'info':ok===false?'error':'question']}</svg><span>${esc(msg)}</span>`}
+  $('#saMedia').onchange=()=>{const m=$('#saMedia').value;$('#saMb').hidden=m!=='MODBUS01';const a=$('#saAddr');if(m==='USB')a.value='SYS';else if(a.value==='SYS')a.value=m==='MODBUS01'?'1':'';$('#saRes').innerHTML=''};
+  $('#saTest').onclick=()=>{const t=read(),er=check(t),r=er?{ok:false,msg:er}:reach(t);
+    log(r.ok?'ok':'warn',`Probar conexión ${addrStr(t)}: ${r.ok?'conexión correcta.':r.msg}`);res(r.ok,r.ok?`Conexión correcta con ${addrStr(t)}.`:r.msg)};
+}
+function pcNetDlg(){
+  const p=S.pc;
+  dialog('Propiedades: Protocolo de Internet versión 4 (TCP/IPv4)',`<p class="note" style="margin-top:0">Adaptador Ethernet del PC portátil (Windows).</p>
+   <fieldset class="gbox"><span class="lg">General</span>
+    <div class="row"><label class="chk"><input type="radio" name="pcm" id="pcDhcp" ${p.dhcp?'checked':''}> Obtener una dirección IP automáticamente</label></div>
+    <div class="row"><label class="chk"><input type="radio" name="pcm" id="pcStat" ${p.dhcp?'':'checked'}> Usar la siguiente dirección IP:</label></div>
+    <div class="row" style="padding-left:20px"><label class="k">Dirección IP:</label>${ipBoxes('pi',p.ip,p.dhcp)}</div>
+    <div class="row" style="padding-left:20px"><label class="k">Máscara de subred:</label>${ipBoxes('pm',p.mask,p.dhcp)}</div>
+    <div class="row" style="padding-left:20px"><label class="k">Puerta de enlace predet.:</label>${ipBoxes('pg',p.gw,p.dhcp)}</div></fieldset>
+   <p id="pcErr" style="color:#b3261e;min-height:18px;margin:8px 0 0"></p><p class="note">En la red de la planta no hay servidor DHCP: en automático Windows asigna 169.254.x.x (APIPA).</p>`,
+   [{l:'Aceptar',def:1,f:()=>{const dh=$('#pcDhcp').checked;if(!dh){const ip=readIp('pi'),mk=readIp('pm'),gw=readIp('pg');
+       if(!parseIp(ip)){$('#pcErr').textContent='Dirección IP no válida.';return}
+       if(!validMask(mk)){$('#pcErr').textContent='Máscara de subred no válida.';return}
+       Object.assign(p,{dhcp:false,ip,mask:mk,gw:gw==='...'?'':gw})}else p.dhcp=true;
+     closeDlg();log('info',`Adaptador del PC: ${pcIp()} / ${pcMask()}${p.dhcp?' (APIPA)':''}.`);
+     if(S.conn.online&&S.conn.media==='TCPIP'){const r=reach(S.conn);if(!r.ok){S.conn.online=false;log('err','Cambio de IP del PC: conexión con el PLC perdida.')}}
+     renderPcInfo();renderAll(false)}},{l:'Cancelar',f:closeDlg}],true);
+  const tog=()=>{const dh=$('#pcDhcp').checked;document.querySelectorAll('#dlgB .ipbox').forEach(b=>{b.classList.toggle('dis',dh);b.querySelectorAll('input').forEach(i=>i.disabled=dh)})};
+  $('#pcDhcp').onchange=tog;$('#pcStat').onchange=tog;
+}
+function connect(){
+  const c=S.conn;
+  if(!c.set){msgbox('warn','Conectar','No hay dirección definida. Use PLC › Establecer dirección.');return}
+  progress('Conexión',100,900,()=>`Conectando a ${addrStr(c)}…`,()=>{
+    const r=reach(c);
+    if(!r.ok){penalty(3,'Conexión fallida. '+r.msg);msgbox('error','Conectar',`No se ha podido establecer la conexión con ${esc(addrStr(c))}.<br><br>${esc(r.msg)}`);renderAll(false);return}
+    c.online=true;log('ok',`Conectado a ${addrStr(c)}. Aplicación en el PLC: ${PLC.project?PLC.project.name+' v'+PLC.project.version:'ninguna'} · ${PLC.mode}.`);
+    if(S.proj)log(isEqual()?'ok':'warn',`El proyecto del PC es ${isEqual()?'IGUAL':'DIFERENTE'} al del PLC.`);
+    renderAll(true)});
+}
+function lost(m){S.conn.online=false;log('err',`Cable ${m} desconectado: comunicación con el PLC perdida.`)}
+
+/* ================= transferencias ================= */
+function upload(){
+  if(!PLC.project){msgbox('warn','Transferir','El PLC no contiene aplicación.');return}
+  dialog('Transferir proyecto desde PLC',`<div class="cmp">${projBox(PLC.project,'Proyecto PLC')}${projBox(S.proj,'Proyecto PC sobrescrito')}</div>
+   ${S.proj&&!isEqual()?'<p class="note" style="color:#b3261e">El proyecto abierto en el PC será reemplazado. Lo no transferido se pierde.</p>':''}`,
+   [{l:'Transferir',def:1,f:()=>{closeDlg();progress('Transferencia de proyecto',212,1600,(n,t)=>`El paquete ${n}/${t} ha sido recibido correctamente.`,()=>{
+     S.proj=clone(PLC.project);S.proj.origin='plc';S.proj.genSig=sig(S.proj);S.draft=clone(S.proj.net);S.uploaded=true;
+     log('ok',`Proyecto ${S.proj.name} v${S.proj.version} transferido desde el PLC. Respaldo listo.`);
+     if(S.scn.n===2)log('info',`Ethernet_1 del proyecto transferido: IP del NOE ${S.proj.net.ip} / ${S.proj.net.mask}.`);
+     S.docs=['welcome','rack','prog'];openDoc('prog')})}},{l:'Cancelar',f:closeDlg}],true);
+}
+function download(){
+  const p=S.proj;
+  if(!isGen()){msgbox('warn','Transferir proyecto a PLC','El proyecto no está generado.<br>Use Generar › Generar cambios o Regenerar todo el proyecto.');return}
+  if(p.cpu!==PLC.cpu){penalty(5,`Transferencia rechazada: el PLC es ${PLC.cpu} y el proyecto está configurado para ${p.cpu}.`);msgbox('error','Transferir proyecto a PLC',`El procesador de destino (${PLC.cpu}) no coincide con el procesador del proyecto (${esc(p.cpu)}).`);return}
+  dialog('Transferir proyecto al PLC',`<div class="cmp">${projBox(p,'Proyecto PC')}${projBox(PLC.project,'Proyecto PLC sobrescrito')}</div>
+    <div class="row" style="margin-top:12px"><label class="chk"><input type="checkbox" id="runAfter"> Ejecución del PLC después de la transferencia</label></div>`,
+   [{l:'Transferir',def:1,f:()=>{const ra=$('#runAfter').checked;
+      const go=()=>{closeDlg();if(PLC.mode==='RUN'){PLC.mode='STOP';log('warn','PLC detenido para la transferencia. Salidas en valor de retorno (0).')}
+        progress('Transferencia de proyecto',294,2200,(n,t)=>`El paquete ${n}/${t} ha sido enviado correctamente.`,()=>applyDownload(ra))};
+      const runChk=()=>PLC.mode==='RUN'?msgbox('question','Transferir proyecto al PLC','El PLC está en RUN. Para transferir el proyecto debe detenerse.<br><br>¿Desea detener el PLC y continuar?',[{l:'Sí',def:1,f:go},{l:'No',f:closeDlg}]):go();
+      if(!S.uploaded&&PLC.project)msgbox('warn','Transferir proyecto al PLC',`La aplicación ${esc(PLC.project.name)} v${esc(PLC.project.version)} del PLC no ha sido transferida al PC ni respaldada. Se perderá.<br><br>¿Continuar de todos modos?`,[{l:'Sí',f:runChk},{l:'No',def:1,f:closeDlg}]);
+      else runChk()}},{l:'Cancelar',f:closeDlg}],true);
+}
+function applyDownload(runAfter){
+  const prevIp=PLCip(),old=PLC.project;
+  if(!S.uploaded&&old)penalty(10,`Sobrescribiste ${old.name} v${old.version} sin respaldarlo. Regla de terreno: siempre Transferir desde PLC antes de descargar`);
+  PLC.project=clone(S.proj);PLC.vars={en:false,cv:0,acc:0,word:0};
+  let mis=null;PLC.errSlot=-1;
+  for(let i=0;i<5;i++)if(S.proj.rack[i]!==PLC.rack[i]){mis=`Posición 0.${i+1}: configurado ${S.proj.rack[i]?'BMX '+S.proj.rack[i]:'vacío'}, instalado ${PLC.rack[i]?'BMX '+PLC.rack[i]:'vacío'}`;PLC.errSlot=i;break}
+  PLC.err=mis;PLC.mode=runAfter?'RUN':'STOP';
+  log('ok',`Transferencia terminada: ${S.proj.name} v${S.proj.version} en el PLC (${PLC.mode}). Variables inicializadas: Lenguaje_LD = 0.`);
+  if(mis)penalty(10,`Fallo de E/S tras la descarga. ${mis}. El bastidor del proyecto debe coincidir con el instalado`);
+  if(S.conn.media==='TCPIP'&&PLCip()!==prevIp){S.conn.online=false;log('warn',`La nueva configuración cambió la IP del NOE de ${prevIp} a ${PLCip()}. Conexión perdida: actualice Establecer dirección y vuelva a conectar.`)}
+  renderAll(true);
+}
+function compare(){
+  const a=S.proj,b=PLC.project,rows=[],r=(k,x,y)=>rows.push(`<tr><td>${k}</td><td class="v ${x!==y?'bad':''}">${esc(x)}</td><td class="v ${x!==y?'bad':''}">${esc(y)}</td></tr>`);
+  r('Nombre',a.name,b.name);r('Versión',a.version,b.version);r('CPU',a.cpu,b.cpu);a.rack.forEach((m,i)=>r(`0.${i+1}`,m||'—',b.rack[i]||'—'));
+  r('Ethernet_1 IP',a.net.exists?a.net.ip:'—',b.net.exists?b.net.ip:'—');r('NOE canal 0',netOn(a.net)?'Ethernet_1':'Sin conexión',netOn(b.net)?'Ethernet_1':'Sin conexión');
+  r('SAMPLETM.INTERVAL',a.prog.interval,b.prog.interval);r('CTU.PV',String(a.prog.pv),String(b.prog.pv));a.prog.mux.forEach((m,i)=>r(`MUX.IN${i}`,m,b.prog.mux[i]));
+  dialog('Comparar',`<div class="tblw" style="max-height:330px;overflow:auto"><table class="grid"><thead><tr><th>Elemento</th><th>Proyecto PC</th><th>Proyecto PLC</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>
+    <p><b>Resultado: ${isEqual()?'IGUAL':'DIFERENTE'}</b>${!isGen()?' (el proyecto del PC no está generado)':''}</p>`,[{l:'Cerrar',def:1,f:closeDlg}],true);
+}
+
+/* ================= final ================= */
+function showFinal(){
+  const s=score(),min=Math.round((Date.now()-S.t0)/60000),n=S.penalties.length,nota=s>=90?'Técnico habilitado':s>=70?'Aprobado con observaciones':'Repetir práctica';
+  dialog('Orden de trabajo cerrada',`<div class="big">${s} <span style="font-size:16px;color:#666">/ 100</span></div><p><b>${nota}</b> · ${min} min · ${n} error${n===1?'':'es'}</p>
+   ${n?`<p><b>Lecciones</b></p><ul class="note">${S.penalties.map(p=>`<li>${esc(p.msg)}</li>`).join('')}</ul>`:'<p class="note">Sin errores: respaldaste antes de descargar y la configuración coincidió con el equipo.</p>'}`,
+   [{l:S.scn.n===1?'Jugar escenario 2':'Repetir escenario 2',def:1,f:()=>{closeDlg();init(2)}},{l:'Cerrar',f:closeDlg}]);
+}
+
+/* ================= render global ================= */
+function renderAll(doc){renderMenubar();renderToolbar();renderTree();renderTabs();if(doc)renderDoc();renderStatus();renderMissions();renderScore();renderLog();renderLive();checkMissions()}
+
+/* ================= acciones ================= */
+const A={
+  nop:()=>{},
+  newproj:newProject,
+  closeproj:()=>{S.proj=null;S.draft=null;S.docs=['welcome'];S.view='welcome';S.sel='welcome';log('info','Proyecto cerrado.');renderAll(true)},
+  scenario:el=>{const n=+el.dataset.n;if(n===S.scn.n&&el.tagName==='INPUT')return;init(n)},
+  reset:()=>msgbox('question','Reiniciar escenario','Se pierde el progreso y el puntaje de esta partida. ¿Continuar?',[{l:'Sí',def:1,f:()=>{closeDlg();init(S.scn.n)}},{l:'No',f:closeDlg}]),
+  validate:()=>{if(!dirty())return;const d=S.draft;
+    if(d.linked&&!d.func){msgbox('error','Validar','La conexión de red requiere la función ETH TCP IP.');return}
+    S.proj.net=clone(d);log('ok',`Validación correcta: Ethernet_1 ${d.ip} / ${d.mask}; NOE canal 0 ${netOn(d)?'vinculado a Ethernet_1':'sin conexión de red'}.`);renderAll(true)},
+  analyze:()=>{log('info','Analizar…');runAnalyze(S.proj)},
+  build:()=>doBuild(false),rebuild:()=>doBuild(true),
+  setaddr:()=>{if(S.conn.online){msgbox('warn','Establecer dirección','Desconéctese para modificar la dirección.');return}setAddrDlg()},
+  pcnet:pcNetDlg,connect,
+  disconnect:()=>{S.conn.online=false;log('info','Desconectado.');renderAll(true)},
+  upload,download,compare,
+  run:()=>{if(!S.conn.online)return;if(!PLC.project){msgbox('warn','Ejecutar','No hay aplicación en el PLC.');return}
+    msgbox('question','Ejecutar PLC',`¿Desea ejecutar la aplicación del PLC en ${esc(addrStr(S.conn))}?`,[{l:'Aceptar',def:1,f:()=>{closeDlg();PLC.mode='RUN';PLC.vars.acc=0;log(PLC.err?'err':'ok',PLC.err?`PLC en RUN con fallo de E/S: ${PLC.err}.`:'PLC en RUN.');renderAll(false)}},{l:'Cancelar',f:closeDlg}])},
+  stop:()=>{if(!S.conn.online)return;msgbox('question','Detener PLC',`¿Desea detener el PLC en ${esc(addrStr(S.conn))}?`,[{l:'Aceptar',def:1,f:()=>{closeDlg();PLC.mode='STOP';log('warn','PLC en STOP. Salidas en valor de retorno (0).');renderAll(false)}},{l:'Cancelar',f:closeDlg}])},
+  force:el=>{if(!S.conn.online){msgbox('warn','Tabla de animación','La modificación de valores requiere estar conectado.');return}
+    if(!isEqual()){msgbox('warn','Tabla de animación','El proyecto del PC es DIFERENTE al del PLC: no se puede animar ni modificar variables.');return}
+    PLC.vars.en=el.dataset.val==='1';log('info',`Lenguaje_LD := ${el.dataset.val} en el PLC.`);renderAll(false)},
+  opendoc:el=>openDoc(el.dataset.v),
+  closedoc:el=>closeDoc(el.dataset.v),
+  closeall:()=>{S.docs=[];S.view='';renderAll(true)},
+  otab:el=>{S.otab=el.dataset.k;renderLog()},
+  newnet:()=>{if(S.proj.net.exists){msgbox('info','Agregar red','La red Ethernet_1 ya existe.');return}S.proj.net.exists=true;S.draft.exists=true;log('info','Red Ethernet_1 creada en Comunicación › Redes.');openDoc('eth')},
+  opennoe:()=>openDoc('noe'),
+  delmod:el=>{const i=+el.dataset.n;log('info',`Módulo BMX ${S.proj.rack[i]} eliminado de 0.${i+1}.`);S.proj.rack[i]='';S.slotSel=-1;afterRack()},
+  repmod:el=>catalogDlg(+el.dataset.n),
+  cpudlg:cpuDlg,
+  hintbox:()=>{const c=MLIST.find(m=>!S.done[m.id]);msgbox('info','Pista',esc(c?(typeof c.h==='function'?c.h():c.h):'Todo listo.'))},
+  about:()=>msgbox('info','Acerca de','Taller M340: simulador de entrenamiento con interfaz al estilo de los entornos de programación Modicon. No se conecta a equipos reales; el PLC es virtual.')
+};
+
+/* ================= eventos ================= */
+document.addEventListener('click',e=>{
+  const mb=e.target.closest('[data-menu]');
+  if(mb){if(openMenu===mb.dataset.menu)closeMenus();else{$('#ctx').hidden=true;showMenu(mb.dataset.menu,mb)}return}
+  const tw=e.target.closest('[data-tw]');if(tw){S.open[tw.dataset.tw]=!S.open[tw.dataset.tw];renderTree();return}
+  const b=e.target.closest('[data-act]');
+  if(b&&!b.disabled){if(b.closest('#drop,#ctx'))closeMenus();e.stopPropagation();const f=A[b.dataset.act];if(f)f(b);return}
+  if(!e.target.closest('#drop,#ctx'))closeMenus();
+  const nd=e.target.closest('.node[data-node]');
+  if(nd){S.sel=nd.dataset.doc||nd.dataset.node;if(nd.dataset.ctx==='red'&&S.proj&&!S.proj.net.exists){const r=nd.getBoundingClientRect();ctxMenu(r.left+30,r.bottom,[{l:'Nueva red...',a:'newnet',i:'net'}])}
+    if(nd.dataset.doc)openDoc(nd.dataset.doc);else renderTree();return}
+  const cn=e.target.closest('.node[data-ctx="cpu"]');if(cn){cpuDlg();return}
+  const em=e.target.closest('[data-empty]');if(em){catalogDlg(+em.dataset.empty);return}
+  const md=e.target.closest('.mod[data-slot]');
+  if(md){const i=+md.dataset.slot;S.slotSel=i;renderDoc();const r=md.getBoundingClientRect();
+    ctxMenu(r.left+20,r.top+40,[{l:'Abrir el módulo',a:S.proj.rack[i]==='NOE 0100'?'opennoe':'nop',dis:S.proj.rack[i]!=='NOE 0100'},{l:'Reemplazar módulo...',a:'repmod',n:String(i)},{sep:1},{l:'Eliminar',a:'delmod',n:String(i)}]);return}
+  if(e.target.closest('.mod[data-cpu]')){cpuDlg();return}
+});
+document.addEventListener('mouseover',e=>{const mb=e.target.closest('[data-menu]');if(mb&&openMenu&&openMenu!==mb.dataset.menu)showMenu(mb.dataset.menu,mb)});
+document.addEventListener('contextmenu',e=>{
+  const nd=e.target.closest('.node');if(!nd||!S.proj)return;e.preventDefault();
+  if(nd.dataset.ctx==='red'||nd.dataset.node==='com')ctxMenu(e.clientX,e.clientY,[{l:'Nueva red...',a:'newnet',i:'net'},{l:'Agregar directorio de usuario...',dis:1},{l:'Agregar hipervínculo...',dis:1}]);
+  else if(nd.dataset.node==='sec')ctxMenu(e.clientX,e.clientY,[{l:'Nueva sección...',dis:1},{l:'Importar...',dis:1}]);
+  else if(nd.dataset.doc)ctxMenu(e.clientX,e.clientY,[{l:'Abrir',a:'opendoc',v:nd.dataset.doc}]);
+});
+$('#dlgX').onclick=closeDlg;
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){if(!$('#drop').hidden||!$('#ctx').hidden)closeMenus();else if(!$('#scrim').hidden)closeDlg();return}
+  if(!$('#scrim').hidden)return;
+  const k=e.key.toLowerCase(),c=e.ctrlKey||e.metaKey;if(!c)return;
+  const go=a=>{e.preventDefault();A[a]&&A[a]({dataset:{}})};
+  if(k==='k')go(S.conn.online?'disconnect':'connect');
+  else if(k==='l'&&e.shiftKey){if(S.conn.online)go('upload')}
+  else if(k==='l'){if(S.conn.online&&S.proj)go('download')}
+  else if(k==='b'&&e.shiftKey){if(S.proj)go('analyze')}
+  else if(k==='b'){if(S.proj)go('build')}
+  else if(k==='r'){if(S.conn.online)go(PLC.mode==='RUN'?'stop':'run')}
+  else if(k==='w'){if(dirty())go('validate')}
+});
+/* entradas */
+document.addEventListener('keydown',e=>{const t=e.target;if(t.classList&&t.classList.contains('oct')&&(e.key==='.'||e.key===',')){e.preventDefault();const n=document.getElementById(t.dataset.ipg+(+t.dataset.i+1));if(n){n.focus();n.select()}}});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.classList.contains('oct')){t.value=t.value.replace(/\D/g,'').slice(0,3);if(t.value.length===3){const n=document.getElementById(t.dataset.ipg+(+t.dataset.i+1));if(n){n.focus();n.select()}}
+    const g=t.dataset.ipg;if(S.draft&&(g==='ip'||g==='mk'||g==='gw')){S.draft[{ip:'ip',mk:'mask',gw:'gw'}[g]]=readIp(g);refreshDirty()}return}
+  const p=S.proj;if(!p)return;
+  if(t.id==='pInt'){p.prog.interval=t.value.trim();t.classList.toggle('bad',parseTime(t.value)===null)}
+  else if(t.id==='pPv')p.prog.pv=t.value.trim();
+  else if(t.dataset.mux!==undefined){p.prog.mux[+t.dataset.mux]=t.value.trim().toUpperCase().replace(/^16#/,'16#');t.classList.toggle('bad',!hexOk(t.value))}
+  else return;
+  renderStatus();renderToolbar();checkMissions();
+});
+document.addEventListener('change',e=>{
+  const t=e.target,C=S.conn;
+  if(t.id==='cabUsb'){S.cables.usb=t.checked;if(!t.checked&&C.online&&C.media==='USB')lost('USB');renderAll(false)}
+  else if(t.id==='cabEth'){S.cables.eth=t.checked;if(!t.checked&&C.online&&C.media==='TCPIP')lost('Ethernet');renderAll(false)}
+  else if(t.id==='cabSer'){S.cables.ser=t.checked;if(!t.checked&&C.online&&C.media==='MODBUS01')lost('serie');renderAll(false)}
+  else if(t.id==='noeFunc'){S.draft.func=t.value;if(!t.value)S.draft.linked=false;refreshDirty(true)}
+  else if(t.id==='noeLink'){S.draft.linked=t.value==='1';refreshDirty(true)}
+});
+function refreshDirty(doc){renderTabs();renderToolbar();if(doc)renderDoc();else{const d=dirty();document.querySelectorAll('#doc [data-act="validate"]').forEach(b=>b.disabled=!d);const bb=$('#doc .busbar');if(bb){let s=bb.querySelector('.dirty');if(d&&!s){s=document.createElement('span');s.className='dirty';s.textContent='Modificado, sin validar';bb.appendChild(s)}else if(!d&&s)s.remove()}}}
+
+/* ================= EJERCICIO EXTRA: TIPOS DE DATOS ================= */
+const TD={tab:'decl',rows:{},res:null,quiz:{},attempts:0,doneMsg:false};
+const TD_TYPES=['','BOOL','EBOOL','INT','UINT','DINT','UDINT','REAL','WORD','DWORD','TIME','STRING'];
+const nAddr=s=>String(s||'').toUpperCase().replace(/\s+/g,'');
+const tdUnq=s=>String(s||'').trim().replace(/^'(.*)'$/,'$1');
+const TDV=[
+ {n:'PB_Arranque',c:'Pulsador de arranque del compresor, cableado a la vía 0 del BMX DDM 3202K (slot 2).',
+  chk:r=>{if(r.type!=='EBOOL')return r.type==='BOOL'?'Una entrada física del M340 se declara EBOOL, no BOOL: el EBOOL guarda además el flanco y el estado de forzado.':'Es una señal de un solo bit cableada a una entrada: el tipo es EBOOL.';
+    if(r.addr!=='%I0.2.0')return 'Dirección de entrada binaria: %I rack.slot.vía → %I0.2.0.'}},
+ {n:'K1_Motor',c:'Contactor del motor principal, cableado a la salida 16 del BMX DDM 3202K (slot 2).',
+  chk:r=>{if(r.type!=='EBOOL')return r.type==='BOOL'?'Una salida física se declara EBOOL (permite forzarla desde la tabla de animación).':'Es una salida de un solo bit: el tipo es EBOOL.';
+    if(r.addr==='%Q0.2.0'||r.addr==='%I0.2.16')return 'En el DDM 3202K las vías 0–15 son entradas y las 16–31 salidas: la salida 16 es %Q0.2.16.';
+    if(r.addr!=='%Q0.2.16')return 'Dirección de salida binaria: %Q rack.slot.vía → %Q0.2.16.'}},
+ {n:'Habilita_Seq',c:'Bit interno que habilita la secuencia de arranque. No está cableado.',
+  chk:r=>{if(r.type==='BOOL'&&r.addr==='')return;if(r.type==='EBOOL'&&/^%M\d+$/.test(r.addr))return;
+    if(/^%[IQ]/.test(r.addr))return 'No está cableado: no lleva dirección %I ni %Q.';
+    if(r.type==='BOOL'&&/^%M/.test(r.addr))return 'Un bit localizado en %M debe ser EBOOL. Déjalo como BOOL sin dirección, o EBOOL en %M (por ejemplo %M10).';
+    return 'Es un bit de habilitación: BOOL sin dirección, o EBOOL localizado en %M.'}},
+ {n:'PT101_Raw',c:'Presión de descarga: transmisor 4-20 mA en la vía 0 del BMX AMI 0410 (slot 3). Valor bruto del módulo, 0 a 10000.',
+  chk:r=>{if(r.type!=='INT')return r.type==='REAL'?'El módulo entrega el valor bruto como INT (0–10000 en 4-20 mA). El valor en bar con decimales va en otra variable REAL.':r.type==='UINT'?'Los canales analógicos del M340 son INT con signo (en ±10 V entregan −10000…10000).':'Un canal analógico del M340 entrega un entero de 16 bits con signo: INT.';
+    if(/^%MW/.test(r.addr))return 'Es una entrada analógica física: %IW rack.slot.vía → %IW0.3.0, no una palabra interna %MW.';
+    if(r.addr!=='%IW0.3.0')return 'Dirección de entrada analógica: %IW rack.slot.vía → %IW0.3.0.'}},
+ {n:'PT101_bar',c:'Presión de descarga ya escalada en bar, con decimales (0,0 a 100,0).',
+  chk:r=>{if(r.type!=='REAL')return (r.type==='INT'||r.type==='DINT'||r.type==='UINT')?'Un entero no guarda decimales: 62,5 bar quedaría como 62. Con decimales se usa REAL (32 bits, coma flotante).':'Un valor de ingeniería con decimales se declara REAL.';
+    if(/^%MW/.test(r.addr))return 'Un REAL ocupa 32 bits; no se declara sobre una sola palabra %MW de 16 bits. Déjalo sin dirección.';
+    if(r.addr)return 'Es un valor calculado en el programa: no lleva dirección.'}},
+ {n:'FV201_Cmd',c:'Consigna a la válvula de control por la vía 0 del BMX AMO 0210 (slot 4), 0 a 10000.',
+  chk:r=>{if(r.type!=='INT')return r.type==='REAL'?'La salida analógica del AMO 0210 recibe un INT (0–10000). Si calculas en REAL, conviértelo con REAL_TO_INT antes de escribir la salida.':'Un canal de salida analógica del M340 es INT.';
+    if(/^%IW/.test(r.addr))return 'Es una salida: %QW, no %IW.';
+    if(r.addr!=='%QW0.4.0')return 'Dirección de salida analógica: %QW rack.slot.vía → %QW0.4.0.'}},
+ {n:'Arranques_Tot',c:'Número acumulado de arranques del compresor desde su puesta en marcha. Ya supera los 100 000.',
+  chk:r=>{if(!['DINT','UDINT'].includes(r.type))return r.type==='INT'?'INT llega a 32 767: al sumar 1 da la vuelta a −32 768. Para más de 100 000 se necesita DINT o UDINT (32 bits).':r.type==='UINT'?'UINT llega a 65 535: no alcanza para más de 100 000. Usa DINT o UDINT.':r.type==='REAL'?'Un conteo es entero. Un REAL pierde exactitud por sobre 16 777 216 y no sirve para contar uno a uno. Usa DINT o UDINT.':'Es un contador entero grande: DINT o UDINT.';
+    if(r.addr)return 'Es una variable interna: no lleva dirección.'}},
+ {n:'Vueltas_Turno',c:'Vueltas del eje contadas en el turno: de 0 a 60 000, nunca negativo. Debe ocupar 16 bits.',
+  chk:r=>{if(r.type!=='UINT')return r.type==='INT'?'INT llega a 32 767: con 60 000 se desborda. Sin signo y de 16 bits es UINT (0 a 65 535).':(r.type==='DINT'||r.type==='UDINT')?'Funcionaría, pero ocupa 32 bits y se pidió 16. Sin signo y de 16 bits es UINT.':r.type==='WORD'?'WORD es un patrón de bits, no un número para sumar o comparar. Para un conteo de 16 bits sin signo usa UINT.':'Entero sin signo de 16 bits: UINT.';
+    if(r.addr&&!/^%MW\d+$/.test(r.addr))return 'Es una variable interna: sin dirección (o en una palabra %MW si la lees desde el HMI).'}},
+ {n:'Alarmas_HMI',c:'16 alarmas empaquetadas en una palabra para el HMI, en %MW100 (cada bit es una alarma).',
+  chk:r=>{if(r.type!=='WORD')return r.type==='INT'?'En memoria cabría, pero 16 alarmas son un patrón de bits, no un número: se declara WORD (se leen como %MW100.0 … %MW100.15).':(r.type==='BOOL'||r.type==='EBOOL')?'Son 16 bits juntos en una misma palabra: WORD.':'Un conjunto de 16 bits independientes se declara WORD.';
+    if(r.addr!=='%MW100')return 'La dirección pedida es la palabra interna %MW100.'}},
+ {n:'T_Prelub',c:'Tiempo de prelubricación antes de arrancar: 30 segundos. Escribe también el valor inicial.',
+  chk:r=>{if(r.type!=='TIME')return (r.type==='INT'||r.type==='DINT')?'Podrías guardar 30 en un entero, pero los temporizadores TON, TOF y TP piden TIME en el pin PT. Usa TIME.':'Una duración se declara TIME.';
+    if(r.addr)return 'Es un parámetro interno: no lleva dirección.';
+    const t=parseTime(r.init);if(t===null)return 'El valor inicial de un TIME se escribe como literal IEC: t#30s.';
+    if(t!==30000)return `${r.init} equivale a ${t} ms; se pedían 30 s (t#30s = 30000 ms).`}},
+ {n:'Tag_Equipo',c:'Texto K-201 que el HMI muestra como nombre del equipo. Escribe también el valor inicial.',
+  chk:r=>{if(r.type!=='STRING')return 'Un texto se declara STRING (por defecto hasta 16 caracteres).';
+    if(r.addr)return 'Es un texto interno: no lleva dirección.';
+    if(tdUnq(r.init).toUpperCase()!=='K-201')return "El valor inicial debe ser el texto 'K-201'."}}
+];
+const TDQ=[
+ {code:'VAR  Contador : INT := 32767;  END_VAR\n\nContador := Contador + 1;',q:'¿Qué valor queda en Contador?',o:['32768','−32768','0','Error al generar'],a:1,
+  e:'INT tiene 16 bits con signo (−32 768 a 32 767). Al pasar el máximo da la vuelta al mínimo, sin aviso. Por eso un contador grande se declara DINT.'},
+ {code:'(* AMI 0410 en 4-20 mA: 0..10000 = 0..100 bar *)\n(* PT101_Raw (INT) = 6250 *)\n\nPT101_bar := INT_TO_REAL(PT101_Raw) * 100.0 / 10000.0;',q:'¿Cuánto vale PT101_bar (REAL)?',o:['62','62.5','6250.0','0.625'],a:1,
+  e:'6250 / 10000 × 100,0 = 62,5 bar, que corresponde a 14 mA. Al convertir primero a REAL se conservan los decimales.'},
+ {code:'(* PT101_bar es REAL, PT101_Raw es INT *)\n\nPT101_bar := PT101_Raw * 100 / 10000;',q:'¿Qué informa Analizar?',o:['Nada: calcula 62.5','Nada: calcula 62','Error: tipos incompatibles INT y REAL','Solo una advertencia'],a:2,
+  e:'Control Expert aplica tipado estricto IEC 61131-3: no convierte INT a REAL de forma implícita, así que hay que usar INT_TO_REAL. Además, 6250 × 100 = 625 000 desbordaría un INT antes de dividir.'},
+ {code:'Alarmas_HMI := 16#00F0;   (* WORD en %MW100 *)',q:'¿Qué bits de %MW100 quedan en 1?',o:['0 a 3','4 a 7','8 a 11','Solo el bit 15'],a:1,
+  e:'Cada dígito hexadecimal son 4 bits. 16#00F0 = 0000 0000 1111 0000: los bits %MW100.4 a %MW100.7. Es el mismo patrón que usa el MUX del programa de la maleta.'},
+ {code:'T_Prelub := t#1m30s;',q:'¿Cuántos milisegundos guarda T_Prelub?',o:['130','1 300','9 000','90 000'],a:3,
+  e:'1 min 30 s = 90 s = 90 000 ms. TIME guarda internamente milisegundos en 32 bits (hasta t#49d17h2m47s295ms).'}
+];
+const tdRow=n=>TD.rows[n]||(TD.rows[n]={type:'',addr:'',init:''});
+function tdScore(){const a=TD.res?TDV.filter(v=>TD.res[v.n]&&TD.res[v.n].ok).length:0;const q=TDQ.filter((x,i)=>TD.quiz[i]===x.a).length;return {a,q,pts:a*5+q*9}}
+function tdValidate(){
+  TD.attempts++;TD.res={};let bad=0;
+  TDV.forEach(v=>{const r=tdRow(v.n),x={type:r.type,addr:nAddr(r.addr),init:r.init};
+    const m=!x.type?'Falta elegir el tipo.':v.chk(x);TD.res[v.n]={ok:!m,msg:m||''};if(m)bad++});
+  log('info',`Ejercicio de tipos · Validar (intento ${TD.attempts})`);
+  TDV.forEach(v=>{const r=TD.res[v.n];if(!r.ok)log('err',`{Editor de datos} ${v.n}: ${r.msg}`)});
+  log(bad?'warn':'ok',`Declaración: ${TDV.length-bad} de ${TDV.length} variables correctas.`);
+  tdCheckDone();renderTipos();renderTDPanel();
+}
+function tdCheckDone(){const s=tdScore();if(!TD.doneMsg&&s.a===TDV.length&&Object.keys(TD.quiz).length===TDQ.length){TD.doneMsg=true;
+  log('ok',`Ejercicio de tipos de datos completado: ${s.pts}/100.`);
+  setTimeout(()=>msgbox('info','Ejercicio de tipos de datos',`Completado con <b>${s.pts} / 100</b>.<br>Declaración: ${s.a}/${TDV.length} correctas en ${TD.attempts} intento${TD.attempts>1?'s':''} · Conversiones: ${s.q}/${TDQ.length}.`),300)}}
+function renderTDPanel(){const el=document.getElementById('tdpanel');if(!el)return;const s=tdScore(),ans=Object.keys(TD.quiz).length;
+  el.innerHTML=`<h4>Ejercicio extra · Tipos de datos</h4><div class="row" style="margin:0"><b style="font-size:18px;color:var(--accent)">${s.pts}</b><span>/ 100</span><span class="note">Declaración ${TD.res?s.a:0}/${TDV.length} · Conversiones ${ans}/${TDQ.length}</span></div><div class="row"><button class="wbtn2" data-act="opendoc" data-v="tipos">Abrir ejercicio</button></div>`}
+function renderTipos(){
+  if(S.view!=='tipos')return;
+  const e=$('#doc'),s=tdScore();
+  const tabs=`<div class="tdtabs"><button class="${TD.tab==='decl'?'on':''}" data-act="tdtab" data-k="decl">Variables (declaración)</button><button class="${TD.tab==='quiz'?'on':''}" data-act="tdtab" data-k="quiz">Conversiones y desbordes</button></div>`;
+  let body='';
+  if(TD.tab==='decl'){
+    body=`<p>Declara las variables de la estación de compresión <b>K-201</b>, cableada en el mismo bastidor de la maleta: DDM 3202K en el slot 2, AMI 0410 en el 3 y AMO 0210 en el 4. Para cada variable elige el <b>tipo</b>, escribe la <b>dirección</b> si está cableada (déjala vacía si es interna) y el <b>valor inicial</b> cuando se pide. Luego pulsa <b>✓ Validar</b>.</p>
+    <div class="tblw"><table class="grid td"><thead><tr><th></th><th>Nombre</th><th>Tipo</th><th>Dirección</th><th>Valor inicial</th><th>Comentario</th></tr></thead><tbody>
+    ${TDV.map(v=>{const r=tdRow(v.n),st=TD.res&&TD.res[v.n];return `<tr class="${st?(st.ok?'okrow':'badrow'):''}" data-tdrow="${v.n}"><td class="st">${st?(st.ok?'✓':'✗'):''}</td><td>${v.n}</td>
+      <td><select class="inp" data-td="type" data-n="${v.n}" id="td_t_${v.n}" aria-label="Tipo de ${v.n}">${TD_TYPES.map(t=>`<option value="${t}" ${t===r.type?'selected':''}>${t||'—'}</option>`).join('')}</select></td>
+      <td><input class="inp mono" style="width:110px" data-td="addr" data-n="${v.n}" id="td_a_${v.n}" value="${esc(r.addr)}" placeholder="(ninguna)" spellcheck="false" aria-label="Dirección de ${v.n}"></td>
+      <td><input class="inp mono" style="width:90px" data-td="init" data-n="${v.n}" id="td_i_${v.n}" value="${esc(r.init)}" spellcheck="false" aria-label="Valor inicial de ${v.n}"></td>
+      <td class="cmt">${esc(v.c)}</td></tr>`}).join('')}
+    </tbody></table></div>
+    <div class="row" style="margin-top:10px"><button class="wbtn2 def" data-act="tdcheck">✓ Validar</button><button class="wbtn2" data-act="tdreset">Reiniciar ejercicio</button>${TD.res?`<span class="note">Intento ${TD.attempts} · ${s.a}/${TDV.length} correctas</span>`:''}</div>
+    ${TD.res&&s.a<TDV.length?`<fieldset class="gbox"><span class="lg">Errores detectados</span><ul class="tderr">${TDV.filter(v=>!TD.res[v.n].ok).map(v=>`<li><b>${v.n}</b>: ${esc(TD.res[v.n].msg)}</li>`).join('')}</ul></fieldset>`:''}
+    <details class="gbox tdref"><summary>Tabla de referencia: tipos elementales</summary>
+    <div class="tblw" style="margin-top:8px"><table class="grid"><thead><tr><th>Tipo</th><th>Bits</th><th>Rango</th><th>Ejemplo / uso típico</th></tr></thead><tbody>
+      <tr><td>BOOL</td><td>1</td><td>FALSE / TRUE</td><td>Bit interno no localizado</td></tr>
+      <tr><td>EBOOL</td><td>1 + flanco + forzado</td><td>0 / 1</td><td>%I, %Q y %M</td></tr>
+      <tr><td>INT</td><td>16</td><td>−32 768 … 32 767</td><td>Canales analógicos %IW / %QW, %MW</td></tr>
+      <tr><td>UINT</td><td>16</td><td>0 … 65 535</td><td>Conteos sin signo</td></tr>
+      <tr><td>DINT</td><td>32</td><td>−2 147 483 648 … 2 147 483 647</td><td>Contadores grandes</td></tr>
+      <tr><td>UDINT</td><td>32</td><td>0 … 4 294 967 295</td><td>Contadores grandes sin signo</td></tr>
+      <tr><td>REAL</td><td>32 (IEEE 754)</td><td>±1,18e−38 … ±3,40e+38, unos 7 dígitos</td><td>Valores de ingeniería: 62.5</td></tr>
+      <tr><td>WORD</td><td>16</td><td>16#0000 … 16#FFFF</td><td>Patrones de bits: 16#00F0</td></tr>
+      <tr><td>DWORD</td><td>32</td><td>16#0 … 16#FFFFFFFF</td><td>Patrones de 32 bits</td></tr>
+      <tr><td>TIME</td><td>32 (ms)</td><td>t#0ms … t#49d17h2m47s295ms</td><td>t#30s, pin PT de TON</td></tr>
+      <tr><td>STRING</td><td>8 por carácter</td><td>16 caracteres por defecto</td><td>'K-201'</td></tr>
+    </tbody></table></div></details>`;
+  }else{
+    body=`<p>Para cada fragmento de código ST elige el resultado. Las respuestas no se pueden cambiar: piensa antes de hacer clic.</p>`+
+    TDQ.map((x,i)=>{const ch=TD.quiz[i];return `<fieldset class="gbox"><span class="lg">Pregunta ${i+1}</span>
+      <pre class="tdcode">${esc(x.code)}</pre><p style="margin:6px 0"><b>${esc(x.q)}</b></p>
+      <div class="tdopts">${x.o.map((o,k)=>`<button class="tdopt ${ch!==undefined?(k===x.a?'right':k===ch?'wrong':''):''}" data-act="tdans" data-q="${i}" data-o="${k}" ${ch!==undefined?'disabled':''}><span class="rb">${ch===k?'●':'○'}</span> ${esc(o)}</button>`).join('')}</div>
+      ${ch!==undefined?`<p class="tdexp ${ch===x.a?'ok':'bad'}"><b>${ch===x.a?'Correcto.':'Incorrecto.'}</b> ${esc(x.e)}</p>`:''}</fieldset>`}).join('');
+  }
+  e.innerHTML=`<div class="busbar"><b>Editor de datos · Ejercicio: Tipos de datos</b><span class="note">Puntaje del ejercicio: <b>${s.pts}</b> / 100 (declaración 5 pts por variable, conversiones 9 pts por pregunta). No afecta al puntaje de la OT.</span></div>${tabs}<div class="pad" style="padding-top:10px">${body}</div>`;
+}
+Object.assign(A,{
+  tdtab:el=>{TD.tab=el.dataset.k;renderTipos()},
+  tdcheck:tdValidate,
+  tdreset:()=>msgbox('question','Reiniciar ejercicio','Se borran las declaraciones y las respuestas del ejercicio de tipos de datos. ¿Continuar?',[{l:'Sí',def:1,f:()=>{closeDlg();TD.rows={};TD.res=null;TD.quiz={};TD.attempts=0;TD.doneMsg=false;renderTipos();renderTDPanel();log('info','Ejercicio de tipos de datos reiniciado.')}},{l:'No',f:closeDlg}]),
+  tdans:el=>{const i=+el.dataset.q,k=+el.dataset.o;if(TD.quiz[i]!==undefined)return;TD.quiz[i]=k;const x=TDQ[i];
+    log(k===x.a?'ok':'err',`Ejercicio de tipos · Pregunta ${i+1}: ${k===x.a?'correcta (+9)':'incorrecta. '+x.e}`);tdCheckDone();renderTipos();renderTDPanel()}
+});
+function tdEdit(e){const t=e.target;if(!t.dataset||!t.dataset.td)return;const r=tdRow(t.dataset.n);r[t.dataset.td]=t.value;
+  if(TD.res&&TD.res[t.dataset.n]){delete TD.res[t.dataset.n];const tr=t.closest('tr');if(tr){tr.className='';const st=tr.querySelector('.st');if(st)st.textContent=''}}
+  renderTDPanel()}
+document.addEventListener('input',tdEdit);
+document.addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.td==='type')tdEdit(e)});
+renderTDPanel();
+
+init(1);
+</script>
+
+</body>
+</html>
