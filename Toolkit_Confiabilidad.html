@@ -1,0 +1,907 @@
+<title>Toolkit de Confiabilidad IPM</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: índice tabular de herramientas (como el sitio original) → ficha de cálculo → hoja de informe A4 en B/N */
+:root{
+  --paper:#f2f4f5;
+  --panel:#ffffff;
+  --panel-2:#eaeef0;
+  --ink:#15191c;
+  --ink-soft:#5a646b;
+  --line:#d3dade;
+  --accent:#0b5f6d;
+  --accent-soft:#dfecee;
+  --flag:#8a5200;
+  --font-sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#111518;--panel:#1a1f23;--panel-2:#222a2e;--ink:#e7ecee;--ink-soft:#9aa5ac;
+    --line:#2e3840;--accent:#4fb6c7;--accent-soft:#1d3037;--flag:#d79b4a;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111518;--panel:#1a1f23;--panel-2:#222a2e;--ink:#e7ecee;--ink-soft:#9aa5ac;
+  --line:#2e3840;--accent:#4fb6c7;--accent-soft:#1d3037;--flag:#d79b4a;color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-sans);font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:26px 44px}
+header.top{display:flex;flex-direction:column;gap:5px;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:20px}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+h1{font-size:clamp(25px,4.2vw,36px);line-height:1.1;margin:0;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+.lede{color:var(--ink-soft);max-width:66ch;margin:3px 0 0;font-size:14.5px}
+
+/* ---- índice tabular ---- */
+.idx{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line)}
+.idx th{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);font-weight:500;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.idx td{border-bottom:1px solid var(--line);padding:11px 12px;vertical-align:top}
+.idx tr:last-child td{border-bottom:0}
+.idx tr.sect td{background:var(--panel-2);padding:6px 12px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.idx td.num{font-family:var(--font-mono);font-size:13px;color:var(--ink-soft);width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.idx td.thumb{width:146px}
+.idx td.thumb svg{width:132px;height:60px;display:block;border:1px solid var(--line);background:var(--panel-2);border-radius:3px}
+.idx a.tool{color:var(--accent);font-weight:600;text-decoration:none;border-bottom:1px solid transparent;cursor:pointer;font-size:15px}
+.idx a.tool:hover{border-bottom-color:var(--accent)}
+.idx td.desc{color:var(--ink-soft);font-size:13.5px;line-height:1.5}
+.idx tr.row:hover td{background:var(--accent-soft)}
+@media (max-width:700px){
+  .idx,.idx tbody,.idx tr,.idx td{display:block;width:100%}
+  .idx thead{display:none}
+  .idx tr.row{border-bottom:1px solid var(--line);padding:10px 0}
+  .idx td{border:0;padding:3px 12px}
+  .idx td.num{display:inline-block;width:auto;text-align:left}
+  .idx td.thumb{width:auto}
+  .idx td.thumb svg{width:100%;max-width:220px;height:auto}
+}
+
+/* ---- barra de ficha ---- */
+.crumb{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.btn{font:inherit;font-size:13.5px;cursor:pointer;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 13px}
+.btn:hover{background:var(--panel-2)}
+.btn.key{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:500}
+:root[data-theme="dark"] .btn.key,:root:not([data-theme="light"]) .btn.key{color:#09191d}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .btn.key{color:#fff}}
+.crumb .path{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+section.mod{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:22px}
+@media (max-width:480px){section.mod{padding:15px}}
+section.mod>h2{margin:0;font-size:21px;letter-spacing:-.01em;font-weight:600}
+section.mod>p.note{margin:4px 0 20px;color:var(--ink-soft);font-size:14px;max-width:64ch}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px 16px}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f.wide{grid-column:1/-1}
+label{font-family:var(--font-mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:8px 10px;width:100%;min-width:0}
+input[type=number],textarea{font-family:var(--font-mono);font-size:14px}
+textarea{resize:vertical;min-height:80px;line-height:1.5}
+.hint{font-size:12px;color:var(--ink-soft)}
+.out{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+.grid-out{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.cell{background:var(--panel);padding:10px 13px;min-width:0}
+.cell .k{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);display:block}
+.cell .v{font-family:var(--font-mono);font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;display:block;margin-top:2px;overflow-wrap:anywhere}
+.cell .u{font-size:12px;color:var(--ink-soft);font-weight:400}
+.cell.hi{background:var(--accent-soft)}
+.cell.hi .v{color:var(--accent)}
+.verdict{margin-top:13px;display:flex;gap:9px;align-items:flex-start;font-size:14px;background:var(--panel-2);border-left:3px solid var(--accent);padding:10px 13px;border-radius:0 5px 5px 0}
+.verdict.flag{border-left-color:var(--flag)}
+.verdict .tag{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap;padding-top:3px}
+figure{margin:18px 0 0}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:12px;color:var(--ink-soft);margin-top:6px;font-family:var(--font-mono)}
+.tbl-scroll{overflow-x:auto;margin-top:16px}
+table.data{border-collapse:collapse;font-family:var(--font-mono);font-size:13px;font-variant-numeric:tabular-nums;width:100%;min-width:360px}
+table.data th,table.data td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.data th{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);font-weight:500}
+table.data td:first-child,table.data th:first-child{text-align:left}
+table.data tr.mark td{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.assump{margin-top:18px;font-size:13px;color:var(--ink-soft);border-top:1px dashed var(--line);padding-top:12px}
+.assump b{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;color:var(--ink-soft);display:block}
+footer.end{margin-top:28px;border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--ink-soft);max-width:72ch}
+code{font-family:var(--font-mono);font-size:.92em;background:var(--panel-2);padding:1px 5px;border-radius:4px}
+.err{color:var(--flag)}
+
+/* ---- hoja de informe: siempre blanco y negro ---- */
+.rbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:16px}
+.rbar .f{max-width:230px}
+.sheet{
+  background:#fff;color:#000;border:1px solid #bbb;
+  width:100%;max-width:210mm;margin:0 auto;padding:14mm 15mm;
+  font-size:10.5pt;line-height:1.42;
+}
+.sheet *{color:#000;border-color:#999}
+.sheet .sh-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1.5pt solid #000;padding-bottom:5pt}
+.sheet .sh-head .org{font-family:var(--font-mono);font-size:7.5pt;letter-spacing:.12em;text-transform:uppercase;color:#444}
+.sheet .sh-head .doc{font-family:var(--font-mono);font-size:7.5pt;text-align:right;color:#444;white-space:nowrap}
+.sheet h2{font-size:15pt;margin:8pt 0 1pt;font-weight:700;letter-spacing:-.01em}
+.sheet .sub{font-size:9pt;color:#333;margin:0 0 9pt}
+.sheet h3{font-family:var(--font-mono);font-size:7.5pt;letter-spacing:.13em;text-transform:uppercase;color:#444;margin:10pt 0 4pt;border-bottom:.5pt solid #999;padding-bottom:2pt;font-weight:500}
+.sheet table.kv{width:100%;border-collapse:collapse;font-size:9pt}
+.sheet table.kv td{padding:2.5pt 6pt 2.5pt 0;border-bottom:.5pt dotted #bbb;vertical-align:top}
+.sheet table.kv td.k{width:46%;color:#333}
+.sheet table.kv td.v{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.sheet .two{display:grid;grid-template-columns:1fr 1fr;gap:0 18pt}
+.sheet .res{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#999;border:1px solid #999}
+.sheet .res .cell{background:#fff;padding:4pt 5pt}
+.sheet .res .cell.hi{background:#ececec}
+.sheet .res .k{font-family:var(--font-mono);font-size:6.8pt;letter-spacing:.07em;text-transform:uppercase;color:#444;display:block}
+.sheet .res .v{font-family:var(--font-mono);font-size:11pt;font-weight:600;display:block;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.sheet .res .u{font-size:7.5pt;font-weight:400;color:#444}
+.sheet figure{margin:7pt auto 0;max-width:122mm}
+.sheet figcaption{font-size:7.5pt;color:#444;text-align:center;font-family:var(--font-mono);margin-top:3pt}
+.sheet svg rect{stroke:#000;fill:none}
+.sheet svg line{stroke:#999}
+.sheet svg path{stroke:#000}
+.sheet svg circle{fill:#000}
+.sheet svg text{fill:#333}
+.sheet p.lect{font-size:9.5pt;margin:3pt 0 0;text-align:justify}
+.sheet .foot{margin-top:11pt;border-top:.5pt solid #999;padding-top:5pt;display:grid;grid-template-columns:1fr 46mm;gap:14pt;font-size:7.8pt;color:#333}
+.sheet .sign{border-top:.5pt solid #000;padding-top:3pt;margin-top:16pt;text-align:center;font-size:8pt}
+@page{size:A4 portrait;margin:12mm}
+@media print{
+  body{background:#fff}
+  .noprint,header.top,footer.end,.rbar{display:none!important}
+  .wrap{padding:0;max-width:none}
+  .sheet{border:0;padding:0;max-width:none;width:100%;font-size:10pt}
+  .sheet figure{max-width:118mm}
+}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">Ingeniería y Planificación del Mantenimiento · ENAP Magallanes</span>
+  <h1>Toolkit de Confiabilidad IPM</h1>
+  <p class="lede">Índice de calculadoras de confiabilidad, mantenibilidad y disponibilidad. Cada herramienta trae datos de ejemplo de una estación compresora, recalcula al escribir y genera un informe ejecutivo de una página en blanco y negro.</p>
+</header>
+
+<!-- ÍNDICE -->
+<div id="v-index">
+  <table class="idx"><thead><tr><th></th><th>Concepto</th><th>Herramienta</th><th>Qué calcula</th></tr></thead>
+  <tbody id="idx-body"></tbody></table>
+</div>
+
+<!-- FICHAS -->
+<div id="v-calc" hidden>
+  <div class="crumb noprint">
+    <button class="btn" type="button" id="back-idx">← Índice</button>
+    <button class="btn key" type="button" id="go-report">Informe ejecutivo</button>
+    <span class="path" id="crumb-path"></span>
+  </div>
+  <main id="main">
+
+  <section class="mod" id="m-dist" hidden>
+    <h2>Confiabilidad por distribución</h2>
+    <p class="note">R(t), f(t) y h(t) para las tres distribuciones de vida más usadas, a partir de sus parámetros.</p>
+    <div class="fields">
+      <div class="f"><label for="d-tipo">Distribución</label>
+        <select id="d-tipo"><option value="exp">Exponencial</option><option value="wbl" selected>Weibull</option><option value="nor">Normal</option></select></div>
+      <div class="f" id="d-p1w"><label for="d-p1" id="d-p1l">Vida característica η (h)</label><input type="number" id="d-p1" value="21500" step="any"></div>
+      <div class="f" id="d-p2w"><label for="d-p2" id="d-p2l">Parámetro de forma β</label><input type="number" id="d-p2" value="2.3" step="any"></div>
+      <div class="f"><label for="d-t">Tiempo de misión t (h)</label><input type="number" id="d-t" value="8760" step="any"></div>
+    </div>
+    <div class="out" id="d-out"></div>
+    <div class="assump"><b>Supuestos</b>γ = 0 (sin vida mínima). En la exponencial h(t) es constante, por lo que β = 1 equivale a MTTF = η.</div>
+  </section>
+
+  <section class="mod" id="m-weibull" hidden>
+    <h2>Análisis de Weibull</h2>
+    <p class="note">Estima β y η desde tiempos a falla. Acepta suspensiones (censura por la derecha) con ajuste de rangos de Johnson y rangos medianos de Benard.</p>
+    <div class="fields">
+      <div class="f wide"><label for="w-data">Tiempos (h) — una suspensión se marca con S</label>
+        <textarea id="w-data">4120
+6890
+7310 S
+9450
+11200
+12800 S
+14100
+15630
+18900
+21400</textarea>
+        <span class="hint">Separa por línea, coma o espacio. Ej.: <code>7310 S</code> = unidad retirada sin fallar a las 7.310 h.</span></div>
+      <div class="f"><label for="w-t">Evaluar R(t) en t (h)</label><input type="number" id="w-t" value="8760" step="any"></div>
+    </div>
+    <div class="out" id="w-out"></div>
+    <div class="assump"><b>Supuestos</b>Regresión de rangos medianos sobre X = ln t (RRX) y, en paralelo, máxima verosimilitud. Con menos de 7 fallas el intervalo real de β es amplio: trata el valor como indicativo.</div>
+  </section>
+
+  <section class="mod" id="m-cond" hidden>
+    <h2>Weibull condicional</h2>
+    <p class="note">Dado que el equipo ya sobrevivió hasta una edad, cuál es su probabilidad de llegar a la siguiente. Es la pregunta que responde una extensión de intervalo.</p>
+    <div class="fields">
+      <div class="f"><label for="c-beta">Forma β</label><input type="number" id="c-beta" value="2.3" step="any"></div>
+      <div class="f"><label for="c-eta">Vida característica η (h)</label><input type="number" id="c-eta" value="21500" step="any"></div>
+      <div class="f"><label for="c-t0">Edad actual t₀ (h)</label><input type="number" id="c-t0" value="12000" step="any"></div>
+      <div class="f"><label for="c-dt">Periodo adicional Δt (h)</label><input type="number" id="c-dt" value="4380" step="any"></div>
+    </div>
+    <div class="out" id="c-out"></div>
+    <div class="assump"><b>Supuestos</b>Sin mantenimiento que restituya la condición durante Δt. Con β &gt; 1 la confiabilidad condicional cae a medida que el equipo envejece: ahí es donde una extensión de intervalo deja de ser gratis.</div>
+  </section>
+
+  <section class="mod" id="m-mtbf" hidden>
+    <h2>MTBF de campo con límite de confianza</h2>
+    <p class="note">MTBF puntual y sus límites a partir de horas-unidad acumuladas y número de fallas, con la distribución χ².</p>
+    <div class="fields">
+      <div class="f"><label for="k-T">Horas-unidad acumuladas</label><input type="number" id="k-T" value="52560" step="any"></div>
+      <div class="f"><label for="k-r">Número de fallas</label><input type="number" id="k-r" value="7" step="1" min="0"></div>
+      <div class="f"><label for="k-c">Confianza</label><select id="k-c"><option>0.60</option><option selected>0.80</option><option>0.90</option><option>0.95</option></select></div>
+      <div class="f"><label for="k-tipo">Fin del ensayo</label><select id="k-tipo"><option value="T" selected>Por tiempo</option><option value="F">Por falla</option></select></div>
+    </div>
+    <div class="out" id="k-out"></div>
+    <div class="assump"><b>Supuestos</b>Tasa de falla constante (exponencial). Si el equipo muestra desgaste (β &gt; 1 en el módulo Weibull), este MTBF describe el promedio del periodo observado, no el riesgo instantáneo de hoy.</div>
+  </section>
+
+  <section class="mod" id="m-crow" hidden>
+    <h2>Crow-AMSAA y tendencia</h2>
+    <p class="note">Ajusta el proceso de Poisson no homogéneo (ley de potencia) a los tiempos acumulados de falla, con el estadístico de Laplace como prueba de tendencia.</p>
+    <div class="fields">
+      <div class="f wide"><label for="a-data">Tiempos acumulados de falla (h)</label>
+        <textarea id="a-data">620 1480 2310 3050 3990 4420 5180 5610 6240 6610 7050 7380</textarea>
+        <span class="hint">En orden ascendente, medidos desde un origen común (t = 0). El origen lo defines tú: si t = 0 es la 1ª falla, resta su tiempo a todas y quita esa fila; T y “Proyectar a” van desde el mismo origen y en el mismo reloj.</span></div>
+      <div class="f"><label for="a-T">Tiempo total T (h)</label><input type="number" id="a-T" value="8760" step="any"></div>
+      <div class="f"><label for="a-tipo">Cierre de la observación</label><select id="a-tipo"><option value="T" selected>T fijo (fecha de cierre)</option><option value="F">Cierra en la última falla</option></select><span class="hint">T fijo: usa el T que escribes (debe ser ≥ última falla), β = n / Σ ln(T/tᵢ). Cierra en la última falla: ignora T y usa la última falla, β = (n−1) / Σ ln(T/tᵢ).</span></div>
+      <div class="f"><label for="a-proy">Proyectar a (h)</label><input type="number" id="a-proy" value="17520" step="any"></div>
+    </div>
+    <div class="out" id="a-out"></div>
+    <div class="assump"><b>Supuestos</b>Sistema reparable, reparación mínima (“tan malo como antes”). β &gt; 1 indica deterioro: las fallas se acercan. β &lt; 1 indica mejora. β ≈ 1 es tasa constante y recién ahí el MTBF tradicional tiene sentido.</div>
+  </section>
+
+  <section class="mod" id="m-disp" hidden>
+    <h2>Disponibilidad</h2>
+    <p class="note">Disponibilidad inherente y operacional, y el MDT máximo admisible para alcanzar una meta.</p>
+    <div class="fields">
+      <div class="f"><label for="v-mtbf">MTBF (h)</label><input type="number" id="v-mtbf" value="2190" step="any"></div>
+      <div class="f"><label for="v-mttr">MTTR correctivo (h)</label><input type="number" id="v-mttr" value="14" step="any"></div>
+      <div class="f"><label for="v-log">Demora logística y administrativa (h)</label><input type="number" id="v-log" value="26" step="any"></div>
+      <div class="f"><label for="v-meta">Disponibilidad meta</label><select id="v-meta"><option>0.95</option><option selected>0.97</option><option>0.98</option><option>0.99</option></select></div>
+    </div>
+    <div class="out" id="v-out"></div>
+    <div class="assump"><b>Supuestos</b>Régimen estacionario, sin mantenimiento preventivo contabilizado como indisponibilidad. Aᵢ usa solo el tiempo de reparación activa; A₀ suma la espera de repuestos, permisos y cuadrilla, que suele ser la parte grande.</div>
+  </section>
+
+  <section class="mod" id="m-red" hidden>
+    <h2>Redundancia activa m de n</h2>
+    <p class="note">Tasa de falla efectiva de un arreglo de n unidades en línea donde se requieren m para operar, con y sin reparación.</p>
+    <div class="fields">
+      <div class="f"><label for="r-n">Unidades instaladas n</label><input type="number" id="r-n" value="3" step="1" min="1"></div>
+      <div class="f"><label for="r-m">Requeridas m</label><input type="number" id="r-m" value="2" step="1" min="1"></div>
+      <div class="f"><label for="r-mtbf">MTBF por unidad (h)</label><input type="number" id="r-mtbf" value="2190" step="any"></div>
+      <div class="f"><label for="r-mttr">MTTR por unidad (h)</label><input type="number" id="r-mttr" value="40" step="any"></div>
+      <div class="f"><label for="r-t">Misión t (h)</label><input type="number" id="r-t" value="720" step="any"></div>
+    </div>
+    <div class="out" id="r-out"></div>
+    <div class="assump"><b>Supuestos</b>Unidades idénticas e independientes, fallas y reparaciones exponenciales, cuadrilla capaz de atender cada unidad caída sin cola, conmutación perfecta. El caso con reparación exige μ ≫ λ; con MTTR largos el resultado es optimista.</div>
+  </section>
+
+  <section class="mod" id="m-repuestos" hidden>
+    <h2>Repuestos por Poisson</h2>
+    <p class="note">Cantidad de repuestos para cubrir la demanda de un periodo con la confianza pedida.</p>
+    <div class="fields">
+      <div class="f"><label for="s-n">Unidades en servicio</label><input type="number" id="s-n" value="6" step="1" min="1"></div>
+      <div class="f"><label for="s-mtbf">MTBF del ítem (h)</label><input type="number" id="s-mtbf" value="17520" step="any"></div>
+      <div class="f"><label for="s-T">Periodo de cobertura (h)</label><input type="number" id="s-T" value="8760" step="any"></div>
+      <div class="f"><label for="s-c">Confianza</label><select id="s-c"><option>0.90</option><option selected>0.95</option><option>0.99</option></select></div>
+    </div>
+    <div class="out" id="s-out"></div>
+    <div class="assump"><b>Supuestos</b>Demanda de Poisson con tasa constante, ítem no reparable dentro del periodo y reposición solo al final. El periodo de cobertura debe ser el lead time real del repuesto, no el año calendario.</div>
+  </section>
+
+  <section class="mod" id="m-mant" hidden>
+    <h2>Mantenibilidad lognormal</h2>
+    <p class="note">MTTR, mediana y tiempo máximo de reparación a partir de tiempos de intervención registrados.</p>
+    <div class="fields">
+      <div class="f wide"><label for="t-data">Tiempos de reparación (h)</label>
+        <textarea id="t-data">2.5 4 1.5 8 3 12 6 2 18 5 3.5 9 24 7 4.5</textarea></div>
+      <div class="f"><label for="t-p">Percentil para Mmax</label><select id="t-p"><option>0.90</option><option selected>0.95</option><option>0.99</option></select></div>
+    </div>
+    <div class="out" id="t-out"></div>
+    <div class="assump"><b>Supuestos</b>Tiempos de reparación activa con distribución lognormal, que es la forma habitual en mantenimiento correctivo: muchas intervenciones cortas y una cola larga. Si tus registros incluyen espera de repuestos, lo que obtienes es tiempo de indisponibilidad, no MTTR.</div>
+  </section>
+  </main>
+</div>
+
+<!-- INFORME -->
+<div id="v-report" hidden>
+  <div class="rbar noprint">
+    <button class="btn" type="button" id="back-calc">← Volver al cálculo</button>
+    <div class="f"><label for="rp-eq">Equipo o instalación</label><input type="text" id="rp-eq" value="Compresor AJAX DPC-2804 N°1 — ECA Arenal"></div>
+    <div class="f"><label for="rp-an">Elaborado por</label><input type="text" id="rp-an" value="Hugo Villegas Barría"></div>
+    <div class="f"><label for="rp-cod">Código</label><input type="text" id="rp-cod" value="IPM-CONF-001"></div>
+  </div>
+  <p class="hint noprint" id="print-hint"></p>
+  <article class="sheet" id="sheet"></article>
+</div>
+
+<footer class="end noprint">
+  Implementación propia de métodos estándar: MIL-HDBK-189 para crecimiento de confiabilidad, MIL-HDBK-338 para redundancia, χ² para límites de MTBF, Johnson y Benard para rangos con censura. Los resultados son estimaciones estadísticas y dependen por completo de la calidad del dato de entrada: valida los tiempos de falla antes de llevar cualquier cifra a un informe firmado.
+</footer>
+</div>
+
+<script>
+/* ---------- utilidades numéricas ---------- */
+const LG=[676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+function gammaln(x){
+  if(x<0.5) return Math.log(Math.PI/Math.sin(Math.PI*x))-gammaln(1-x);
+  x-=1; let a=0.99999999999980993, t=x+7.5;
+  for(let i=0;i<8;i++) a+=LG[i]/(x+i+1);
+  return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);
+}
+function gammaP(a,x){
+  if(x<=0) return 0;
+  if(x<a+1){
+    let ap=a,sum=1/a,del=sum;
+    for(let n=0;n<500;n++){ap++;del*=x/ap;sum+=del;if(Math.abs(del)<Math.abs(sum)*1e-14)break;}
+    return sum*Math.exp(-x+a*Math.log(x)-gammaln(a));
+  }
+  let b=x+1-a,c=1e300,d=1/b,h=d;
+  for(let i=1;i<500;i++){
+    const an=-i*(i-a); b+=2; d=an*d+b; if(Math.abs(d)<1e-300)d=1e-300;
+    c=b+an/c; if(Math.abs(c)<1e-300)c=1e-300; d=1/d; const del=d*c; h*=del;
+    if(Math.abs(del-1)<1e-14)break;
+  }
+  return 1-Math.exp(-x+a*Math.log(x)-gammaln(a))*h;
+}
+function chi2inv(p,v){
+  if(p<=0) return 0; if(p>=1) return Infinity; if(v<=0) return 0;
+  let lo=0, hi=Math.max(10,v*4);
+  while(gammaP(v/2,hi/2)<p && hi<1e9) hi*=2;
+  for(let i=0;i<300;i++){ const mid=(lo+hi)/2; (gammaP(v/2,mid/2)<p?lo=mid:hi=mid); }
+  return (lo+hi)/2;
+}
+function erf(x){
+  const s=x<0?-1:1; x=Math.abs(x);
+  const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);
+  return s*y;
+}
+const normCdf=z=>0.5*(1+erf(z/Math.SQRT2));
+function normInv(p){
+  if(p<=0)return -Infinity; if(p>=1)return Infinity;
+  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.3577518672690,-30.66479806614716,2.506628277459239];
+  const b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572];
+  const c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783];
+  const d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416];
+  const pl=0.02425; let q,r;
+  if(p<pl){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if(p>1-pl){q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  q=p-0.5;r=q*q;
+  return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+const gammaFn=x=>Math.exp(gammaln(x));
+function nCr(n,k){ return Math.round(Math.exp(gammaln(n+1)-gammaln(k+1)-gammaln(n-k+1))); }
+
+/* ---------- formato ---------- */
+function fmt(x,d){
+  d=d||4;
+  if(x===null||x===undefined||typeof x!=='number'||!isFinite(x)) return '—';
+  if(x===0) return '0';
+  const a=Math.abs(x);
+  if(a>=1e7||a<1e-4) return x.toExponential(3).replace('.',',');
+  return x.toLocaleString('es-CL',{maximumSignificantDigits:d});
+}
+const pct=(x,d)=>isFinite(x)?(x*100).toLocaleString('es-CL',{minimumFractionDigits:d===undefined?2:d,maximumFractionDigits:d===undefined?2:d})+' %':'—';
+function cells(list){
+  return '<div class="grid-out">'+list.map(c=>
+    '<div class="cell'+(c[2]?' hi':'')+'"><span class="k">'+c[0]+'</span><span class="v">'+c[1]+(c[3]?' <span class="u">'+c[3]+'</span>':'')+'</span></div>').join('')+'</div>';
+}
+function verdict(txt,tag,flag){
+  return '<div class="verdict'+(flag?' flag':'')+'"><span class="tag">'+(tag||'Lectura')+'</span><span>'+txt+'</span></div>';
+}
+function parseNums(s){ return s.split(/[\s,;]+/).filter(Boolean).map(Number).filter(v=>isFinite(v)&&v>0).sort((a,b)=>a-b); }
+
+/* ---------- gráfico SVG ---------- */
+function niceTicks(min,max,n){
+  n=n||5;
+  if(!isFinite(min)||!isFinite(max)||min===max) return [min];
+  const span=max-min, step0=span/n, mag=Math.pow(10,Math.floor(Math.log10(step0)));
+  const norm=step0/mag; let step;
+  if(norm<1.5)step=1;else if(norm<3)step=2;else if(norm<7)step=5;else step=10;
+  step*=mag;
+  const out=[]; let v=Math.ceil(min/step)*step;
+  while(v<=max+step*1e-9){out.push(Math.round(v/step)*step);v+=step;}
+  return out;
+}
+function svgPlot(o){
+  const W=640,H=330,L=62,R=18,T=14,B=46;
+  const xd=o.xdom, yd=o.ydom;
+  const px=v=>L+(v-xd[0])/(xd[1]-xd[0])*(W-L-R);
+  const py=v=>H-B-(v-yd[0])/(yd[1]-yd[0])*(H-T-B);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(o.alt||'gráfico')+'">';
+  s+='<rect x="'+L+'" y="'+T+'" width="'+(W-L-R)+'" height="'+(H-T-B)+'" fill="none" stroke="var(--line)"/>';
+  (o.yticks||[]).forEach(t=>{
+    const y=py(t[0]); if(!isFinite(y))return;
+    s+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="var(--line)" stroke-dasharray="2 4"/>';
+    s+='<text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-family="var(--font-mono)" font-size="11" fill="var(--ink-soft)">'+t[1]+'</text>';
+  });
+  (o.xticks||[]).forEach(t=>{
+    const x=px(t[0]); if(!isFinite(x))return;
+    s+='<line x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+(H-B)+'" stroke="var(--line)" stroke-dasharray="2 4"/>';
+    s+='<text x="'+x+'" y="'+(H-B+18)+'" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink-soft)">'+t[1]+'</text>';
+  });
+  (o.series||[]).forEach(se=>{
+    const col=se.color||'var(--accent)';
+    if(se.type==='points'){
+      se.pts.forEach(p=>{const x=px(p[0]),y=py(p[1]);if(isFinite(x)&&isFinite(y))s+='<circle cx="'+x+'" cy="'+y+'" r="3.4" fill="'+col+'"/>';});
+    }else{
+      const d=se.pts.filter(p=>isFinite(p[0])&&isFinite(p[1])).map((p,i)=>(i?'L':'M')+px(p[0]).toFixed(1)+' '+py(p[1]).toFixed(1)).join(' ');
+      s+='<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"'+(se.dash?' stroke-dasharray="5 4"':'')+'/>';
+    }
+  });
+  (o.marks||[]).forEach(m=>{
+    const x=px(m.x); if(!isFinite(x))return;
+    s+='<line x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+(H-B)+'" stroke="var(--flag)" stroke-width="1.5" stroke-dasharray="4 3"/>';
+    s+='<text x="'+(x+5)+'" y="'+(T+14)+'" font-family="var(--font-mono)" font-size="11" fill="var(--flag)">'+m.label+'</text>';
+  });
+  s+='<text x="'+((L+W-R)/2)+'" y="'+(H-6)+'" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink-soft)">'+(o.xlab||'')+'</text>';
+  s+='<text x="14" y="'+((T+H-B)/2)+'" text-anchor="middle" transform="rotate(-90 14 '+((T+H-B)/2)+')" font-family="var(--font-mono)" font-size="11" fill="var(--ink-soft)">'+(o.ylab||'')+'</text>';
+  return s+'</svg>';
+}
+const figure=(svg,cap)=>'<figure>'+svg+'<figcaption>'+cap+'</figcaption></figure>';
+
+/* ---------- 1. distribuciones ---------- */
+function calcDist(){
+  const tipo=$('d-tipo').value, p1=+$('d-p1').value, p2=+$('d-p2').value, t=+$('d-t').value;
+  let R,f,h,mttf,b10,nombre;
+  if(tipo==='exp'){
+    const mtbf=p1, lam=1/mtbf;
+    R=x=>Math.exp(-lam*x); f=x=>lam*Math.exp(-lam*x); h=()=>lam;
+    mttf=mtbf; b10=-mtbf*Math.log(0.9); nombre='Exponencial';
+  }else if(tipo==='wbl'){
+    const eta=p1,be=p2;
+    R=x=>Math.exp(-Math.pow(x/eta,be));
+    f=x=>(be/eta)*Math.pow(x/eta,be-1)*Math.exp(-Math.pow(x/eta,be));
+    h=x=>(be/eta)*Math.pow(x/eta,be-1);
+    mttf=eta*gammaFn(1+1/be); b10=eta*Math.pow(-Math.log(0.9),1/be); nombre='Weibull';
+  }else{
+    const mu=p1,sg=p2;
+    R=x=>1-normCdf((x-mu)/sg);
+    f=x=>Math.exp(-0.5*Math.pow((x-mu)/sg,2))/(sg*Math.sqrt(2*Math.PI));
+    h=x=>f(x)/Math.max(R(x),1e-12);
+    mttf=mu; b10=mu+normInv(0.1)*sg; nombre='Normal';
+  }
+  const tmax=Math.max(t*1.6,mttf*2.2);
+  const pts=[];
+  for(let i=0;i<=120;i++){const x=tmax*i/120;pts.push([x,R(x)]);}
+  const Rt=R(t);
+  let out=cells([
+    ['R(t)',pct(Rt),true],['F(t) — prob. de falla',pct(1-Rt)],
+    ['f(t) — densidad',fmt(f(t)),'','1/h'],['h(t) — tasa instantánea',fmt(h(t)),'','1/h'],
+    ['MTTF',fmt(mttf),'','h'],['Vida B10',fmt(b10),'','h']
+  ]);
+  out+=figure(svgPlot({
+    xdom:[0,tmax],ydom:[0,1],
+    xticks:niceTicks(0,tmax,6).map(v=>[v,fmt(v,3)]),
+    yticks:[0,.2,.4,.6,.8,1].map(v=>[v,(v*100)+'%']),
+    series:[{type:'line',pts:pts}],
+    marks:[{x:t,label:'t = '+fmt(t,5)+' h'}],
+    xlab:'Tiempo (h)',ylab:'R(t)',alt:'Curva de confiabilidad '+nombre
+  }),'Función de confiabilidad — '+nombre);
+  let lect;
+  if(tipo==='wbl'){
+    lect = p2<1 ? 'β &lt; 1: mortalidad infantil. El riesgo baja con la edad, así que un reemplazo programado introduce fallas en vez de evitarlas.'
+      : p2<1.15 ? 'β ≈ 1: tasa de falla prácticamente constante. El reemplazo por tiempo no aporta nada; corresponde monitoreo por condición.'
+      : 'β = '+fmt(p2,3)+' &gt; 1: hay desgaste. Un intervalo basado en tiempo sí tiene justificación estadística, y la vida B10 de '+fmt(b10,4)+' h es un punto de partida razonable para fijarlo.';
+  }else if(tipo==='exp'){
+    lect='Tasa de falla constante por definición: la probabilidad de fallar en la próxima hora no depende de la edad acumulada. No hay intervalo de reemplazo óptimo.';
+  }else{
+    lect='La normal implica desgaste bien definido y poca dispersión relativa. Verifica que σ/μ sea menor a 0,3; de lo contrario esta distribución asignaría probabilidad a tiempos negativos.';
+  }
+  $('d-out').innerHTML=out+verdict(lect);
+}
+function syncDistLabels(){
+  const tipo=$('d-tipo').value, l1=$('d-p1l'), l2=$('d-p2l'), p2w=$('d-p2w');
+  if(tipo==='exp'){l1.textContent='MTBF (h)';p2w.hidden=true;}
+  else if(tipo==='wbl'){l1.textContent='Vida característica η (h)';l2.textContent='Parámetro de forma β';p2w.hidden=false;}
+  else{l1.textContent='Vida media μ (h)';l2.textContent='Desviación estándar σ (h)';p2w.hidden=false;}
+}
+
+/* ---------- 2. Weibull ---------- */
+function weibullFit(raw){
+  const items=raw.split(/[\n,;]+|\s(?=\d)/).map(s=>s.trim()).filter(Boolean).map(s=>{
+    const susp=/[sS+]\s*$/.test(s);
+    return {t:parseFloat(s.replace(/[sS+]\s*$/,'').trim()),susp:susp};
+  }).filter(o=>isFinite(o.t)&&o.t>0).sort((a,b)=>a.t-b.t);
+  const N=items.length, fails=items.filter(o=>!o.susp);
+  if(fails.length<2) return {err:'Se necesitan al menos 2 tiempos a falla.'};
+  let prevAR=0, pts=[];
+  items.forEach((it,idx)=>{
+    const k=idx+1; if(it.susp) return;
+    const AR=prevAR+(N+1-prevAR)/(N-k+2); prevAR=AR;
+    pts.push({t:it.t,F:(AR-0.3)/(N+0.4)});
+  });
+  const xs=pts.map(p=>Math.log(p.t)), ys=pts.map(p=>Math.log(-Math.log(1-p.F)));
+  const n=xs.length, mx=xs.reduce((a,b)=>a+b,0)/n, my=ys.reduce((a,b)=>a+b,0)/n;
+  let sxy=0,sxx=0,syy=0;
+  for(let i=0;i<n;i++){sxy+=(xs[i]-mx)*(ys[i]-my);sxx+=(xs[i]-mx)**2;syy+=(ys[i]-my)**2;}
+  const beta=sxy/sxx, eta=Math.exp(mx-my/beta), r2=(sxy*sxy)/(sxx*syy);
+  const allT=items.map(o=>o.t), fT=fails.map(o=>o.t), r=fT.length;
+  let bm=beta>0?beta:1;
+  for(let i=0;i<200;i++){
+    let s0=0,s1=0,s2=0;
+    allT.forEach(t=>{const p=Math.pow(t,bm),l=Math.log(t);s0+=p;s1+=p*l;s2+=p*l*l;});
+    const sl=fT.reduce((a,t)=>a+Math.log(t),0)/r;
+    const g=s1/s0-1/bm-sl, dg=(s2*s0-s1*s1)/(s0*s0)+1/(bm*bm), step=g/dg;
+    bm-=step;
+    if(!isFinite(bm)||bm<=0){bm=beta;break;}
+    if(Math.abs(step)<1e-10)break;
+  }
+  const em=Math.pow(allT.reduce((a,t)=>a+Math.pow(t,bm),0)/r,1/bm);
+  return {pts:pts,beta:beta,eta:eta,r2:r2,bm:bm,em:em,N:N,r:r,susp:N-r};
+}
+function calcWeibull(){
+  const f=weibullFit($('w-data').value);
+  if(f.err){$('w-out').innerHTML='<p class="err">'+f.err+'</p>';return;}
+  const t=+$('w-t').value;
+  const Rt=Math.exp(-Math.pow(t/f.eta,f.beta));
+  const mttf=f.eta*gammaFn(1+1/f.beta), b10=f.eta*Math.pow(-Math.log(0.9),1/f.beta);
+  let out=cells([
+    ['β — forma (RRX)',fmt(f.beta,4),true],['η — vida caract.',fmt(f.eta,5),true,'h'],
+    ['R² del ajuste',fmt(f.r2,4)],['β por MLE',fmt(f.bm,4)],['η por MLE',fmt(f.em,5),'','h'],
+    ['MTTF',fmt(mttf,5),'','h'],['Vida B10',fmt(b10,5),'','h'],['R('+fmt(t,5)+' h)',pct(Rt)]
+  ]);
+  const xs=f.pts.map(p=>Math.log(p.t)), ys=f.pts.map(p=>Math.log(-Math.log(1-p.F)));
+  const x0=Math.min.apply(null,xs)-0.35, x1=Math.max.apply(null,xs)+0.35;
+  const yfit=x=>f.beta*(x-Math.log(f.eta));
+  const y0=Math.min(Math.min.apply(null,ys),yfit(x0))-0.3, y1=Math.max(Math.max.apply(null,ys),yfit(x1))+0.3;
+  const Fticks=[0.01,0.05,0.1,0.25,0.5,0.632,0.9,0.99].map(F=>[Math.log(-Math.log(1-F)),(F*100).toLocaleString('es-CL')+'%']).filter(d=>d[0]>=y0&&d[0]<=y1);
+  const tTicks=niceTicks(Math.exp(x0),Math.exp(x1),5).filter(v=>v>0).map(v=>[Math.log(v),fmt(v,3)]);
+  out+=figure(svgPlot({
+    xdom:[x0,x1],ydom:[y0,y1],xticks:tTicks,yticks:Fticks,
+    series:[{type:'line',pts:[[x0,yfit(x0)],[x1,yfit(x1)]]},{type:'points',pts:xs.map((x,i)=>[x,ys[i]])}],
+    xlab:'Tiempo a falla (h, escala log)',ylab:'F(t) acumulada',alt:'Papel de Weibull'
+  }),'Papel de probabilidad de Weibull · '+f.r+' fallas, '+f.susp+' suspensiones de '+f.N+' unidades');
+  const lect = f.beta<0.9 ? 'β &lt; 1: la tasa de falla decrece. Revisa calidad de montaje, puesta en servicio o repuestos, porque reemplazar por tiempo empeoraría el indicador.'
+    : f.beta<1.2 ? 'β cercano a 1: no hay evidencia de desgaste. Cualquier tarea preventiva basada en horas aquí carece de justificación estadística; corresponde condición o detección.'
+    : 'β = '+fmt(f.beta,3)+': hay desgaste. Un intervalo por tiempo se sostiene, y B10 = '+fmt(b10,4)+' h marca la edad en que ya habrá fallado el 10 % de la población.';
+  const dif=Math.abs(f.beta-f.bm)/f.beta;
+  let out2=out+verdict(lect);
+  if(dif>0.2) out2+=verdict('RRX y MLE difieren en '+pct(dif,0)+'. Con muestras pequeñas o censura fuerte eso es esperable; MLE suele ser el más robusto de los dos.','Contraste',true);
+  $('w-out').innerHTML=out2;
+}
+
+/* ---------- 3. Weibull condicional ---------- */
+function calcCond(){
+  const be=+$('c-beta').value, eta=+$('c-eta').value, t0=+$('c-t0').value, dt=+$('c-dt').value;
+  const R=x=>Math.exp(-Math.pow(x/eta,be));
+  const Rc=R(t0+dt)/R(t0), Rnew=R(dt);
+  const h0=(be/eta)*Math.pow(t0/eta,be-1), h1=(be/eta)*Math.pow((t0+dt)/eta,be-1);
+  const span=Math.max(dt*2.2,eta*0.6), pts=[], pts2=[];
+  for(let i=0;i<=120;i++){const x=span*i/120;pts.push([x,R(t0+x)/R(t0)]);pts2.push([x,R(x)]);}
+  let out=cells([
+    ['R condicional a Δt',pct(Rc),true],['Prob. de falla en Δt',pct(1-Rc)],
+    ['R si fuera nuevo',pct(Rnew)],['h(t₀)',fmt(h0),'','1/h'],
+    ['h(t₀+Δt)',fmt(h1),'','1/h'],['Aumento del riesgo',fmt(h1/h0,3),'','×']
+  ]);
+  out+=figure(svgPlot({
+    xdom:[0,span],ydom:[0,1],
+    xticks:niceTicks(0,span,6).map(v=>[v,fmt(v,3)]),
+    yticks:[0,.2,.4,.6,.8,1].map(v=>[v,(v*100)+'%']),
+    series:[{type:'line',pts:pts},{type:'line',pts:pts2,dash:true,color:'var(--ink-soft)'}],
+    marks:[{x:dt,label:'Δt = '+fmt(dt,5)+' h'}],
+    xlab:'Horas adicionales desde t₀',ylab:'Confiabilidad',alt:'Confiabilidad condicional'
+  }),'Línea llena: equipo con '+fmt(t0,5)+' h de edad. Línea punteada: equipo nuevo.');
+  const perdida=Rnew-Rc;
+  const lect = be<=1 ? 'Con β ≤ 1 la edad no castiga: la curva condicional coincide con la del equipo nuevo o incluso la supera.'
+    : 'Llegar a '+fmt(t0+dt,5)+' h desde '+fmt(t0,5)+' h cuesta '+pct(perdida,1)+' de confiabilidad respecto de un equipo nuevo recorriendo el mismo periodo. El riesgo instantáneo sube '+fmt(h1/h0,3)+' veces dentro del intervalo.';
+  $('c-out').innerHTML=out+verdict(lect,'Lectura',be>1&&perdida>0.1);
+}
+
+/* ---------- 4. MTBF campo ---------- */
+function calcMtbf(){
+  const T=+$('k-T').value, r=Math.max(0,Math.round(+$('k-r').value)), C=+$('k-c').value, tipo=$('k-tipo').value;
+  const gl_l = tipo==='T' ? 2*r+2 : 2*r, al=1-C;
+  const mt = r>0 ? T/r : Infinity;
+  const low = 2*T/chi2inv(C,gl_l), up = r>0 ? 2*T/chi2inv(al,2*r) : Infinity;
+  const low2 = 2*T/chi2inv(1-al/2,gl_l), up2 = r>0 ? 2*T/chi2inv(al/2,2*r) : Infinity;
+  const lam=r>0?r/T:0;
+  let out=cells([
+    ['MTBF puntual',fmt(mt,5),true,'h'],['Tasa de falla λ',fmt(lam),'','1/h'],
+    ['Límite inferior unilateral ('+pct(C,0)+')',fmt(low,5),true,'h'],
+    ['Límite superior unilateral ('+pct(C,0)+')',fmt(up,5),'','h'],
+    ['Intervalo bilateral — inferior',fmt(low2,5),'','h'],
+    ['Intervalo bilateral — superior',fmt(up2,5),'','h']
+  ]);
+  let rows='';
+  [0.60,0.70,0.80,0.90,0.95].forEach(c=>{
+    const l=2*T/chi2inv(c,gl_l);
+    rows+='<tr'+(Math.abs(c-C)<1e-9?' class="mark"':'')+'><td>'+pct(c,0)+'</td><td>'+fmt(l,5)+'</td><td>'+fmt(mt>0?l/mt:0,3)+'</td></tr>';
+  });
+  out+='<div class="tbl-scroll"><table class="data"><thead><tr><th>Confianza</th><th>MTBF mínimo (h)</th><th>Fracción del puntual</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  const lect = r===0
+    ? 'Sin fallas registradas no hay MTBF puntual. Lo único defendible es el límite inferior de '+fmt(low,5)+' h con '+pct(C,0)+' de confianza.'
+    : 'Con '+r+' fallas en '+fmt(T,6)+' horas-unidad, lo que puedes afirmar con '+pct(C,0)+' de confianza es que el MTBF real supera las '+fmt(low,5)+' h, equivalente al '+pct(low/mt,0)+' del valor puntual. Informa el límite, no el puntual.';
+  $('k-out').innerHTML=out+verdict(lect,'Lectura',r<5);
+}
+
+/* ---------- 5. Crow-AMSAA ---------- */
+function calcCrow(){
+  const ts=parseNums($('a-data').value), tipo=$('a-tipo').value;
+  let T=+$('a-T').value;
+  if(ts.length<3){$('a-out').innerHTML='<p class="err">Se necesitan al menos 3 tiempos de falla.</p>';return;}
+  if(tipo==='F') T=ts[ts.length-1];
+  if(T<=ts[ts.length-1]) T=ts[ts.length-1];
+  const N=ts.length;
+  const beta = tipo==='F' ? (N-1)/ts.slice(0,N-1).reduce((a,t)=>a+Math.log(T/t),0) : N/ts.reduce((a,t)=>a+Math.log(T/t),0);
+  const lam = N/Math.pow(T,beta);
+  const mtbfC = T/N, mtbfI = 1/(lam*beta*Math.pow(T,beta-1));
+  const U=(ts.reduce((a,t)=>a+t,0)/N - T/2)/(T*Math.sqrt(1/(12*N)));
+  const proy=+$('a-proy').value;
+  const Nproy=lam*Math.pow(proy,beta), mtbfProy=1/(lam*beta*Math.pow(proy,beta-1));
+  let out=cells([
+    ['β — parámetro de forma',fmt(beta,4),true],['λ — escala',fmt(lam),true],
+    ['MTBF acumulado',fmt(mtbfC,5),'','h'],['MTBF instantáneo',fmt(mtbfI,5),true,'h'],
+    ['Laplace U',fmt(U,3)],['Fallas esperadas a '+fmt(proy,6)+' h',fmt(Nproy,4)],
+    ['Fallas adicionales',fmt(Math.max(0,Nproy-N),4)],['MTBF inst. proyectado',fmt(mtbfProy,5),'','h']
+  ]);
+  const xs=ts.map(t=>Math.log(t)), ys=ts.map((t,i)=>Math.log(i+1));
+  const x0=Math.min.apply(null,xs)-0.25, x1=Math.log(Math.max(T,proy))+0.1;
+  const fit=x=>Math.log(lam)+beta*x;
+  const y0=Math.min(0,fit(x0))-0.2, y1=Math.max(Math.max.apply(null,ys),fit(x1))+0.25;
+  out+=figure(svgPlot({
+    xdom:[x0,x1],ydom:[y0,y1],
+    xticks:niceTicks(Math.exp(x0),Math.exp(x1),5).filter(v=>v>0).map(v=>[Math.log(v),fmt(v,3)]),
+    yticks:niceTicks(Math.exp(y0),Math.exp(y1),5).filter(v=>v>=1).map(v=>[Math.log(v),fmt(v,3)]),
+    series:[{type:'line',pts:[[x0,fit(x0)],[x1,fit(x1)]]},{type:'points',pts:xs.map((x,i)=>[x,ys[i]])}],
+    marks:[{x:Math.log(T),label:'T'}],
+    xlab:'Tiempo acumulado (h, log)',ylab:'Fallas acumuladas (log)',alt:'Ajuste Crow-AMSAA'
+  }),'Fallas acumuladas vs. tiempo en escala log-log; la recta es el modelo ajustado.');
+  const tend = beta>1.05?'deterioro':beta<0.95?'mejora':'estabilidad';
+  const lap = Math.abs(U)<1.645?'El estadístico de Laplace (|U| = '+fmt(Math.abs(U),3)+') no supera 1,645, así que al 90 % no se rechaza la hipótesis de tasa constante.'
+    :(U>0?'El estadístico de Laplace U = '+fmt(U,3)+' confirma deterioro significativo al 90 %.':'El estadístico de Laplace U = '+fmt(U,3)+' confirma mejora significativa al 90 %.');
+  const lect='β = '+fmt(beta,3)+' indica '+tend+'. '+lap+' El MTBF instantáneo ('+fmt(mtbfI,4)+' h) es el que describe el equipo hoy; el acumulado ('+fmt(mtbfC,4)+' h) mezcla todo el periodo y suele ser engañoso.';
+  $('a-out').innerHTML=out+verdict(lect,'Lectura',beta>1.2&&Math.abs(U)>1.645);
+}
+
+/* ---------- 6. Disponibilidad ---------- */
+function calcDisp(){
+  const mtbf=+$('v-mtbf').value, mttr=+$('v-mttr').value, log=+$('v-log').value, meta=+$('v-meta').value;
+  const Ai=mtbf/(mtbf+mttr), mdt=mttr+log, Ao=mtbf/(mtbf+mdt);
+  const mdtMax=mtbf*(1-meta)/meta, mtbfMin=mdt*meta/(1-meta);
+  let out=cells([
+    ['Aᵢ — inherente',pct(Ai,3),true],['A₀ — operacional',pct(Ao,3),true],
+    ['Tiempo abajo por año',fmt(8760*(1-Ao),4),'','h'],['MDT total',fmt(mdt,4),'','h'],
+    ['MDT máx. para meta '+pct(meta,0),fmt(mdtMax,4),'','h'],
+    ['MTBF mín. para meta '+pct(meta,0),fmt(mtbfMin,5),'','h']
+  ]);
+  const mMax=Math.max(mtbf*2,mtbfMin*1.2), pts=[];
+  for(let i=1;i<=120;i++){const m=mMax*i/120;pts.push([m,m*(1-meta)/meta]);}
+  const yMax=Math.max(mdt*1.6,mMax*(1-meta)/meta*1.1);
+  out+=figure(svgPlot({
+    xdom:[0,mMax],ydom:[0,yMax],
+    xticks:niceTicks(0,mMax,6).map(v=>[v,fmt(v,3)]),
+    yticks:niceTicks(0,yMax,5).map(v=>[v,fmt(v,3)]),
+    series:[{type:'line',pts:pts},{type:'points',pts:[[mtbf,mdt]],color:'var(--flag)'}],
+    xlab:'MTBF (h)',ylab:'MDT admisible (h)',alt:'Curva de iso-disponibilidad'
+  }),'Combinaciones MTBF–MDT que dan exactamente '+pct(meta,0)+'. El punto marca la situación actual: bajo la línea se cumple la meta.');
+  const ok=Ao>=meta;
+  const lect=(ok?'Cumples la meta con holgura de '+fmt(mdtMax-mdt,3)+' h de MDT. '
+    :'No alcanzas la meta: necesitas bajar el MDT de '+fmt(mdt,3)+' h a '+fmt(mdtMax,3)+' h, o subir el MTBF a '+fmt(mtbfMin,5)+' h. ')
+    +(log>mttr?'La espera logística ('+fmt(log,3)+' h) pesa más que la reparación misma ('+fmt(mttr,3)+' h): la palanca está en repuestos y permisos, no en la cuadrilla.'
+    :'La reparación activa domina el MDT, así que la palanca está en herramientas, procedimiento y dotación.');
+  $('v-out').innerHTML=out+verdict(lect,'Lectura',!ok);
+}
+
+/* ---------- 7. Redundancia ---------- */
+function calcRed(){
+  const n=Math.max(1,Math.round(+$('r-n').value));
+  let m=Math.max(1,Math.round(+$('r-m').value)); if(m>n) m=n;
+  const mtbf=+$('r-mtbf').value, mttr=+$('r-mttr').value, t=+$('r-t').value;
+  const lam=1/mtbf, mu=1/mttr;
+  const lamEff=Math.exp(gammaln(n+1)-gammaln(m))*Math.pow(lam,n-m+1)/Math.pow(mu,n-m);
+  const mtbfSys=1/lamEff;
+  const Rsys=x=>{let s=0;for(let k=m;k<=n;k++){s+=nCr(n,k)*Math.pow(Math.exp(-lam*x),k)*Math.pow(1-Math.exp(-lam*x),n-k);}return s;};
+  let mtbfNR=0; for(let i=m;i<=n;i++) mtbfNR+=1/i; mtbfNR/=lam;
+  const Rt=Rsys(t), Runit=Math.exp(-lam*t), A=mtbf/(mtbf+mttr);
+  let Asys=0; for(let k=m;k<=n;k++) Asys+=nCr(n,k)*Math.pow(A,k)*Math.pow(1-A,n-k);
+  let out=cells([
+    ['Configuración',m+' de '+n,true],['λ efectiva (con reparación)',fmt(lamEff),'','1/h'],
+    ['MTBF del arreglo (con rep.)',fmt(mtbfSys,5),true,'h'],['MTBF del arreglo (sin rep.)',fmt(mtbfNR,5),'','h'],
+    ['R del arreglo a t',pct(Rt),true],['R de una unidad a t',pct(Runit)],
+    ['Disponibilidad del arreglo',pct(Asys,3)],['Disponibilidad de una unidad',pct(A,3)]
+  ]);
+  const tmax=Math.max(t*2,mtbfNR*1.5), pts=[], pts2=[];
+  for(let i=0;i<=120;i++){const x=tmax*i/120;pts.push([x,Rsys(x)]);pts2.push([x,Math.exp(-lam*x)]);}
+  out+=figure(svgPlot({
+    xdom:[0,tmax],ydom:[0,1],
+    xticks:niceTicks(0,tmax,6).map(v=>[v,fmt(v,3)]),
+    yticks:[0,.2,.4,.6,.8,1].map(v=>[v,(v*100)+'%']),
+    series:[{type:'line',pts:pts},{type:'line',pts:pts2,dash:true,color:'var(--ink-soft)'}],
+    marks:[{x:t,label:'t = '+fmt(t,5)+' h'}],
+    xlab:'Tiempo de misión (h)',ylab:'Confiabilidad',alt:'Confiabilidad del arreglo redundante'
+  }),'Línea llena: arreglo '+m+' de '+n+' sin reparación. Punteada: una sola unidad.');
+  const lect = n===m
+    ? 'Con m = n no hay redundancia: el arreglo es una serie de '+n+' unidades y falla antes que una sola. El MTBF cae a '+fmt(mtbfNR,5)+' h.'
+    : 'La reparación es lo que hace rendir la redundancia: el arreglo multiplica el MTBF por '+fmt(mtbfSys/mtbf,4)+' mientras la cuadrilla llegue en '+fmt(mttr,3)+' h. Sin reparación la ganancia baja a '+fmt(mtbfNR/mtbf,3)+' veces. Tolera '+(n-m)+' unidad(es) fuera de servicio.';
+  $('r-out').innerHTML=out+verdict(lect,'Lectura',n===m);
+}
+
+/* ---------- 8. Repuestos ---------- */
+function poisCdf(k,lam){
+  if(k===null||k<0) return 0;
+  let s=0,p=Math.exp(-lam);
+  for(let i=0;i<=k;i++){ if(i>0)p*=lam/i; s+=p; }
+  return Math.min(1,s);
+}
+function calcSpares(){
+  const n=Math.max(1,Math.round(+$('s-n').value)), mtbf=+$('s-mtbf').value, T=+$('s-T').value, C=+$('s-c').value;
+  const lam=n*T/mtbf;
+  let acc=0,p=Math.exp(-lam),need=null,rows='';
+  const maxK=Math.max(25,Math.ceil(lam*4)+10);
+  for(let k=0;k<=maxK;k++){
+    if(k>0) p*=lam/k;
+    acc+=p;
+    if(need===null&&acc>=C) need=k;
+    if(k<=Math.max(12,(need===null?12:need+4)))
+      rows+='<tr'+(need===k?' class="mark"':'')+'><td>'+k+'</td><td>'+pct(p,2)+'</td><td>'+pct(Math.min(acc,1),2)+'</td></tr>';
+  }
+  if(need===null) need=maxK;
+  let out=cells([
+    ['Demanda esperada λ',fmt(lam,4),true,'ítems'],['Repuestos requeridos',String(need),true],
+    ['Confianza alcanzada',pct(poisCdf(need,lam),2)],['Prob. de quiebre con '+need,pct(1-poisCdf(need,lam),2)],
+    ['Prob. de quiebre sin stock',pct(1-Math.exp(-lam),2)],['Demanda anualizada',fmt(n*8760/mtbf,3),'','ítems/año']
+  ]);
+  out+='<div class="tbl-scroll"><table class="data"><thead><tr><th>Repuestos en stock</th><th>Prob. de demanda exacta</th><th>Prob. acumulada de cobertura</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  const lect='Con '+n+' unidades en servicio y un MTBF de '+fmt(mtbf,5)+' h, esperas '+fmt(lam,3)+' fallas en el periodo. Mantener '+need+' repuesto(s) da '+pct(poisCdf(need,lam),1)+' de cobertura; el repuesto siguiente agrega solo '+pct(poisCdf(need+1,lam)-poisCdf(need,lam),1)+'.';
+  $('s-out').innerHTML=out+verdict(lect);
+}
+
+/* ---------- 9. Mantenibilidad ---------- */
+function calcMant(){
+  const d=parseNums($('t-data').value);
+  if(d.length<3){$('t-out').innerHTML='<p class="err">Se necesitan al menos 3 tiempos de reparación.</p>';return;}
+  const P=+$('t-p').value, ln=d.map(Math.log), n=ln.length;
+  const mu=ln.reduce((a,b)=>a+b,0)/n;
+  const sg=Math.sqrt(ln.reduce((a,b)=>a+(b-mu)**2,0)/(n-1));
+  const mttr=Math.exp(mu+sg*sg/2), med=Math.exp(mu), mmax=Math.exp(mu+normInv(P)*sg);
+  let out=cells([
+    ['MTTR lognormal',fmt(mttr,4),true,'h'],['Mediana M̃',fmt(med,4),true,'h'],
+    ['Mmax al '+pct(P,0),fmt(mmax,4),true,'h'],['σ de ln(t)',fmt(sg,3)],
+    ['Media aritmética',fmt(d.reduce((a,b)=>a+b,0)/n,4),'','h'],['n de intervenciones',String(n)],
+    ['Mínimo observado',fmt(d[0],4),'','h'],['Máximo observado',fmt(d[d.length-1],4),'','h']
+  ]);
+  const tmax=Math.max(mmax*1.15,d[d.length-1]*1.1), pts=[];
+  for(let i=1;i<=140;i++){const x=tmax*i/140;pts.push([x,normCdf((Math.log(x)-mu)/sg)]);}
+  out+=figure(svgPlot({
+    xdom:[0,tmax],ydom:[0,1],
+    xticks:niceTicks(0,tmax,6).map(v=>[v,fmt(v,3)]),
+    yticks:[0,.25,.5,.75,.9,1].map(v=>[v,(v*100)+'%']),
+    series:[{type:'line',pts:pts},{type:'points',pts:d.map((t,i)=>[t,(i+0.5)/n]),color:'var(--ink-soft)'}],
+    marks:[{x:mmax,label:'Mmax'}],
+    xlab:'Tiempo de reparación (h)',ylab:'Fracción de intervenciones completadas',alt:'Distribución de tiempos de reparación'
+  }),'Curva lognormal ajustada contra los '+n+' tiempos registrados.');
+  const lect='La mitad de las intervenciones termina antes de '+fmt(med,3)+' h, pero el MTTR sube a '+fmt(mttr,3)+' h por la cola de casos largos. Dimensiona la ventana de mantenimiento con Mmax ('+fmt(mmax,3)+' h), no con el promedio: usar el promedio deja '+pct(1-P,0)+' de las intervenciones fuera de ventana.';
+  $('t-out').innerHTML=out+verdict(lect,'Lectura',sg>1);
+}
+
+/* ---------- miniaturas del índice ---------- */
+const S='stroke="var(--ink-soft)" fill="none" stroke-width="1.4"', A='stroke="var(--accent)" fill="none" stroke-width="1.8"';
+const THUMB={
+  dist:'<svg viewBox="0 0 132 60"><line x1="12" y1="48" x2="122" y2="48" '+S+'/><line x1="12" y1="8" x2="12" y2="48" '+S+'/><path d="M14 47 C40 46 44 14 62 14 C80 14 86 46 120 47" '+A+'/></svg>',
+  weibull:'<svg viewBox="0 0 132 60"><line x1="14" y1="48" x2="122" y2="48" '+S+'/><line x1="14" y1="8" x2="14" y2="48" '+S+'/><path d="M20 44 L116 14" '+A+'/><circle cx="28" cy="41" r="2.6" fill="var(--ink-soft)"/><circle cx="46" cy="36" r="2.6" fill="var(--ink-soft)"/><circle cx="64" cy="29" r="2.6" fill="var(--ink-soft)"/><circle cx="84" cy="25" r="2.6" fill="var(--ink-soft)"/><circle cx="106" cy="17" r="2.6" fill="var(--ink-soft)"/></svg>',
+  cond:'<svg viewBox="0 0 132 60"><line x1="12" y1="48" x2="122" y2="48" '+S+'/><path d="M14 12 C46 13 58 20 70 30 C82 41 96 46 118 47" '+A+'/><line x1="70" y1="8" x2="70" y2="48" stroke="var(--flag)" stroke-width="1.4" stroke-dasharray="3 3"/><text x="73" y="18" font-size="9" font-family="monospace" fill="var(--flag)">t0</text></svg>',
+  mtbf:'<svg viewBox="0 0 132 60"><line x1="20" y1="30" x2="112" y2="30" '+S+'/><line x1="20" y1="20" x2="20" y2="40" '+A+'/><line x1="112" y1="20" x2="112" y2="40" '+A+'/><circle cx="58" cy="30" r="4" fill="var(--accent)"/><text x="40" y="52" font-size="9" font-family="monospace" fill="var(--ink-soft)">LC</text><text x="92" y="52" font-size="9" font-family="monospace" fill="var(--ink-soft)">UC</text></svg>',
+  crow:'<svg viewBox="0 0 132 60"><line x1="14" y1="48" x2="122" y2="48" '+S+'/><line x1="14" y1="8" x2="14" y2="48" '+S+'/><path d="M18 44 L38 44 L38 37 L58 37 L58 30 L78 30 L78 22 L98 22 L98 14 L118 14" '+A+'/></svg>',
+  disp:'<svg viewBox="0 0 132 60"><rect x="14" y="20" width="30" height="14" fill="var(--accent)" opacity=".75"/><rect x="50" y="20" width="8" height="14" fill="var(--ink-soft)" opacity=".5"/><rect x="64" y="20" width="34" height="14" fill="var(--accent)" opacity=".75"/><rect x="104" y="20" width="6" height="14" fill="var(--ink-soft)" opacity=".5"/><line x1="14" y1="42" x2="122" y2="42" '+S+'/><text x="14" y="54" font-size="8.5" font-family="monospace" fill="var(--ink-soft)">up / down</text></svg>',
+  red:'<svg viewBox="0 0 132 60"><circle cx="16" cy="30" r="2.6" fill="var(--ink-soft)"/><circle cx="116" cy="30" r="2.6" fill="var(--ink-soft)"/><rect x="48" y="7" width="36" height="13" '+A+'/><rect x="48" y="24" width="36" height="13" '+A+'/><rect x="48" y="41" width="36" height="13" '+A+'/><path d="M16 30 L34 30 M34 13.5 L34 47.5 M34 13.5 L48 13.5 M34 30.5 L48 30.5 M34 47.5 L48 47.5 M84 13.5 L98 13.5 M84 30.5 L98 30.5 M84 47.5 L98 47.5 M98 13.5 L98 47.5 M98 30 L116 30" '+S+'/></svg>',
+  repuestos:'<svg viewBox="0 0 132 60"><line x1="14" y1="48" x2="122" y2="48" '+S+'/><rect x="20" y="34" width="12" height="14" fill="var(--ink-soft)" opacity=".55"/><rect x="36" y="20" width="12" height="28" fill="var(--ink-soft)" opacity=".55"/><rect x="52" y="14" width="12" height="34" fill="var(--accent)"/><rect x="68" y="24" width="12" height="24" fill="var(--ink-soft)" opacity=".55"/><rect x="84" y="34" width="12" height="14" fill="var(--ink-soft)" opacity=".55"/><rect x="100" y="42" width="12" height="6" fill="var(--ink-soft)" opacity=".55"/></svg>',
+  mant:'<svg viewBox="0 0 132 60"><line x1="12" y1="48" x2="122" y2="48" '+S+'/><path d="M14 47 C22 47 26 12 40 12 C56 12 60 38 80 44 C96 48 104 47 120 47" '+A+'/><line x1="86" y1="10" x2="86" y2="48" stroke="var(--flag)" stroke-width="1.3" stroke-dasharray="3 3"/><text x="89" y="19" font-size="8.5" font-family="monospace" fill="var(--flag)">Mmax</text></svg>'
+};
+
+/* ---------- módulos ---------- */
+const MODS=[
+  {id:'dist',el:'m-dist',t:'Confiabilidad por distribución',g:'Vida del componente',fn:calcDist,
+   d:'R(t), F(t), f(t) y h(t) para las distribuciones exponencial, Weibull y normal, con MTTF y vida B10 a partir de los parámetros.'},
+  {id:'weibull',el:'m-weibull',t:'Análisis de Weibull',fn:calcWeibull,
+   d:'Estima β y η desde tiempos a falla, con suspensiones. Entrega el papel de probabilidad, R² y contraste entre regresión de rangos medianos y máxima verosimilitud.'},
+  {id:'cond',el:'m-cond',t:'Weibull condicional',fn:calcCond,
+   d:'Probabilidad de que un equipo que ya acumuló cierta edad sobreviva un periodo adicional. Es el cálculo que respalda o descarta una extensión de intervalo.'},
+  {id:'mtbf',el:'m-mtbf',t:'MTBF de campo con confianza',g:'Sistema reparable',fn:calcMtbf,
+   d:'MTBF puntual y límites unilaterales y bilaterales por χ², distinguiendo ensayo terminado por tiempo o por falla.'},
+  {id:'crow',el:'m-crow',t:'Crow-AMSAA y tendencia',fn:calcCrow,
+   d:'Ajuste del proceso de Poisson no homogéneo a los tiempos acumulados de falla: β, λ, MTBF instantáneo, test de Laplace y proyección de fallas.'},
+  {id:'disp',el:'m-disp',t:'Disponibilidad',fn:calcDisp,
+   d:'Disponibilidad inherente y operacional, horas de indisponibilidad al año y la curva de combinaciones MTBF–MDT que cumplen una meta.'},
+  {id:'red',el:'m-red',t:'Redundancia activa m de n',fn:calcRed,
+   d:'Tasa de falla efectiva de n unidades en línea con m requeridas, con y sin reparación, más la disponibilidad del arreglo.'},
+  {id:'repuestos',el:'m-repuestos',t:'Repuestos por Poisson',g:'Soporte y logística',fn:calcSpares,
+   d:'Número de repuestos necesario para cubrir la demanda de un periodo con la confianza pedida, con la probabilidad de quiebre de stock.'},
+  {id:'mant',el:'m-mant',t:'Mantenibilidad lognormal',fn:calcMant,
+   d:'MTTR, mediana y tiempo máximo de reparación a partir de los tiempos de intervención registrados, ajustados a una lognormal.'}
+];
+
+/* ---------- informe ---------- */
+function esc(s){return String(s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));}
+function buildReport(id){
+  const mod=MODS.find(m=>m.id===id), sec=$(mod.el);
+  const hoy=new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
+  let kv='';
+  [].forEach.call(sec.querySelectorAll('.f'),f=>{
+    if(f.hidden) return;
+    const lab=f.querySelector('label'), ctl=f.querySelector('input,select,textarea');
+    if(!lab||!ctl) return;
+    let val;
+    if(ctl.tagName==='SELECT') val=ctl.options[ctl.selectedIndex].text;
+    else if(ctl.tagName==='TEXTAREA'){
+      const n=ctl.value.split(/[\s,;]+/).filter(Boolean).length;
+      val=ctl.value.trim().replace(/\s+/g,' ');
+      if(val.length>120) val=val.slice(0,118)+'…';
+      val+=' ('+n+' valores)';
+    } else val=ctl.value;
+    kv+='<tr><td class="k">'+esc(lab.textContent)+'</td><td class="v">'+esc(val)+'</td></tr>';
+  });
+  const grid=sec.querySelector('.out .grid-out');
+  const fig=sec.querySelector('.out figure');
+  const lect=[].map.call(sec.querySelectorAll('.out .verdict'),v=>v.lastElementChild.innerHTML).join(' ');
+  const assump=sec.querySelector('.assump');
+  const eq=esc($('rp-eq').value), an=esc($('rp-an').value), cod=esc($('rp-cod').value);
+  $('sheet').innerHTML=
+    '<div class="sh-head"><div class="org">ENAP Magallanes<br>Ingeniería y Planificación del Mantenimiento</div>'+
+    '<div class="doc">'+cod+'<br>'+hoy+'</div></div>'+
+    '<h2>'+esc(mod.t)+'</h2><p class="sub">'+eq+'</p>'+
+    '<h3>Datos de entrada</h3><table class="kv"><tbody>'+kv+'</tbody></table>'+
+    '<h3>Resultados</h3><div class="res">'+(grid?grid.innerHTML:'')+'</div>'+
+    (fig?fig.outerHTML:'')+
+    '<h3>Lectura técnica</h3><p class="lect">'+lect+'</p>'+
+    '<div class="foot"><div><b>Método y supuestos.</b> '+(assump?assump.textContent.replace(/^Supuestos/,'').trim():'')+'</div>'+
+    '<div class="sign">'+an+'<br>Ingeniero de Estudios de Mantenimiento</div></div>';
+}
+
+/* ---------- navegación ---------- */
+function $(id){return document.getElementById(id)}
+let current='dist';
+function view(v){
+  $('v-index').hidden = v!=='index';
+  $('v-calc').hidden  = v!=='calc';
+  $('v-report').hidden= v!=='report';
+  window.scrollTo(0,0);
+}
+function openMod(id){
+  const mod=MODS.find(m=>m.id===id)||MODS[0];
+  current=mod.id;
+  MODS.forEach(m=>{ $(m.el).hidden = m.id!==mod.id; });
+  $('crumb-path').textContent='Índice / '+mod.t;
+  try{ mod.fn(); }catch(e){ console.error(e); }
+  view('calc');
+  try{history.replaceState(null,'','#'+mod.id);}catch(e){}
+}
+(function init(){
+  const body=$('idx-body');
+  let n=0;
+  MODS.forEach(m=>{
+    if(m.g){
+      const tr=document.createElement('tr'); tr.className='sect';
+      const td=document.createElement('td'); td.colSpan=4; td.textContent=m.g;
+      tr.appendChild(td); body.appendChild(tr);
+    }
+    n++;
+    const tr=document.createElement('tr'); tr.className='row';
+    tr.innerHTML='<td class="num">'+n+'.</td><td class="thumb">'+THUMB[m.id]+'</td>'+
+      '<td><a class="tool" role="button" tabindex="0">'+m.t+'</a></td><td class="desc">'+m.d+'</td>';
+    const go=()=>openMod(m.id);
+    tr.addEventListener('click',go);
+    tr.querySelector('a').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+    body.appendChild(tr);
+  });
+  $('back-idx').addEventListener('click',()=>{view('index');try{history.replaceState(null,'','#index');}catch(e){}});
+  $('go-report').addEventListener('click',()=>{buildReport(current);view('report');});
+  $('back-calc').addEventListener('click',()=>view('calc'));
+  $('rp-eq').addEventListener('input',()=>buildReport(current));
+  $('rp-an').addEventListener('input',()=>buildReport(current));
+  $('rp-cod').addEventListener('input',()=>buildReport(current));
+  $('d-tipo').addEventListener('change',()=>{syncDistLabels();calcDist();});
+  MODS.forEach(m=>{
+    const sec=$(m.el);
+    const re=()=>{ try{ m.fn(); }catch(e){ console.error(e); } };
+    sec.addEventListener('input',re); sec.addEventListener('change',re);
+  });
+  $('print-hint').textContent='Hoja A4 lista para imprimir en blanco y negro. Desde el archivo local, Ctrl+P (⌘+P en Mac) la imprime o la guarda como PDF en una página.';
+  syncDistLabels();
+  const h=(location.hash||'').replace('#','');
+  if(MODS.some(m=>m.id===h)) openMod(h); else view('index');
+})();
+</script>

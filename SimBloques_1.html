@@ -498,6 +498,7 @@ input.narrow { width: 96px; flex: none; }
 <li><b>Prioridad de entrada:</b> de arriba hacia abajo según la posición de los bloques en el diagrama. Las k primeras parten operando; para cambiar el orden, mueve los bloques.</li>
 <li><b>Factor de envejecimiento en espera:</b> 0 = reserva fría (no acumula desgaste); 1 = caliente (envejece como si operara, equivale a la redundancia activa); un valor intermedio representa una reserva tibia. El tiempo en espera consume vida a esa fracción de la tasa normal.</li>
 <li><b>Probabilidad de conmutación exitosa:</b> cuando falla una unidad operando, entra la siguiente reserva disponible con esta probabilidad. Si no arranca, queda fallada (y va a reparación si es reparable) y se intenta con la siguiente.</li>
+<li><b>Tiempo de conmutación:</b> lo que tarda la reserva en tomar la carga (arranque, sincronización, puesta en línea). Mientras conmuta no opera ni envejece; si con eso el nodo queda bajo k, el sistema cae durante ese lapso y se cuenta como una caída. 0 = instantáneo.</li>
 <li>Cuando una unidad reparada vuelve, pasa a reserva si ya operan k unidades, o entra a operar si faltan.</li>
 </ul>
 <p>Las ramas de un grupo en espera deben ser bloques simples que pueden fallar y que solo se conectan a ese nodo. Los diagramas con redundancia en espera se calculan con la <b>Simulación</b> (confiabilidad y mantenibilidad); Analizar, la calculadora rápida y los gráficos exactos avisan que no aplican.</p>
@@ -582,14 +583,40 @@ input.narrow { width: 96px; flex: none; }
 <p>Herramientas › Simulación (<kbd>F8</kbd>). Tres pestañas:</p>
 <ul>
 <li><b>Confiabilidad:</b> tiempo final e incremento. Se sortean tiempos de falla de cada bloque y se estima R(t) del sistema; el informe la compara con el valor exacto. Sirve para verificar o para sistemas demasiado grandes para el cálculo exacto.</li>
-<li><b>Mantenibilidad:</b> tiempo final e incremento. Cada bloque falla según su distribución de falla y vuelve a operar tras un tiempo de reparación (si es reparable); el sistema se evalúa en cada cambio de estado. Entrega tiempo fuera de servicio, tiempo en servicio, disponibilidad media y puntual, confiabilidad en el período y número esperado de fallas, para el sistema y para cada bloque.</li>
+<li><b>Mantenibilidad:</b> tiempo final e incremento. Cada bloque falla según su distribución de falla y vuelve a operar tras un tiempo de reparación (si es reparable); el sistema se evalúa en cada cambio de estado. Entrega tiempo fuera de servicio, tiempo en servicio, disponibilidad media y puntual, confiabilidad en el período, número esperado de caídas, MTBDE (tiempo medio entre caídas del sistema) y MDT (duración media de cada caída), para el sistema y para cada bloque. Si los bloques tienen logística (sección 16) se agregan el desglose del tiempo fuera de servicio, los repuestos y las cuadrillas.</li>
 <li><b>Configuración:</b> lazos externos (repeticiones independientes, muestran la dispersión), lazos internos (simulaciones por repetición) y semilla. Con la misma semilla los resultados se repiten.</li>
 </ul>
 <p>Si el diagrama tiene nodos, la simulación de mantenibilidad agrega por cada nodo la distribución del tiempo por estado (m de n unidades en servicio) y la capacidad media disponible. Los grupos en espera solo se pueden calcular aquí (sección 8).</p>
 <p>El error de muestreo de una probabilidad estimada es del orden de √(R(1−R)/N). Con 10 000 simulaciones y R ≈ 0,95 es ±0,002 aprox.</p>
-<p class="muted small">Supuestos: componentes independientes salvo dentro de un grupo en espera, reparación “como nuevo”, sin mantenciones preventivas ni colas de reparación. Una Normal de reparación se trunca en 0. Los bloques duplicados para representar una misma línea en dos sentidos se simulan como independientes, igual que en la guía.</p>
+<p class="muted small">Supuestos: componentes independientes salvo dentro de un grupo en espera, reparación y mantención preventiva “como nuevo”. Sin logística definida, las reparaciones parten de inmediato y no hay límite de repuestos ni de personal. Una Normal de reparación se trunca en 0. Los bloques duplicados para representar una misma línea en dos sentidos se simulan como independientes, igual que en la guía.</p>
 
-<h2>16. Guardar y compartir</h2>
+<h2>16. Logística de mantenimiento: repuestos, cuadrillas y mantención preventiva</h2>
+<p>La disponibilidad real de un parque no depende solo de cuánto dura la reparación, sino de lo que pasa antes: esperar el repuesto, esperar a que haya personal, trasladarse al equipo. Este módulo agrega esos tiempos a la simulación de mantenibilidad para responder preguntas como “¿cuántos kits de válvulas conviene tener en bodega?” o “¿alcanza una cuadrilla para las tres plantas?”.</p>
+<h3>Recursos del proyecto</h3>
+<p><b>Herramientas › Repuestos y cuadrillas…</b> define los recursos compartidos:</p>
+<ul>
+<li><b>Repuestos:</b> nombre, stock inicial y reposición. Política uno por uno (S−1, S): cada reparación consume una unidad y genera un pedido que llega tras el plazo de reposición (fijo o exponencial). Si no hay stock, el equipo espera la próxima llegada (cola por orden de llegada). <i>Sin reposición</i> = solo se cuenta con el stock inicial.</li>
+<li><b>Cuadrillas:</b> nombre y cantidad de equipos de trabajo que pueden intervenir en paralelo. La cuadrilla se ocupa durante la reparación activa y durante la mantención preventiva. Cola: primero las reparaciones (por orden de llegada) y después las mantenciones preventivas.</li>
+</ul>
+<h3>Pestaña Logística del bloque</h3>
+<p>En las propiedades de un bloque reparable:</p>
+<ul>
+<li><b>Demora logística:</b> tiempo desde la falla hasta que se puede intervenir (aviso, traslado, permisos, aislamiento, enfriamiento). Valor fijo o distribución.</li>
+<li><b>Repuesto</b> que consume cada reparación y <b>cuadrilla</b> que la ejecuta. “Ninguno” significa recurso ilimitado.</li>
+<li><b>Mantención preventiva por calendario:</b> intervalo, fecha de la primera (vacía = igual al intervalo) y duración (fija o distribución). Detiene el equipo y lo deja como nuevo. Si en la fecha el equipo está fallado, esa mantención se omite; si la cuadrilla está ocupada, el equipo sigue operando hasta que se libere. En equipos con β &gt; 1 reduce las fallas; con β ≤ 1 solo agrega tiempo detenido.</li>
+</ul>
+<p>Secuencia ante una falla: <b>demora logística → espera de repuesto → espera de cuadrilla → reparación activa</b>. El cuadro azul de la pestaña muestra el tiempo mínimo fuera de servicio por falla sin esperas.</p>
+<h3>Resultados</h3>
+<ul>
+<li><b>Desglose por bloque:</b> horas fuera de servicio separadas en demora logística, espera de repuesto, espera de cuadrilla, reparación activa y mantención preventiva, y el porcentaje atribuible a esperas logísticas. Es la tabla que indica dónde invertir.</li>
+<li><b>Mantención preventiva:</b> mantenciones realizadas y omitidas por bloque.</li>
+<li><b>Repuestos:</b> demandas, demandas sin stock, tasa de llenado (fracción atendida desde bodega), stock medio y equipos esperando.</li>
+<li><b>Cuadrillas:</b> utilización, cuadrillas ocupadas en promedio y trabajos en cola.</li>
+</ul>
+<p>El ejemplo <button type="button" class="btn small" data-ex="logistica">Compresores con logística</button> compara el mismo parque 2 de 3 sin logística, con 1 kit en stock y con 2 kits. Con datos ilustrativos, el segundo kit sube la disponibilidad de ≈0,978 a ≈0,996: casi toda la indisponibilidad del caso con 1 kit era espera de repuesto.</p>
+<p class="muted small">Supuestos: un tipo de repuesto por bloque y una unidad por reparación; cuadrillas idénticas; mantención solo por calendario (no por horas de operación ni por condición); sin costos. Las reparaciones no se interrumpen.</p>
+
+<h2>17. Guardar y compartir</h2>
 <ul>
 <li><b>Archivo › Guardar proyecto</b> (<kbd>Ctrl</kbd>+<kbd>S</kbd>): descarga un <code>.sbq.json</code> con diagramas, plantillas, gráficos, hojas y configuración. También puedes copiar el contenido.</li>
 <li><b>Archivo › Abrir proyecto</b> (<kbd>Ctrl</kbd>+<kbd>O</kbd>): carga un <code>.sbq.json</code>.</li>
@@ -597,7 +624,7 @@ input.narrow { width: 96px; flex: none; }
 </ul>
 <p class="callout">Si usas el programa dentro de la vista web de Claude, las descargas pueden estar bloqueadas: usa <b>Copiar</b> y pega en un archivo de texto. Abriendo <code>SimBloques.html</code> como archivo local (doble clic) las descargas funcionan normalmente y no necesitas internet.</p>
 
-<h2>17. Informes imprimibles (PDF)</h2>
+<h2>18. Informes imprimibles (PDF)</h2>
 <p>Todos los resultados se pueden llevar a papel o a PDF. El programa abre una ventana con el documento ya maquetado en A4; ahí pulsas <b>Imprimir</b> y eliges <b>Guardar como PDF</b> como destino.</p>
 <h3>Informe del proyecto</h3>
 <p><b>Archivo › Informe del proyecto</b> (<kbd>Ctrl</kbd>+<kbd>P</kbd>) genera el documento completo. En el cuadro eliges:</p>
@@ -614,8 +641,8 @@ input.narrow { width: 96px; flex: none; }
 <p><b>Archivo › Imprimir diagrama</b> saca una lámina con el dibujo del diagrama activo y la tabla de sus bloques, distribuciones y capacidades. Sirve para adjuntar a un procedimiento o llevar a una reunión sin los cálculos.</p>
 <p class="callout">Si el navegador bloquea la ventana emergente, el programa te ofrece descargar el informe como archivo <code>.html</code>: ábrelo y imprime desde ahí. Las figuras son SVG, así que no pierden nitidez al ampliar ni al imprimir.</p>
 
-<h2>18. Verificar el programa</h2>
-<p><b>Ayuda › Verificar el programa</b> ejecuta un autodiagnóstico del motor de cálculo dentro de tu propio navegador y entrega un informe imprimible. Tarda cerca de un segundo.</p>
+<h2>19. Verificar el programa</h2>
+<p><b>Ayuda › Verificar el programa</b> ejecuta un autodiagnóstico del motor de cálculo dentro de tu propio navegador y entrega un informe imprimible. Tarda uno o dos segundos.</p>
 <p>Cada comprobación enfrenta al motor contra un valor que se conoce por otra vía:</p>
 <div class="tw"><table>
 <tr><th>Área</th><th>Contra qué se compara</th></tr>
@@ -627,11 +654,12 @@ input.narrow { width: 96px; flex: none; }
 <tr><td>Tabla COPT</td><td>Que las probabilidades de los estados sumen 1, la capacidad media, P(k de n) contra la binomial y p = MTTF/(MTTF+MTTR)</td></tr>
 <tr><td>Consistencia</td><td>Rs(0)=1, Rs(t) siempre entre 0 y 1 y no creciente, monotonía al mejorar un componente, y la detección de ciclos, subdiagramas circulares y k mayor que n</td></tr>
 <tr><td>Simulación</td><td>Que la simulación converja al cálculo exacto, que la reserva fría 1-de-2 dé e⁻ᵗ/ᵐ(1+t/m)=0,7358, que la disponibilidad dé MTTF/(MTTF+MTTR), y que la misma semilla reproduzca el mismo resultado</td></tr>
+<tr><td>Logística</td><td>Problema del reparador con fuente finita (A del sistema y utilización de la cuadrilla), disponibilidad sin stock m/(m+plazo+MTTR), tasa de llenado con stock 1 contra la recurrencia W = (L − W − X)⁺ calculada aparte, demora logística, mantención preventiva determinística y tiempo de conmutación m/(m+t)</td></tr>
 <tr><td>Ajuste MLE</td><td>Que recupere β y η de 300 datos generados con parámetros conocidos, el estimador cerrado λ = nº fallas / Σt con censura, y Kaplan–Meier con valores a mano</td></tr>
 </table></div>
 <p class="callout">Que pasen todas las comprobaciones <b>no demuestra que el programa esté libre de errores</b>: demuestra que en estos casos coincide con el resultado correcto. Para un estudio del que dependa una decisión, la verificación que más vale sigue siendo reproducir a mano un caso sencillo de tu propio sistema y contrastarlo. El informe se puede imprimir y adjuntar al estudio como respaldo.</p>
 
-<h2>19. Atajos de teclado</h2>
+<h2>20. Atajos de teclado</h2>
 <div class="tw"><table>
 <tr><th>Tecla</th><th>Acción</th><th>Tecla</th><th>Acción</th></tr>
 <tr><td><kbd>F1</kbd></td><td>Manual</td><td><kbd>B</kbd></td><td>Agregar bloque</td></tr>
@@ -645,7 +673,7 @@ input.narrow { width: 96px; flex: none; }
 <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Guardar</td><td><kbd>0</kbd> · <kbd>+</kbd> · <kbd>−</kbd></td><td>Ajustar · acercar · alejar</td></tr>
 </table></div>
 
-<h2>20. Ejemplos de la guía y validación</h2>
+<h2>21. Ejemplos de la guía y validación</h2>
 <p>Cada ejemplo de la guía de entrenamiento de BlockSim 1.0 viene armado. Al cargarlo se reemplaza el proyecto actual. Los valores de la columna SimBloques se obtienen con el programa tal como está.</p>
 <div class="tw"><table>
 <tr><th>Caso</th><th>Qué se calcula</th><th>Guía BlockSim</th><th>SimBloques</th><th></th></tr>
@@ -669,11 +697,13 @@ input.narrow { width: 96px; flex: none; }
 <tr><td>Pregunta 6</td><td>R(1000 h): rodamientos (Weibull, intervalos) · eje (Lognormal) · sistema</td><td>0,944841 · 0,952387 · 0,8999</td><td>0,944841 · 0,952387 · 0,8999</td><td><button type="button" class="btn small" data-ex="rodamiento">Cargar</button></td></tr>
 <tr><td>Configuraciones mixtas</td><td>Rs con S4 y S5 por fraccionamiento · con demanda completa (3 de 3)</td><td>Cálculo manual: 0,317546 · 0,092389</td><td>0,317546 · 0,092389 (simulado: 0,0936)</td><td><button type="button" class="btn small" data-ex="mixto">Cargar</button></td></tr>
 <tr><td>Compresores</td><td>2 de 3 activa vs 2 + 1 en espera (datos ilustrativos)</td><td>—</td><td>Ver capacidad en la simulación de mantenibilidad</td><td><button type="button" class="btn small" data-ex="compresores">Cargar</button></td></tr>
+<tr><td>Logística (validación)</td><td>Reparador único, 3 máquinas 1 de 3 (fuente finita) · sin stock, plazo 200 · stock 1 uno por uno · demora media 100 · PM 50 cada 1000 · conmutación 2 h</td><td>Teórico: A = 0,9746 · 0,8000 · 0,9229 · 0,8696 · 0,952381 · 0,9804</td><td>Simulado: 0,9738 · 0,8014 · 0,9220 · 0,8697 · 0,952381 · 0,9805</td><td>—</td></tr>
+<tr><td>Compresores con logística</td><td>2 de 3 sin logística · 1 kit · 2 kits, cuadrilla única, PM 2000 h (datos ilustrativos)</td><td>—</td><td>A ≈ 0,999 · 0,978 · 0,996 (8760 h)</td><td><button type="button" class="btn small" data-ex="logistica">Cargar</button></td></tr>
 </table></div>
 <p>Las diferencias en la Pregunta 3 (0,0001 % en el tiempo y 0,02 % en el MTTF) vienen de la Lognormal de las fuentes de poder: BlockSim 1.0 usaba una aproximación de la normal acumulada de menor precisión; SimBloques la evalúa con precisión de máquina (se verificó el MTTF por integración trapezoidal independiente). En la optimización del Ejemplo 1, el Disco duro 1 queda en 0,9712 en vez de 0,9713: la diferencia de costo es despreciable.</p>
 <p>En el Ejemplo 4 los datos de los generadores vienen cargados en el ajuste de distribución (botón “Datos Ejemplo 4”), y en la Pregunta 6 los de rodamientos y eje quedan guardados en cada bloque: abre sus propiedades › Ajustar a datos de vida.</p>
 
-<h2>21. Diferencias con BlockSim 1.0 y límites</h2>
+<h2>22. Diferencias con BlockSim 1.0 y límites</h2>
 <ul>
 <li>BlockSim 1.0 no tenía redundancia en espera, fraccionamiento, tablas de capacidad ni gráficos de sensibilidad; son agregados de SimBloques.</li>
 <li>Las distribuciones de los bloques se ingresan en el programa o se ajustan con el módulo integrado; no se enlaza a Weibull++.</li>
@@ -681,9 +711,8 @@ input.narrow { width: 96px; flex: none; }
 <li>La hoja de cálculo guarda valores, no fórmulas vivas: si cambias el diagrama, vuelve a ejecutar el asistente.</li>
 <li>El cálculo exacto supone componentes independientes. Las repeticiones de un mismo componente en el diagrama se tratan como componentes distintos.</li>
 <li>La optimización usa un algoritmo de asignación marginal (mayor ganancia de confiabilidad por unidad de costo) con ajuste fino a la meta. Puede diferir en el cuarto decimal del algoritmo de BlockSim cuando hay bloques con costo casi igual.</li>
-<li>La simulación de mantenibilidad no considera mantenimiento preventivo, repuestos ni cuadrillas limitadas.</li>
+<li>El módulo logístico (repuestos, cuadrillas, demoras, mantención preventiva y tiempo de conmutación) no existe en BlockSim 1.0. Límites: un tipo de repuesto por bloque, cuadrillas idénticas sin prioridad entre equipos, mantención preventiva solo por calendario y sin costos.</li>
 <li>La capacidad se suma en cada nodo a partir de las ramas que llegan a él; no es un cálculo de flujo máximo de red. Las unidades de reserva en espera no aportan capacidad mientras esperan.</li>
-<li>No hay tiempo de conmutación: la reserva entra (o falla al entrar) en el mismo instante en que falla la unidad operando.</li>
 </ul>
 
 </template>
@@ -1265,7 +1294,7 @@ var BS = (function () {
         var sub = new Flat(project, e.subId, stack.concat(diagId), prefix + e.name + ' › ');
         var off = leaves.length;
         sub.leaves.forEach(function (l) { leaves.push(l); });
-        sub.groups.forEach(function (g) { groups.push({ k: g.k, d: g.d, psw: g.psw, name: g.name, units: g.units.map(function (u) { return u + off; }) }); });
+        sub.groups.forEach(function (g) { groups.push({ k: g.k, d: g.d, psw: g.psw, sw: g.sw, name: g.name, units: g.units.map(function (u) { return u + off; }) }); });
         subs.push(sub);
         getters[k] = function (st, base) { return sub.ev(st, base + off); };
       } else {
@@ -1294,7 +1323,7 @@ var BS = (function () {
           if (c.succs[p].length !== 1) throw new Error('Grupo en espera "' + e.name + '": el bloque "' + pe.name + '" solo puede conectarse a ese nodo.');
           units.push(leafOf[p]);
         });
-        groups.push({ k: Math.max(1, e.k || 1), d: Math.min(1, Math.max(0, +e.dorm || 0)), psw: e.pSwitch == null ? 1 : Math.min(1, Math.max(0, +e.pSwitch)), name: prefix + e.name, units: units });
+        groups.push({ k: Math.max(1, e.k || 1), d: Math.min(1, Math.max(0, +e.dorm || 0)), psw: e.pSwitch == null ? 1 : Math.min(1, Math.max(0, +e.pSwitch)), sw: Math.max(0, +e.tSwitch || 0), name: prefix + e.name, units: units });
       }
     });
     var S = new Uint8Array(c.n);
@@ -1338,10 +1367,48 @@ var BS = (function () {
     return g;
   }
 
+  /* ---------- Tiempos logísticos: valor fijo o distribución ----------
+     spec = { kind: 'fixed', value: x }  |  { kind: 'dist', dist: {...} } */
+  function specSample(s, rng) { return s.kind === 'dist' ? distSample(s.dist, rng) : Math.max(0, +s.value || 0); }
+  function specMean(s) { return !s ? 0 : s.kind === 'dist' ? distMean(s.dist) : Math.max(0, +s.value || 0); }
+  function specIsZero(s) { return !s || (s.kind !== 'dist' && !(+s.value > 0)); }
+  function validateSpec(s, what) {
+    if (!s) return what + ': no está definido.';
+    if (s.kind === 'dist') { var e = validateDist(s.dist); return e ? what + ': ' + e : null; }
+    return (typeof s.value === 'number' && isFinite(s.value) && s.value >= 0) ? null : what + ': el valor debe ser un número mayor o igual a 0.';
+  }
+  function specLabel(s) {
+    if (!s) return '—';
+    return s.kind === 'dist' ? distLabel(s.dist, true) : 'Fijo = ' + fmtNum(+s.value || 0, 4);
+  }
+  /* ¿El diagrama (o sus subdiagramas) usa algo del módulo logístico? */
+  function usesLogistics(project, diagId, seen) {
+    seen = seen || {}; if (seen[diagId]) return false; seen[diagId] = 1;
+    var d = findDiagram(project, diagId); if (!d) return false;
+    return (d.elements || []).some(function (e) {
+      if (e.active === false) return false;
+      if (e.kind === 'node') return e.redund === 'standby' && +e.tSwitch > 0;
+      if (e.asDiagram && e.subId) return usesLogistics(project, e.subId, seen);
+      var L = e.logi; if (!L || !e.canRepair) return false;
+      return !!(L.pool || L.crew || (L.delayOn && !specIsZero(L.delay)) || (L.pm && L.pm.on));
+    });
+  }
+
   /* Motor de simulación por eventos discretos.
-     Cada unidad tiene una vida en "edad"; envejece a tasa 1 operando, d en espera y 0 fallada.
+     Cada unidad tiene una vida en "edad"; envejece a tasa 1 operando, d en espera y 0 en cualquier otro estado.
      Grupos en espera: operan k unidades según prioridad; al fallar una, entra la siguiente disponible
-     con probabilidad de conmutación psw (si falla la conmutación, esa unidad queda fallada). */
+     con probabilidad de conmutación psw (si falla la conmutación, esa unidad queda fallada) y tras el
+     tiempo de conmutación sw (mientras conmuta no opera).
+     Módulo logístico (solo en mantenibilidad), por bloque reparable:
+       falla → demora logística → espera de repuesto (pool) → espera de cuadrilla → reparación activa → como nuevo.
+     Repuestos: política uno por uno (S−1, S): cada demanda genera un pedido que llega tras el plazo de reposición;
+       si no hay stock, la unidad espera la próxima llegada (cola FIFO).
+     Cuadrillas: n técnicos/equipos iguales; la cuadrilla se ocupa solo durante la reparación activa y la mantención.
+       Cola: primero las reparaciones (en orden de llegada) y luego las mantenciones preventivas.
+     Mantención preventiva por calendario: cada intervalo, desde la primera fecha. Si la unidad está fallada se omite;
+       si no hay cuadrilla, la unidad sigue operando hasta que se libere una. Deja la unidad "como nueva". */
+  var M_FAIL = 0, M_OP = 1, M_SB = 2, M_SW = 3, M_PM = 4;
+  var PH_NONE = 0, PH_LOG = 1, PH_SPARE = 2, PH_CREW = 3, PH_REP = 4, PH_PM = 5;
   function simCore(project, diagId, o, withRepair, onProgress) {
     var fl = new Flat(project, diagId), L = fl.leaves.length;
     var End = withRepair ? o.endTime : Infinity, grid = timeGrid(o.endTime, o.inc);
@@ -1351,30 +1418,128 @@ var BS = (function () {
     groups.forEach(function (g, gi) { g.units.forEach(function (u) { gOf[u] = gi; }); });
     var nodes = fl.collectNodes([]), NN = nodes.length;
     var els = fl.leaves.map(function (l) { return l.el; });
-    var mode = new Uint8Array(L), age = new Float64Array(L), life = new Float64Array(L), rep = new Float64Array(L), st = new Uint8Array(L);
+
+    /* ---- configuración logística ---- */
+    var poolDefs = withRepair ? (project.pools || []) : [], crewDefs = withRepair ? (project.crews || []) : [];
+    var NP = poolDefs.length, NC = crewDefs.length, poolIx = {}, crewIx = {};
+    poolDefs.forEach(function (p, i) {
+      poolIx[p.id] = i;
+      if (!(p.stock >= 0 && Math.floor(p.stock) === p.stock)) throw new Error('Repuestos "' + p.name + '": el stock inicial debe ser un entero mayor o igual a 0.');
+      if (!p.noRestock) { var e = validateSpec(p.lead, 'Repuestos "' + p.name + '" – plazo de reposición'); if (e) throw new Error(e); }
+    });
+    crewDefs.forEach(function (c, i) {
+      crewIx[c.id] = i;
+      if (!(c.count >= 1 && Math.floor(c.count) === c.count)) throw new Error('Cuadrilla "' + c.name + '": la cantidad debe ser un entero mayor o igual a 1.');
+    });
+    var poolOf = new Int32Array(L).fill(-1), crewOf = new Int32Array(L).fill(-1), logOf = [], pmOf = [];
+    els.forEach(function (e, k) {
+      var Lg = e.logi; logOf[k] = null; pmOf[k] = null;
+      if (!withRepair || !Lg || !e.canRepair || e.isStatic) return;
+      var nm = fl.leaves[k].name;
+      if (Lg.pool && poolIx[Lg.pool] != null) poolOf[k] = poolIx[Lg.pool];
+      if (Lg.crew && crewIx[Lg.crew] != null) crewOf[k] = crewIx[Lg.crew];
+      if (Lg.delayOn && !specIsZero(Lg.delay)) { var e1 = validateSpec(Lg.delay, 'Bloque "' + nm + '" – demora logística'); if (e1) throw new Error(e1); logOf[k] = Lg.delay; }
+      if (Lg.pm && Lg.pm.on) {
+        var pm = Lg.pm;
+        if (!(pm.interval > 0)) throw new Error('Bloque "' + nm + '": el intervalo de mantención preventiva debe ser mayor que 0.');
+        var e2 = validateSpec(pm.dur, 'Bloque "' + nm + '" – duración de la mantención'); if (e2) throw new Error(e2);
+        pmOf[k] = { interval: pm.interval, first: pm.first > 0 ? pm.first : pm.interval, dur: pm.dur };
+      }
+    });
+
+    /* ---- estado ---- */
+    var mode = new Uint8Array(L), ph = new Uint8Array(L), age = new Float64Array(L), life = new Float64Array(L), rep = new Float64Array(L), st = new Uint8Array(L);
+    var pmNext = new Float64Array(L), pmPend = new Uint8Array(L), held = new Int32Array(L);
+    var stock = new Int32Array(NP), arr = poolDefs.map(function () { return []; }), qP = poolDefs.map(function () { return []; });
+    var free = new Int32Array(NC), qC = crewDefs.map(function () { return []; });
     var dirty = new Uint8Array(groups.length);
-    var rate = function (k) { return mode[k] === 1 ? 1 : (mode[k] === 2 ? groups[gOf[k]].d : 0); };
-    // acumuladores
+    var rate = function (k) { return mode[k] === M_OP ? 1 : (mode[k] === M_SB ? groups[gOf[k]].d : 0); };
+
+    /* ---- acumuladores ---- */
     var acc = { up: 0, nf: 0, rel: 0, ptA: new Float64Array(grid.length) };
-    var lacc = els.map(function () { return { down: 0, sb: 0, nf: 0, rel: 0 }; });
+    var lacc = els.map(function () { return { down: 0, sb: 0, sw: 0, nf: 0, rel: 0, log: 0, wsp: 0, wcr: 0, rep: 0, pm: 0, npm: 0, nskip: 0 }; });
+    var pacc = poolDefs.map(function () { return { stock: 0, bo: 0, dem: 0, out: 0, maxBo: 0 }; });
+    var cacc = crewDefs.map(function () { return { busy: 0, q: 0, maxQ: 0 }; });
     var nacc = nodes.map(function (n) { return { tm: new Float64Array(n.info.preds.length + 1), cap: 0, capm: new Float64Array(n.info.preds.length + 1), ok: 0, served: 0 }; });
     var curM = new Int32Array(NN), curCap = new Float64Array(NN);
     var Ts = [], perOuter = [], surv = null;
-    var nfLeaf = new Int32Array(L);
+    var nfLeaf = new Int32Array(L), npmLeaf = new Int32Array(L);
+
+    /* ---- cadena de reparación ---- */
+    function startRepair(k, t) { ph[k] = PH_REP; rep[k] = t + distSample(els[k].repair, rng); }
+    function requestCrew(k, t) {
+      var c = crewOf[k];
+      if (c < 0) return startRepair(k, t);
+      if (free[c] > 0) { free[c]--; held[k] = c; return startRepair(k, t); }
+      ph[k] = PH_CREW; rep[k] = Infinity; qC[c].push(k);
+    }
+    function order(p, t) { if (!poolDefs[p].noRestock) arr[p].push(t + specSample(poolDefs[p].lead, rng)); }
+    function requestSpare(k, t) {
+      var p = poolOf[k];
+      if (p < 0) return requestCrew(k, t);
+      pacc[p].dem++;
+      order(p, t);
+      if (stock[p] > 0) { stock[p]--; return requestCrew(k, t); }
+      pacc[p].out++; ph[k] = PH_SPARE; rep[k] = Infinity; qP[p].push(k);
+    }
     function failUnit(k, t) {
-      mode[k] = 0; nfLeaf[k]++;
-      rep[k] = (withRepair && els[k].canRepair && !els[k].isStatic) ? t + distSample(els[k].repair, rng) : Infinity;
+      mode[k] = M_FAIL; nfLeaf[k]++; pmPend[k] = 0;
+      if (gOf[k] >= 0) dirty[gOf[k]] = 1;
+      if (!(withRepair && els[k].canRepair && !els[k].isStatic)) { ph[k] = PH_NONE; rep[k] = Infinity; return; }
+      if (logOf[k]) { ph[k] = PH_LOG; rep[k] = t + specSample(logOf[k], rng); return; }
+      requestSpare(k, t);
+    }
+    function restore(k) {
+      mode[k] = gOf[k] >= 0 ? M_SB : M_OP; age[k] = 0; life[k] = sampleLife(els[k], rng); rep[k] = Infinity; ph[k] = PH_NONE;
       if (gOf[k] >= 0) dirty[gOf[k]] = 1;
     }
-    function reconf(gi, t) {
-      var g = groups[gi], act = 0, j;
-      for (j = 0; j < g.units.length; j++) if (mode[g.units[j]] === 1) act++;
-      for (j = 0; j < g.units.length && act < g.k; j++) {
-        var u = g.units[j]; if (mode[u] !== 2) continue;
-        if (g.psw >= 1 || rng() < g.psw) { mode[u] = 1; act++; } else failUnit(u, t);
+    function startPM(k, t) {
+      pmPend[k] = 0; mode[k] = M_PM; ph[k] = PH_PM; rep[k] = t + specSample(pmOf[k].dur, rng); npmLeaf[k]++;
+      if (gOf[k] >= 0) dirty[gOf[k]] = 1;
+    }
+    function releaseCrew(c, t) {
+      free[c]++;
+      var q = qC[c];
+      while (free[c] > 0 && q.length) {
+        var pick = -1, j;
+        for (j = 0; j < q.length; j++) if (q[j] >= 0) { pick = j; break; }   // reparaciones primero
+        if (pick < 0) pick = 0;
+        var x = q.splice(pick, 1)[0];
+        if (x >= 0) { if (mode[x] === M_FAIL && ph[x] === PH_CREW) { free[c]--; held[x] = c; startRepair(x, t); } }
+        else { var u = -x - 1; if (pmPend[u] && (mode[u] === M_OP || mode[u] === M_SB || mode[u] === M_SW)) { free[c]--; held[u] = c; startPM(u, t); } }
       }
     }
-    function sync() { for (var k = 0; k < L; k++) st[k] = mode[k] === 1 ? 1 : 0; return fl.ev(st); }
+    function release(k, t) { var c = held[k]; if (c >= 0) { held[k] = -1; releaseCrew(c, t); } }
+    function pmDue(k, t) {
+      var P = pmOf[k];
+      while (pmNext[k] <= t + 1e-9 * Math.max(1, t)) pmNext[k] += P.interval;
+      if (pmPend[k] || mode[k] === M_PM) return;
+      if (mode[k] === M_FAIL) { lacc[k].nskip++; return; }
+      var c = crewOf[k];
+      if (c >= 0) {
+        if (free[c] > 0) { free[c]--; held[k] = c; }
+        else { pmPend[k] = 1; qC[c].push(-k - 1); return; }
+      }
+      startPM(k, t);
+    }
+    function arrival(p, t) {
+      if (qP[p].length) { var k = qP[p].shift(); requestCrew(k, t); }
+      else stock[p]++;
+    }
+    function minIx(a) { var m = 0; for (var i = 1; i < a.length; i++) if (a[i] < a[m]) m = i; return m; }
+
+    function reconf(gi, t) {
+      var g = groups[gi], act = 0, j;
+      for (j = 0; j < g.units.length; j++) if (mode[g.units[j]] === M_OP || mode[g.units[j]] === M_SW) act++;
+      for (j = 0; j < g.units.length && act < g.k; j++) {
+        var u = g.units[j]; if (mode[u] !== M_SB) continue;
+        if (g.psw >= 1 || rng() < g.psw) {
+          if (g.sw > 0) { mode[u] = M_SW; rep[u] = t + g.sw; } else mode[u] = M_OP;
+          act++;
+        } else failUnit(u, t);
+      }
+    }
+    function sync() { for (var k = 0; k < L; k++) st[k] = mode[k] === M_OP ? 1 : 0; return fl.ev(st); }
     function snapNodes() {
       for (var n = 0; n < NN; n++) {
         var nd = nodes[n], S = nd.flat.S, p = nd.info.preds, m = 0, cp = 0;
@@ -1385,24 +1550,42 @@ var BS = (function () {
     for (var s = 0; s < total; s++) {
       if (s % inner === 0) surv = new Float64Array(grid.length);
       var k;
-      for (k = 0; k < L; k++) { life[k] = sampleLife(els[k], rng); age[k] = 0; rep[k] = Infinity; mode[k] = 1; nfLeaf[k] = 0; }
-      groups.forEach(function (g) { var c = 0; g.units.forEach(function (u) { if (c < g.k) { mode[u] = 1; c++; } else mode[u] = 2; }); });
+      for (k = 0; k < L; k++) {
+        life[k] = sampleLife(els[k], rng); age[k] = 0; rep[k] = Infinity; mode[k] = M_OP; nfLeaf[k] = 0; npmLeaf[k] = 0;
+        ph[k] = PH_NONE; held[k] = -1; pmPend[k] = 0; pmNext[k] = pmOf[k] ? pmOf[k].first : Infinity;
+      }
+      for (k = 0; k < NP; k++) { stock[k] = poolDefs[k].stock; arr[k].length = 0; qP[k].length = 0; }
+      for (k = 0; k < NC; k++) { free[k] = crewDefs[k].count; qC[k].length = 0; }
+      groups.forEach(function (g) { var c = 0; g.units.forEach(function (u) { if (c < g.k) { mode[u] = M_OP; c++; } else mode[u] = M_SB; }); });
       var t = 0, sysUp = sync(), up = 0, nfs = sysUp ? 0 : 1, T = sysUp ? Infinity : 0, gi = 0, guard = 0;
       snapNodes();
       while (guard++ < 2000000) {
         if (!withRepair && !sysUp) break;
-        var tn = Infinity;
+        var tn = Infinity, p;
         for (k = 0; k < L; k++) {
           var r = rate(k);
           if (r > 0) { var tf = t + Math.max(0, life[k] - age[k]) / r; if (tf < tn) tn = tf; }
-          else if (mode[k] === 0 && rep[k] < tn) tn = rep[k];
+          else if (rep[k] < tn && (mode[k] === M_FAIL || mode[k] === M_SW || mode[k] === M_PM)) tn = rep[k];
+          if (pmNext[k] < tn) tn = pmNext[k];
         }
+        for (p = 0; p < NP; p++) for (var a = 0; a < arr[p].length; a++) if (arr[p][a] < tn) tn = arr[p][a];
         var tEnd = Math.min(tn, End);
         if (tEnd === Infinity) break;
         var dt = tEnd - t;
         if (withRepair && dt > 0) {
           if (sysUp) up += dt;
-          for (k = 0; k < L; k++) { if (mode[k] === 0) lacc[k].down += dt; else if (mode[k] === 2) lacc[k].sb += dt; }
+          for (k = 0; k < L; k++) {
+            var md = mode[k], la = lacc[k];
+            if (md === M_FAIL) {
+              la.down += dt;
+              var pk = ph[k];
+              if (pk === PH_REP) la.rep += dt; else if (pk === PH_LOG) la.log += dt; else if (pk === PH_SPARE) la.wsp += dt; else if (pk === PH_CREW) la.wcr += dt;
+            } else if (md === M_PM) { la.down += dt; la.pm += dt; }
+            else if (md === M_SB) la.sb += dt;
+            else if (md === M_SW) la.sw += dt;
+          }
+          for (p = 0; p < NP; p++) { var bo = qP[p].length; pacc[p].stock += stock[p] * dt; pacc[p].bo += bo * dt; if (bo > pacc[p].maxBo) pacc[p].maxBo = bo; }
+          for (p = 0; p < NC; p++) { var ql = qC[p].length; cacc[p].busy += (crewDefs[p].count - free[p]) * dt; cacc[p].q += ql * dt; if (ql > cacc[p].maxQ) cacc[p].maxQ = ql; }
           for (var n = 0; n < NN; n++) {
             var nf = nodes[n].info;
             nacc[n].tm[curM[n]] += dt; nacc[n].capm[curM[n]] += curCap[n] * dt; nacc[n].cap += curCap[n] * dt;
@@ -1418,11 +1601,18 @@ var BS = (function () {
         for (k = 0; k < L; k++) {
           var r2 = rate(k);
           if (r2 > 0) { if ((life[k] - age[k]) / r2 <= tol) { age[k] = life[k]; failUnit(k, t); } }
-          else if (mode[k] === 0 && rep[k] <= t + tol) {
-            mode[k] = gOf[k] >= 0 ? 2 : 1; age[k] = 0; life[k] = sampleLife(els[k], rng); rep[k] = Infinity;
-            if (gOf[k] >= 0) dirty[gOf[k]] = 1;
+          else if (rep[k] <= t + tol) {
+            if (mode[k] === M_FAIL) {
+              if (ph[k] === PH_LOG) { rep[k] = Infinity; requestSpare(k, t); }
+              else { restore(k); release(k, t); }
+            } else if (mode[k] === M_SW) { mode[k] = M_OP; rep[k] = Infinity; }
+            else if (mode[k] === M_PM) { restore(k); release(k, t); }
           }
         }
+        for (p = 0; p < NP; p++) {
+          while (arr[p].length) { var mi = minIx(arr[p]); if (arr[p][mi] > t + tol) break; arr[p].splice(mi, 1); arrival(p, t); }
+        }
+        for (k = 0; k < L; k++) if (pmNext[k] <= t + tol) pmDue(k, t);
         for (var g2 = 0; g2 < groups.length; g2++) if (dirty[g2]) { dirty[g2] = 0; reconf(g2, t); }
         var now = sync();
         if (sysUp && !now) { nfs++; if (T === Infinity) T = t; }
@@ -1431,7 +1621,7 @@ var BS = (function () {
       if (withRepair) {
         while (gi < grid.length) { if (sysUp) acc.ptA[gi]++; gi++; }
         acc.up += up; acc.nf += nfs; if (nfs === 0) acc.rel++;
-        for (k = 0; k < L; k++) { lacc[k].nf += nfLeaf[k]; if (!nfLeaf[k]) lacc[k].rel++; }
+        for (k = 0; k < L; k++) { lacc[k].nf += nfLeaf[k]; lacc[k].npm += npmLeaf[k]; if (!nfLeaf[k]) lacc[k].rel++; }
       } else {
         Ts.push(T);
         for (var q = 0; q < grid.length; q++) if (T > grid[q]) surv[q]++;
@@ -1450,14 +1640,27 @@ var BS = (function () {
       });
       return { rows: rows, sims: N, mttf: fin.length === N ? fin.reduce(function (a, v) { return a + v; }, 0) / N : NaN, failedFrac: fin.length / N, leaves: L, standby: groups.length };
     }
-    var Tend = o.endTime;
+    var Tend = o.endTime, downTot = N * Tend - acc.up;
+    var logi = usesLogistics(project, diagId);
     return {
-      sims: N, time: Tend, standby: groups.length,
-      system: { down: Tend - acc.up / N, up: acc.up / N, meanA: acc.up / N / Tend, ptA: acc.ptA[grid.length - 1] / N, rel: acc.rel / N, nf: acc.nf / N },
+      sims: N, time: Tend, standby: groups.length, logistics: logi,
+      system: { down: Tend - acc.up / N, up: acc.up / N, meanA: acc.up / N / Tend, ptA: acc.ptA[grid.length - 1] / N, rel: acc.rel / N, nf: acc.nf / N,
+        mtbde: acc.nf > 0 ? acc.up / acc.nf : Infinity, mdt: acc.nf > 0 ? downTot / acc.nf : 0 },
       ptRows: grid.map(function (tt, g) { return { t: tt, A: acc.ptA[g] / N }; }),
       blocks: fl.leaves.map(function (l, k) {
-        var dd = lacc[k].down / N, sb = lacc[k].sb / N;
-        return { name: l.name, down: dd, up: Tend - dd, sb: sb, op: Tend - dd - sb, meanA: (Tend - dd) / Tend, nf: lacc[k].nf / N, nom: 0, rel: lacc[k].rel / N, standby: gOf[k] >= 0 };
+        var a = lacc[k], dd = a.down / N, sb = a.sb / N, sw = a.sw / N;
+        return { name: l.name, down: dd, up: Tend - dd, sb: sb, sw: sw, op: Tend - dd - sb - sw, meanA: (Tend - dd) / Tend, nf: a.nf / N, nom: a.npm / N, rel: a.rel / N, standby: gOf[k] >= 0,
+          log: a.log / N, wsp: a.wsp / N, wcr: a.wcr / N, rep: a.rep / N, pm: a.pm / N, nskip: a.nskip / N,
+          pool: poolOf[k] >= 0 ? poolDefs[poolOf[k]].name : '', crew: crewOf[k] >= 0 ? crewDefs[crewOf[k]].name : '', hasPM: !!pmOf[k] };
+      }),
+      pools: poolDefs.map(function (pd, i) {
+        var a = pacc[i];
+        return { name: pd.name, used: Array.prototype.indexOf.call(poolOf, i) >= 0, stock0: pd.stock, meanStock: a.stock / (N * Tend), meanBo: a.bo / (N * Tend), maxBo: a.maxBo,
+          dem: a.dem / N, out: a.out / N, fill: a.dem > 0 ? 1 - a.out / a.dem : NaN, noRestock: !!pd.noRestock, lead: pd.noRestock ? null : pd.lead };
+      }),
+      crews: crewDefs.map(function (cd, i) {
+        var a = cacc[i];
+        return { name: cd.name, used: Array.prototype.indexOf.call(crewOf, i) >= 0, count: cd.count, util: a.busy / (N * Tend * cd.count), meanBusy: a.busy / (N * Tend), meanQ: a.q / (N * Tend), maxQ: a.maxQ };
       }),
       nodes: nodes.map(function (nd, n) {
         var a = nacc[n], tot = nd.info.caps.reduce(function (x, y) { return x + y; }, 0), npr = nd.info.preds.length;
@@ -1689,7 +1892,7 @@ var BS = (function () {
     distR: distR, distPdf: distPdf, distMean: distMean, distSample: distSample, distLabel: distLabel,
     validateDist: validateDist, DIST_NAMES: DIST_NAMES, fmtNum: fmtNum,
     compile: compile, System: System, optimize: optimize, feasF: feasF,
-    simReliability: simReliability, simMaintainability: simMaintainability, copt: copt, hasStandby: hasStandby, capOf: capOf, servedFrac: servedFrac,
+    simReliability: simReliability, simMaintainability: simMaintainability, specSample: specSample, specMean: specMean, specLabel: specLabel, validateSpec: validateSpec, usesLogistics: usesLogistics, copt: copt, hasStandby: hasStandby, capOf: capOf, servedFrac: servedFrac,
     fitAll: fitAll, prepData: prepData, kaplanMeier: kaplanMeier, findDiagram: findDiagram
   };
 })();
@@ -1931,6 +2134,32 @@ var MODEL = (function () {
     return P;
   };
 
+  EX.logistica = function () {
+    var P = newProject('Compresores con logística – repuestos, cuadrilla y mantención preventiva');
+    P.settings.units = 'h'; P.settings.capUnit = '%';
+    P.pools = [
+      { id: 'pl_kit1', name: 'Kit de válvulas (stock 1)', stock: 1, lead: { kind: 'fixed', value: 720 }, noRestock: false },
+      { id: 'pl_kit2', name: 'Kit de válvulas (stock 2)', stock: 2, lead: { kind: 'fixed', value: 720 }, noRestock: false }];
+    P.crews = [{ id: 'cr_mec', name: 'Cuadrilla mecánica', count: 1 }];
+    var T = newTemplate('Compresores');
+    var comp = newBlock({ name: 'Compresor', icon: 'compressor', failure: weib(1.4, 2500), canRepair: true, repair: { type: 'lognormal', mu: 3.4, sigma: 0.8 }, cap: 50, note: 'Datos ilustrativos' });
+    var sb = START(0, 0, 'Inicio');
+    T.blocks.push(sb, comp, newNode({ name: 'Nodo 2 de 3', k: 2 })); P.templates.push(T);
+    var mk = function (name, logi) {
+      var D = newDiagram(name);
+      var s = put(D, instFromTemplate(sb, 40, 160));
+      var cs = [40, 160, 280].map(function (y, i) { var b = put(D, instFromTemplate(comp, 220, y)); b.name = 'Compresor ' + (i + 1); if (logi) b.logi = clone(logi); return b; });
+      var n = put(D, newNode({ name: '2 de 3 activa', k: 2, x: 400, y: 166 }));
+      cs.forEach(function (b) { link(D, s, b); link(D, b, n); });
+      P.diagrams.push(D);
+    };
+    var base = { delayOn: true, delay: { kind: 'fixed', value: 4 }, pool: 'pl_kit1', crew: 'cr_mec', pm: { on: true, interval: 2000, first: null, dur: { kind: 'fixed', value: 12 } } };
+    mk('A. Sin logística (ideal)', null);
+    mk('B. Stock 1 kit, 1 cuadrilla, PM 2000 h', base);
+    mk('C. Stock 2 kits, 1 cuadrilla, PM 2000 h', Object.assign(clone(base), { pool: 'pl_kit2' }));
+    return P;
+  };
+
   EX.mixto = function () {
     var P = newProject('Configuraciones mixtas – 13 equipos (Ri = 0,75)');
     P.settings.units = 'h'; P.settings.capUnit = '%';
@@ -1985,7 +2214,8 @@ var MODEL = (function () {
     { key: 'avion', title: 'Pregunta 5', desc: 'Avión: 1-de-2 por ala (0,9801) vs 2-de-4 (0,9963)' },
     { key: 'rodamiento', title: 'Pregunta 6', desc: 'Ajuste de datos de intervalo (Weibull) y censurados (Lognormal)' },
     { key: 'mixto', title: 'Configuraciones mixtas', desc: 'Serie, paralelo, 3 de 4 y fraccionamiento al 100 % y 120 % (13 equipos, Ri = 0,75). Rs = 0,3175 y propuestas de mejora' },
-    { key: 'compresores', title: 'Compresores', desc: '3 compresores: 2 de 3 activa vs 2 operando + 1 en espera, con capacidad (datos ilustrativos)' }
+    { key: 'compresores', title: 'Compresores', desc: '3 compresores: 2 de 3 activa vs 2 operando + 1 en espera, con capacidad (datos ilustrativos)' },
+    { key: 'logistica', title: 'Compresores con logística', desc: 'Mismo parque 2 de 3 sin logística, con 1 kit de repuesto y con 2 kits; cuadrilla única y PM cada 2000 h (datos ilustrativos)' }
   ];
 
   return {
@@ -2322,6 +2552,7 @@ function menuDefs() {
       { label: 'Calculadora rápida (QCP)', key: 'F6', action: function () { openQCP(); } },
       { label: 'Gráfico', key: 'F7', action: function () { cmdPlot(); } },
       { label: 'Simulación', key: 'F8', action: function () { openSim(); } },
+      { label: 'Repuestos y cuadrillas…', action: function () { openResources(); } },
       { label: 'Asistente de funciones', action: function () { openWizard(); } }, '-',
       { label: 'Ajuste de distribución (datos de vida)…', action: function () { openFit(null); } }] },
     { name: 'Ayuda', items: [{ label: 'Manual de uso', key: 'F1', action: openManual }, '-'].concat(ex).concat(['-', { label: 'Verificar el programa…', action: cmdSelfTest }, { label: 'Acerca de SimBloques', action: openAbout }]) }
@@ -2709,7 +2940,7 @@ function openAbout() {
   openModal({
     title: 'Acerca de SimBloques',
     body: h('div', { class: 'stack' },
-      h('p', null, 'SimBloques es una herramienta de confiabilidad de sistemas mediante diagramas de bloques (RBD), inspirada en las funciones de ReliaSoft BlockSim 1.0 descritas en su guía de entrenamiento.'),
+      h('p', null, 'SimBloques es una herramienta de confiabilidad de sistemas mediante diagramas de bloques (RBD), inspirada en las funciones de ReliaSoft BlockSim 1.0 descritas en su guía de entrenamiento. Incluye un módulo de simulación logística de mantenimiento (repuestos, cuadrillas, demoras y mantención preventiva) desarrollado desde cero y validado contra resultados de colas e inventario.'),
       h('p', null, 'Funciona completamente en el navegador, sin conexión a internet ni servidores: los datos quedan en tu equipo. Guarda los proyectos como archivos .sbq.json.'),
       h('p', { class: 'muted' }, 'No está afiliado a ReliaSoft ni a HBM Prenscia. Los resultados se validaron contra los ejemplos de la guía (ver el manual, sección "Validación").'))
   });
@@ -3218,6 +3449,135 @@ function containsDiag(rootId, targetId, seen) {
   return d.elements.some(function (e) { return e.asDiagram && e.subId && containsDiag(e.subId, targetId, seen); });
 }
 
+/* ---------- Editor de tiempo logístico: valor fijo o distribución ---------- */
+function specEditor(spec, opts) {
+  opts = opts || {};
+  spec = spec ? MODEL.clone(spec) : { kind: 'fixed', value: opts.defValue || 0 };
+  var nm = 'spec-' + Math.random().toString(36).slice(2, 7), listeners = [];
+  var fire = function () { listeners.forEach(function (f) { f(); }); };
+  var rFix = h('input', { type: 'radio', name: nm, id: nm + 'f', value: 'fixed', checked: spec.kind !== 'dist' });
+  var rDist = h('input', { type: 'radio', name: nm, id: nm + 'd', value: 'dist', checked: spec.kind === 'dist' });
+  var val = h('input', { type: 'text', inputmode: 'decimal', id: nm + 'v', value: fmtIn(spec.kind === 'dist' ? (opts.defValue || 0) : (+spec.value || 0)) });
+  var dEd = distEditor(spec.kind === 'dist' ? spec.dist : { type: 'exponential', lambda: 1 / (opts.defValue > 0 ? opts.defValue : 10), gamma: 0 }, { allowMix: false });
+  var fixBox = h('label', { class: 'field' }, h('span', null, (opts.label || 'Valor') + ' (' + units() + ')'), val);
+  var sync = function () { fixBox.hidden = rDist.checked; dEd.el.hidden = !rDist.checked; };
+  [rFix, rDist].forEach(function (r) { r.addEventListener('change', function () { sync(); fire(); }); });
+  val.addEventListener('input', fire); dEd.onChange(fire);
+  sync();
+  var el = h('div', { class: 'stack spec-ed' },
+    h('div', { class: 'row gap' }, h('label', { class: 'radio', for: nm + 'f' }, rFix, h('span', null, 'Valor fijo')), h('label', { class: 'radio', for: nm + 'd' }, rDist, h('span', null, 'Distribución'))),
+    fixBox, dEd.el);
+  return {
+    el: el,
+    get: function () {
+      if (rDist.checked) { var g = dEd.get(); return { spec: { kind: 'dist', dist: g.dist }, err: g.err ? (opts.label || 'Valor') + ': ' + g.err : null }; }
+      var s = { kind: 'fixed', value: parseNum(val.value) };
+      return { spec: s, err: BS.validateSpec(s, opts.label || 'Valor') };
+    },
+    mean: function () { var g = this.get(); return g.err ? NaN : BS.specMean(g.spec); },
+    setDisabled: function (dis) { $$('input', el).forEach(function (i) { i.disabled = dis; }); },
+    onChange: function (f) { listeners.push(f); }
+  };
+}
+
+/* ---------- Recursos logísticos del proyecto: repuestos y cuadrillas ---------- */
+function ensureLogi(P) { if (!P.pools) P.pools = []; if (!P.crews) P.crews = []; }
+function allProjectBlocks(P) {
+  var out = [];
+  P.diagrams.forEach(function (d) { d.elements.forEach(function (e) { out.push({ el: e, where: d.name }); }); });
+  P.templates.forEach(function (t) { t.blocks.forEach(function (e) { out.push({ el: e, where: 'Plantilla ' + t.name }); }); });
+  return out;
+}
+function resUsage(P, key, id) {
+  return allProjectBlocks(P).filter(function (x) { return x.el.logi && x.el.logi[key] === id; }).length;
+}
+function openResources(opts) {
+  opts = opts || {};
+  ensureLogi(App.P);
+  var pools = MODEL.clone(App.P.pools), crews = MODEL.clone(App.P.crews);
+  var pBox = h('div'), cBox = h('div');
+  var leadKind = function (p) { return p.noRestock ? 'none' : (p.lead && p.lead.kind === 'dist' ? 'exp' : 'fixed'); };
+  var leadVal = function (p) { return p.lead ? (p.lead.kind === 'dist' ? BS.distMean(p.lead.dist) : +p.lead.value) : 0; };
+  function drawPools() {
+    pBox.innerHTML = '';
+    var t = h('table', { class: 'tbl edit' });
+    t.appendChild(h('thead', null, h('tr', null, h('th', null, 'Nombre del repuesto'), h('th', null, 'Stock inicial'), h('th', null, 'Reposición'), h('th', null, 'Plazo medio (' + units() + ')'), h('th', null, 'Bloques que lo usan'), h('th', null, ''))));
+    var tb = h('tbody');
+    pools.forEach(function (p, i) {
+      var nI = h('input', { type: 'text', value: p.name, 'aria-label': 'Nombre repuesto ' + (i + 1) });
+      var sI = h('input', { type: 'text', inputmode: 'numeric', value: String(p.stock), class: 'narrow', 'aria-label': 'Stock inicial ' + (i + 1) });
+      var kS = h('select', { 'aria-label': 'Tipo de reposición ' + (i + 1) },
+        h('option', { value: 'fixed', selected: leadKind(p) === 'fixed' }, 'Plazo fijo'),
+        h('option', { value: 'exp', selected: leadKind(p) === 'exp' }, 'Plazo exponencial'),
+        h('option', { value: 'none', selected: leadKind(p) === 'none' }, 'Sin reposición'));
+      var lI = h('input', { type: 'text', inputmode: 'decimal', value: fmtIn(leadVal(p)), class: 'narrow', 'aria-label': 'Plazo de reposición ' + (i + 1) });
+      var upd = function () {
+        p.name = nI.value; p.stock = parseNum(sI.value); var v = parseNum(lI.value);
+        p.noRestock = kS.value === 'none'; lI.disabled = p.noRestock;
+        p.lead = kS.value === 'exp' ? { kind: 'dist', dist: { type: 'exponential', lambda: v > 0 ? 1 / v : NaN, gamma: 0 } } : { kind: 'fixed', value: v };
+      };
+      [nI, sI, lI].forEach(function (x) { x.addEventListener('input', upd); }); kS.addEventListener('change', upd); upd();
+      var used = resUsage(App.P, 'pool', p.id);
+      tb.appendChild(h('tr', null, h('td', null, nI), h('td', null, sI), h('td', null, kS), h('td', null, lI), h('td', null, String(used)),
+        h('td', null, h('button', { type: 'button', class: 'btn small', onclick: function () { pools.splice(i, 1); drawPools(); } }, 'Quitar'))));
+    });
+    if (!pools.length) tb.appendChild(h('tr', null, h('td', { colspan: '6', class: 'muted' }, 'Sin repuestos definidos.')));
+    t.appendChild(tb);
+    pBox.appendChild(h('div', { class: 'tbl-wrap' }, t));
+  }
+  function drawCrews() {
+    cBox.innerHTML = '';
+    var t = h('table', { class: 'tbl edit' });
+    t.appendChild(h('thead', null, h('tr', null, h('th', null, 'Nombre de la cuadrilla'), h('th', null, 'Cantidad (equipos de trabajo)'), h('th', null, 'Bloques que la usan'), h('th', null, ''))));
+    var tb = h('tbody');
+    crews.forEach(function (c, i) {
+      var nI = h('input', { type: 'text', value: c.name, 'aria-label': 'Nombre cuadrilla ' + (i + 1) });
+      var cI = h('input', { type: 'text', inputmode: 'numeric', value: String(c.count), class: 'narrow', 'aria-label': 'Cantidad cuadrilla ' + (i + 1) });
+      var upd = function () { c.name = nI.value; c.count = parseNum(cI.value); };
+      nI.addEventListener('input', upd); cI.addEventListener('input', upd);
+      tb.appendChild(h('tr', null, h('td', null, nI), h('td', null, cI), h('td', null, String(resUsage(App.P, 'crew', c.id))),
+        h('td', null, h('button', { type: 'button', class: 'btn small', onclick: function () { crews.splice(i, 1); drawCrews(); } }, 'Quitar'))));
+    });
+    if (!crews.length) tb.appendChild(h('tr', null, h('td', { colspan: '4', class: 'muted' }, 'Sin cuadrillas definidas: las reparaciones parten de inmediato (recursos ilimitados).')));
+    t.appendChild(tb);
+    cBox.appendChild(h('div', { class: 'tbl-wrap' }, t));
+  }
+  drawPools(); drawCrews();
+  var body = h('div', { class: 'stack' },
+    h('p', { class: 'muted' }, 'Recursos compartidos por los bloques del proyecto. Se asignan a cada bloque en sus propiedades › Logística y se usan en la Simulación de mantenibilidad (F8).'),
+    h('fieldset', { class: 'fs' }, h('legend', null, 'Repuestos'), pBox,
+      h('div', { class: 'row gap-s' }, h('button', { type: 'button', class: 'btn small', onclick: function () {
+        pools.push({ id: MODEL.uid('pl'), name: uniqueName('Repuesto', pools), stock: 1, lead: { kind: 'fixed', value: 720 }, noRestock: false }); drawPools();
+      } }, 'Agregar repuesto')),
+      h('p', { class: 'muted small' }, 'Política uno por uno (S−1, S): cada falla que consume un repuesto genera un pedido que llega tras el plazo de reposición. Si no hay stock, el equipo espera la próxima llegada. "Sin reposición" = solo se cuenta con el stock inicial.')),
+    h('fieldset', { class: 'fs' }, h('legend', null, 'Cuadrillas'), cBox,
+      h('div', { class: 'row gap-s' }, h('button', { type: 'button', class: 'btn small', onclick: function () {
+        crews.push({ id: MODEL.uid('cr'), name: uniqueName('Cuadrilla', crews), count: 1 }); drawCrews();
+      } }, 'Agregar cuadrilla')),
+      h('p', { class: 'muted small' }, 'Una cuadrilla queda ocupada durante la reparación activa y durante la mantención preventiva. Si todas están ocupadas, los equipos esperan en cola: primero las reparaciones (en orden de llegada) y después las mantenciones preventivas.')));
+  openModal({
+    title: 'Repuestos y cuadrillas', body: body, xwide: true,
+    onClose: opts.onClose,
+    buttons: [{ label: 'Cancelar' }, { label: 'Aceptar', primary: true, onClick: function (close) {
+      var err = null;
+      pools.forEach(function (p) {
+        p.name = String(p.name || '').trim();
+        if (!p.name) err = err || 'Cada repuesto necesita un nombre.';
+        if (!(p.stock >= 0 && Math.floor(p.stock) === p.stock)) err = err || 'Repuesto "' + p.name + '": el stock inicial debe ser un entero ≥ 0.';
+        if (!p.noRestock && !(BS.specMean(p.lead) > 0)) err = err || 'Repuesto "' + p.name + '": el plazo de reposición debe ser mayor que 0.';
+      });
+      crews.forEach(function (c) {
+        c.name = String(c.name || '').trim();
+        if (!c.name) err = err || 'Cada cuadrilla necesita un nombre.';
+        if (!(c.count >= 1 && Math.floor(c.count) === c.count)) err = err || 'Cuadrilla "' + c.name + '": la cantidad debe ser un entero ≥ 1.';
+      });
+      if (err) { toast(err, 'warn'); return false; }
+      commit(); App.P.pools = pools; App.P.crews = crews; save();
+      close(); toast('Recursos logísticos guardados.');
+    } }]
+  });
+}
+
 /* ---------- Propiedades de bloque / nodo ---------- */
 function openBlockProps(el, ctx) {
   var w = MODEL.clone(el), isNode = w.kind === 'node';
@@ -3230,10 +3590,10 @@ function openBlockProps(el, ctx) {
   var head = h('div', { class: 'bp-head' },
     h('label', { class: 'field grow' }, h('span', null, isNode ? 'Nombre del nodo' : 'Nombre del bloque'), nameInp),
     isNode ? null : h('label', { class: 'field' }, h('span', null, 'Ícono'), h('div', { class: 'row gap-s' }, iconPrev, iconSel)));
-  var tabs = tabsUI(isNode ? ['Nodo', 'Falla', 'Reparación'] : ['Falla', 'Reparación', 'Optimización', 'Otros']);
+  var tabs = tabsUI(isNode ? ['Nodo', 'Falla', 'Reparación'] : ['Falla', 'Reparación', 'Logística', 'Optimización', 'Otros']);
 
   // --- Nodo
-  var kInp = null, redSel = null, dormInp = null, pswInp = null, demInp = null;
+  var kInp = null, redSel = null, dormInp = null, pswInp = null, demInp = null, swInp = null;
   if (isNode) {
     var nIn = D ? D.links.filter(function (l) { return l.to === w.id; }).length : 0;
     kInp = h('input', { type: 'number', min: '1', step: '1', id: 'bp-k', value: w.k || 1 });
@@ -3241,10 +3601,12 @@ function openBlockProps(el, ctx) {
     demInp = h('input', { type: 'text', inputmode: 'decimal', id: 'bp-demand', value: w.demand > 0 ? fmtIn(w.demand) : '', placeholder: 'Suma de capacidades' });
     dormInp = h('input', { type: 'text', inputmode: 'decimal', id: 'bp-dorm', value: fmtIn(w.dorm || 0) });
     pswInp = h('input', { type: 'text', inputmode: 'decimal', id: 'bp-psw', value: fmtIn(w.pSwitch == null ? 1 : w.pSwitch) });
+    swInp = h('input', { type: 'text', inputmode: 'decimal', id: 'bp-tsw', value: fmtIn(+w.tSwitch || 0) });
     var sbBox = h('fieldset', { class: 'fs' }, h('legend', null, 'Reserva en espera'),
       h('div', { class: 'grid2' },
         h('label', { class: 'field' }, h('span', null, 'Factor de envejecimiento en espera'), dormInp, h('small', { class: 'muted' }, '0 = reserva fría (no envejece) · 1 = caliente (envejece como si operara) · intermedio = tibia.')),
-        h('label', { class: 'field' }, h('span', null, 'Probabilidad de conmutación exitosa'), pswInp, h('small', { class: 'muted' }, 'Probabilidad de que la unidad de reserva arranque cuando se la requiere. Si no arranca, queda fallada y va a reparación.'))),
+        h('label', { class: 'field' }, h('span', null, 'Probabilidad de conmutación exitosa'), pswInp, h('small', { class: 'muted' }, 'Probabilidad de que la unidad de reserva arranque cuando se la requiere. Si no arranca, queda fallada y va a reparación.')),
+        h('label', { class: 'field' }, h('span', null, 'Tiempo de conmutación (' + units() + ')'), swInp, h('small', { class: 'muted' }, 'Tiempo que tarda la reserva en tomar la carga (arranque, puesta en línea). Mientras conmuta no opera. 0 = instantáneo.'))),
       h('div', { class: 'note' }, 'Prioridad de entrada: de arriba hacia abajo según la posición de los bloques en el diagrama. ' + (D ? (function () {
         var pr = D.links.filter(function (l) { return l.to === w.id; }).map(function (l) { return D.elements.filter(function (e) { return e.id === l.from; })[0]; }).filter(Boolean)
           .sort(function (a, b) { return a.y - b.y || a.x - b.x; }).map(function (e, i) { return (i + 1) + '. ' + e.name; });
@@ -3345,6 +3707,82 @@ function openBlockProps(el, ctx) {
     h('p', { class: 'muted small' }, 'La reparación solo se usa en la simulación de mantenibilidad (disponibilidad, tiempo fuera de servicio). Los cálculos analíticos de la calculadora rápida usan únicamente la distribución de falla. Después de cada reparación el bloque queda "como nuevo".')));
   syncRep();
 
+  // --- Logística (repuestos, cuadrillas, demora, mantención preventiva)
+  var lgUI = null;
+  if (!isNode) {
+    ensureLogi(App.P);
+    var lg = w.logi || {}, lpm = lg.pm || {};
+    var lp = tabs.panes['Logística'];
+    var delayOn = h('input', { type: 'checkbox', id: 'bp-delayon', checked: !!lg.delayOn });
+    var delayEd = specEditor(lg.delay || { kind: 'fixed', value: 0 }, { label: 'Demora logística', defValue: 8 });
+    var poolSel = h('select', { id: 'bp-pool' }), crewSel = h('select', { id: 'bp-crew' });
+    var fillSel = function (sel, list, curId, none) {
+      sel.innerHTML = ''; sel.appendChild(h('option', { value: '' }, none));
+      list.forEach(function (x) { sel.appendChild(h('option', { value: x.id, selected: x.id === curId }, x.name)); });
+      if (curId && !list.some(function (x) { return x.id === curId; })) sel.value = '';
+    };
+    var refill = function () {
+      var cp = poolSel.value || lg.pool, cc = crewSel.value || lg.crew;
+      fillSel(poolSel, App.P.pools || [], cp, 'Ninguno (repuesto siempre disponible)');
+      fillSel(crewSel, App.P.crews || [], cc, 'Ninguna (sin límite de personal)');
+    };
+    refill();
+    var pmOn = h('input', { type: 'checkbox', id: 'bp-pmon', checked: !!lpm.on });
+    var pmInt = h('input', { type: 'text', inputmode: 'decimal', id: 'bp-pmint', value: fmtIn(lpm.interval > 0 ? lpm.interval : 4000) });
+    var pmFirst = h('input', { type: 'text', inputmode: 'decimal', id: 'bp-pmfirst', value: lpm.first > 0 ? fmtIn(lpm.first) : '', placeholder: 'Igual al intervalo' });
+    var pmDurEd = specEditor(lpm.dur || { kind: 'fixed', value: 8 }, { label: 'Duración de la mantención', defValue: 8 });
+    var lgInfo = h('div', { class: 'note' });
+    var syncLog = function () {
+      var on = canRep.checked;
+      delayOn.disabled = !on; poolSel.disabled = !on; crewSel.disabled = !on; pmOn.disabled = !on;
+      delayEd.setDisabled(!on || !delayOn.checked);
+      pmInt.disabled = pmFirst.disabled = !on || !pmOn.checked; pmDurEd.setDisabled(!on || !pmOn.checked);
+      if (!on) { lgInfo.textContent = 'La logística se aplica a bloques reparables. Marca "El bloque puede repararse" en la pestaña Reparación.'; return; }
+      var g = rEd.get(), mttr = g.err ? NaN : BS.distMean(g.dist), md = delayOn.checked ? delayEd.mean() : 0;
+      lgInfo.textContent = 'Secuencia ante una falla: demora logística' + (delayOn.checked ? ' (media ' + fmt(md, 2) + ')' : ' (no)') +
+        ' → repuesto' + (poolSel.value ? ' "' + poolSel.options[poolSel.selectedIndex].text + '"' : ' (siempre disponible)') +
+        ' → cuadrilla' + (crewSel.value ? ' "' + crewSel.options[crewSel.selectedIndex].text + '"' : ' (sin límite)') +
+        ' → reparación (MTTR ' + fmt(mttr, 2) + ' ' + units() + '). Tiempo mínimo fuera de servicio por falla, sin esperas: ' + fmt(md + mttr, 2) + ' ' + units() + '.';
+    };
+    [delayOn, pmOn].forEach(function (x) { x.addEventListener('change', syncLog); });
+    [poolSel, crewSel].forEach(function (x) { x.addEventListener('change', syncLog); });
+    delayEd.onChange(syncLog); canRep.addEventListener('change', syncLog); rEd.onChange(syncLog);
+    lp.appendChild(h('div', { class: 'stack' }, lgInfo,
+      h('div', { class: 'two-col' },
+        h('div', { class: 'stack' },
+          h('fieldset', { class: 'fs' }, h('legend', null, 'Demora logística'),
+            h('label', { class: 'check' }, delayOn, h('span', null, 'Hay demora antes de empezar la reparación')),
+            delayEd.el,
+            h('small', { class: 'muted' }, 'Tiempo desde la falla hasta que se puede intervenir: aviso, traslado, permisos, aislamiento, enfriamiento.')),
+          h('fieldset', { class: 'fs' }, h('legend', null, 'Recursos'),
+            h('label', { class: 'field' }, h('span', null, 'Repuesto que consume cada reparación'), poolSel),
+            h('label', { class: 'field' }, h('span', null, 'Cuadrilla que hace la reparación'), crewSel),
+            h('div', { class: 'row gap-s' }, h('button', { type: 'button', class: 'btn small', onclick: function () { openResources({ onClose: function () { refill(); syncLog(); } }); } }, 'Repuestos y cuadrillas…')))),
+        h('div', { class: 'stack' },
+          h('fieldset', { class: 'fs' }, h('legend', null, 'Mantención preventiva'),
+            h('label', { class: 'check' }, pmOn, h('span', null, 'Mantención preventiva por calendario')),
+            h('div', { class: 'grid2' },
+              h('label', { class: 'field' }, h('span', null, 'Intervalo (' + units() + ')'), pmInt),
+              h('label', { class: 'field' }, h('span', null, 'Primera mantención en (' + units() + ')'), pmFirst)),
+            pmDurEd.el,
+            h('small', { class: 'muted' }, 'Detiene el equipo durante la duración y lo deja "como nuevo". Usa la cuadrilla asignada arriba; si está ocupada, el equipo sigue operando hasta que se libere. Si el equipo está fallado en la fecha, esa mantención se omite.'))))));
+    syncLog();
+    lgUI = function () {
+      var e1 = delayEd.get(), e2 = pmDurEd.get(), err = null;
+      var L = { delayOn: delayOn.checked, delay: e1.spec, pool: poolSel.value || null, crew: crewSel.value || null,
+        pm: { on: pmOn.checked, interval: parseNum(pmInt.value), first: pmFirst.value.trim() === '' ? null : parseNum(pmFirst.value), dur: e2.spec } };
+      if (canRep.checked) {
+        if (L.delayOn && e1.err) err = e1.err;
+        if (L.pm.on) {
+          if (!(L.pm.interval > 0)) err = err || 'El intervalo de mantención preventiva debe ser mayor que 0.';
+          if (L.pm.first != null && !(L.pm.first > 0)) err = err || 'La primera mantención debe ser mayor que 0 (o déjala vacía).';
+          if (e2.err) err = err || e2.err;
+        }
+      }
+      return { logi: L, err: err };
+    };
+  }
+
   // --- Optimización
   var maxR = null, feas = null, optChk = null;
   if (!isNode) {
@@ -3424,6 +3862,8 @@ function openBlockProps(el, ctx) {
         if (w.redund === 'standby') {
           if (!(w.dorm >= 0 && w.dorm <= 1)) err = err || 'El factor de envejecimiento en espera debe estar entre 0 y 1.';
           if (!(w.pSwitch >= 0 && w.pSwitch <= 1)) err = err || 'La probabilidad de conmutación debe estar entre 0 y 1.';
+          w.tSwitch = swInp.value.trim() === '' ? 0 : parseNum(swInp.value);
+          if (!(w.tSwitch >= 0)) err = err || 'El tiempo de conmutación debe ser un número mayor o igual a 0.';
         }
       }
       w.canFail = canFail.checked; w.isStatic = isStatic.checked; w.staticR = parseNum(staticR.value);
@@ -3436,6 +3876,7 @@ function openBlockProps(el, ctx) {
         if (!(w.opt.maxR > 0 && w.opt.maxR <= 1)) err = err || 'La confiabilidad máxima alcanzable debe estar entre 0 y 1.';
         w.asDiagram = asDiag.checked; w.subId = asDiag.checked ? subSel.value : null; w.note = noteTa.value;
         w.cap = parseNum(capInp.value); if (!(w.cap >= 0)) err = err || 'La capacidad del bloque debe ser un número mayor o igual a 0.';
+        var lgr = lgUI(); w.logi = lgr.logi; if (lgr.err) err = err || 'Logística: ' + lgr.err;
         if (w.asDiagram) {
           if (!w.subId) err = err || 'Elige el diagrama que representa este bloque.';
           else if (D && containsDiag(w.subId, D.id)) err = err || 'Ese diagrama contiene (directa o indirectamente) al diagrama actual: se formaría un ciclo.';
@@ -4268,7 +4709,7 @@ function openSim() {
   var F = function (l, e, hint) { return h('label', { class: 'field' }, h('span', null, l), e, hint ? h('small', { class: 'muted' }, hint) : null); };
   tabs.panes['Confiabilidad'].appendChild(h('div', { class: 'stack' }, h('p', { class: 'muted' }, 'Simula tiempos de falla de cada bloque (sin reparación) y estima R(t) del sistema. Útil para comparar con el cálculo exacto o para sistemas muy grandes.'),
     h('div', { class: 'grid2' }, F('Tiempo final (' + units() + ')', relEnd), F('Incremento', relInc, 'Se reporta R(t) en cada incremento.'))));
-  tabs.panes['Mantenibilidad'].appendChild(h('div', { class: 'stack' }, h('p', { class: 'muted' }, 'Simula fallas y reparaciones de cada bloque para estimar disponibilidad, tiempo fuera de servicio y número de fallas en el período.'),
+  tabs.panes['Mantenibilidad'].appendChild(h('div', { class: 'stack' }, h('p', { class: 'muted' }, 'Simula fallas y reparaciones de cada bloque para estimar disponibilidad, tiempo fuera de servicio y número de fallas en el período. Incluye la logística definida en cada bloque (repuestos, cuadrillas, demoras y mantención preventiva).'),
     h('div', { class: 'grid2' }, F('Tiempo final (' + units() + ')', mEnd), F('Incremento', mInc, 'Se reporta la disponibilidad puntual en cada incremento.'))));
   tabs.panes['Configuración'].appendChild(h('div', { class: 'stack' }, h('div', { class: 'grid2' }, F('Número de lazos externos', outer, 'Repeticiones independientes (para ver la dispersión del resultado).'), F('Número de lazos internos', inner, 'Simulaciones por cada lazo externo.')),
     h('p', null, 'Total de simulaciones: ', total), h('div', { class: 'row gap' }, h('label', { class: 'check' }, useSeed, h('span', null, 'Usar semilla (resultados repetibles)')), F('Semilla', seed))));
@@ -4324,15 +4765,37 @@ function showRelSim(D, r, o, secs) {
   ].filter(Boolean));
 }
 function showMaintSim(D, r, o, secs) {
-  var s = r.system;
-  showResults('Simulación de mantenibilidad – ' + D.name, [
-    { heading: 'Sistema', kv: [['Simulaciones', String(r.sims)], ['Tiempo simulado', fmt(r.time, 2) + ' ' + units()], ['Tiempo fuera de servicio (medio)', fmt(s.down, 4)], ['Tiempo en servicio (medio)', fmt(s.up, 4)], ['Disponibilidad media', fmt(s.meanA, 6)], ['Disponibilidad puntual al final', fmt(s.ptA, 4)], ['Confiabilidad (sin falla del sistema en el período)', fmt(s.rel, 4)], ['Número esperado de fallas del sistema', fmt(s.nf, 4)], ['Tiempo de cálculo', fmt(secs, 2) + ' s']] },
-    r.standby ? { heading: 'Bloques', table: { head: ['Bloque', 'Fuera de servicio', 'Operando', 'En espera', 'Disp. media', 'N° esperado de fallas', 'Confiabilidad'], rows: r.blocks.map(function (b) { return [b.name, fmt(b.down, 4), fmt(b.op, 4), b.standby ? fmt(b.sb, 4) : '—', fmt(b.meanA, 4), fmt(b.nf, 4), fmt(b.rel, 4)]; }) } }
-      : { heading: 'Bloques', table: { head: ['Bloque', 'Fuera de servicio', 'En servicio', 'Disp. media', 'N° esperado de fallas', 'N° de mantenciones', 'Confiabilidad'], rows: r.blocks.map(function (b) { return [b.name, fmt(b.down, 4), fmt(b.up, 4), fmt(b.meanA, 4), fmt(b.nf, 4), fmt(b.nom, 0), fmt(b.rel, 4)]; }) } },
-  ].concat(nodeSections(r)).concat([
+  var s = r.system, u = units(), any = function (f) { return r.blocks.some(f); };
+  var kvSys = [['Simulaciones', String(r.sims)], ['Tiempo simulado', fmt(r.time, 2) + ' ' + u], ['Tiempo fuera de servicio (medio)', fmt(s.down, 4)], ['Tiempo en servicio (medio)', fmt(s.up, 4)], ['Disponibilidad media', fmt(s.meanA, 6)], ['Disponibilidad puntual al final', fmt(s.ptA, 4)], ['Confiabilidad (sin falla del sistema en el período)', fmt(s.rel, 4)], ['Número esperado de caídas del sistema', fmt(s.nf, 4)],
+    ['MTBDE – tiempo medio entre caídas del sistema', s.mtbde === Infinity ? '— (sin caídas)' : fmt(s.mtbde, 2) + ' ' + u], ['MDT – duración media de cada caída', s.nf > 0 ? fmt(s.mdt, 2) + ' ' + u : '—'], ['Tiempo de cálculo', fmt(secs, 2) + ' s']];
+  var secsOut = [{ heading: 'Sistema', kv: kvSys }];
+  var hasSw = any(function (b) { return b.sw > 0; });
+  secsOut.push(r.standby ? { heading: 'Bloques', table: { head: ['Bloque', 'Fuera de servicio', 'Operando', 'En espera'].concat(hasSw ? ['Conmutando'] : []).concat(['Disp. media', 'N° esperado de fallas', 'N° de mantenciones', 'Confiabilidad']), rows: r.blocks.map(function (b) { return [b.name, fmt(b.down, 4), fmt(b.op, 4), b.standby ? fmt(b.sb, 4) : '—'].concat(hasSw ? [b.standby ? fmt(b.sw, 4) : '—'] : []).concat([fmt(b.meanA, 4), fmt(b.nf, 4), fmt(b.nom, 2), fmt(b.rel, 4)]); }) } }
+    : { heading: 'Bloques', table: { head: ['Bloque', 'Fuera de servicio', 'En servicio', 'Disp. media', 'N° esperado de fallas', 'N° de mantenciones', 'Confiabilidad'], rows: r.blocks.map(function (b) { return [b.name, fmt(b.down, 4), fmt(b.up, 4), fmt(b.meanA, 4), fmt(b.nf, 4), fmt(b.nom, 2), fmt(b.rel, 4)]; }) } });
+  if (r.logistics) {
+    var lgB = r.blocks.filter(function (b) { return b.down > 0; }).sort(function (a, b) { return b.down - a.down; });
+    var pc = function (v, tot) { return tot > 0 ? fmt(v / tot * 100, 1) + ' %' : '—'; };
+    secsOut.push({ heading: 'Desglose del tiempo fuera de servicio por bloque (' + u + ' por período)', table: {
+      head: ['Bloque', 'Total fuera de servicio', 'Demora logística', 'Espera de repuesto', 'Espera de cuadrilla', 'Reparación activa', 'Mantención preventiva', '% por esperas logísticas'],
+      rows: lgB.map(function (b) { return [b.name, fmt(b.down, 2), fmt(b.log, 2), fmt(b.wsp, 2), fmt(b.wcr, 2), fmt(b.rep, 2), fmt(b.pm, 2), pc(b.log + b.wsp + b.wcr, b.down)]; }) } });
+    var tl = lgB.reduce(function (a, b) { return [a[0] + b.log, a[1] + b.wsp, a[2] + b.wcr, a[3] + b.rep, a[4] + b.pm]; }, [0, 0, 0, 0, 0]);
+    if (tl.some(function (v) { return v > 0; }))
+      secsOut.push({ chart: renderChart({ bars: [{ label: 'Demora', value: tl[0] }, { label: 'Repuesto', value: tl[1] }, { label: 'Cuadrilla', value: tl[2] }, { label: 'Reparación', value: tl[3] }, { label: 'PM', value: tl[4] }], yLabel: 'Horas-equipo (' + u + ')', width: 640, height: 240, compact: true, ymin: 0 }) });
+    if (any(function (b) { return b.hasPM; })) secsOut.push({ heading: 'Mantención preventiva', table: { head: ['Bloque', 'Mantenciones realizadas', 'Omitidas (equipo fallado)', 'Tiempo en mantención', 'Fallas en el período'],
+      rows: r.blocks.filter(function (b) { return b.hasPM; }).map(function (b) { return [b.name, fmt(b.nom, 2), fmt(b.nskip, 2), fmt(b.pm, 2), fmt(b.nf, 3)]; }) } });
+    var usedP = r.pools.filter(function (p) { return p.used; }), usedC = r.crews.filter(function (c) { return c.used; });
+    if (usedP.length) secsOut.push({ heading: 'Repuestos', table: { head: ['Repuesto', 'Stock inicial', 'Reposición', 'Demandas en el período', 'Demandas sin stock', 'Tasa de llenado', 'Stock medio', 'Equipos esperando (medio)', 'Máx. esperando'],
+      rows: usedP.map(function (p) { return [p.name, String(p.stock0), p.noRestock ? 'Sin reposición' : BS.specLabel(p.lead), fmt(p.dem, 3), fmt(p.out, 3), isFinite(p.fill) ? fmt(p.fill * 100, 1) + ' %' : '—', fmt(p.meanStock, 3), fmt(p.meanBo, 4), String(p.maxBo)]; }) } });
+    if (usedC.length) secsOut.push({ heading: 'Cuadrillas', table: { head: ['Cuadrilla', 'Cantidad', 'Utilización', 'Ocupadas en promedio', 'Trabajos en cola (medio)', 'Máx. en cola'],
+      rows: usedC.map(function (c) { return [c.name, String(c.count), fmt(c.util * 100, 1) + ' %', fmt(c.meanBusy, 3), fmt(c.meanQ, 4), String(c.maxQ)]; }) } });
+  }
+  secsOut = secsOut.concat(nodeSections(r)).concat([
     { heading: 'Disponibilidad puntual', table: { head: ['Tiempo', 'A(t)'], rows: r.ptRows.map(function (x) { return [fmt(x.t, 2), fmt(x.A, 4)]; }) } },
-    { text: 'Los bloques sin reparación permanecen fallados hasta el final del período. Las reparaciones dejan el bloque como nuevo. Mantenciones preventivas: no se modelan (0).' + (r.standby ? ' En los grupos en espera, las unidades de reserva no aportan capacidad hasta que entran a operar.' : '') }
-  ]), { xwide: true });
+    { text: 'Los bloques sin reparación permanecen fallados hasta el final del período. Las reparaciones y mantenciones preventivas dejan el bloque como nuevo. Una caída del sistema es cada paso de "funcionando" a "detenido"; MTBDE = tiempo en servicio / caídas y MDT = tiempo fuera de servicio / caídas.' +
+      (r.logistics ? ' Fuera de servicio de un bloque = demora logística + esperas de repuesto y cuadrilla + reparación activa + mantención preventiva.' : ' No hay logística definida: reparaciones inmediatas, repuestos y personal ilimitados.') +
+      (r.standby ? ' En los grupos en espera, las unidades de reserva no aportan capacidad hasta que entran a operar.' : '') }
+  ]);
+  showResults('Simulación de mantenibilidad – ' + D.name, secsOut, { xwide: true });
 }
 function nodeSections(r) {
   var cu = capUnit(), out = [];
@@ -4759,6 +5222,24 @@ function buildProjectReport(diags, t, opt, notes) {
     body += '<section class="' + (i === 0 ? '' : 'page-break') + '">' + diagramReportHTML(d, t, opt) + '</section>';
   });
 
+  var lgRows = [], trs = function (rows) { return rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>'; }).join(''); };
+  diags.forEach(function (d) {
+    d.elements.forEach(function (e) {
+      var L = e.logi; if (e.kind === 'node' || !e.canRepair || !L) return;
+      var pn = (App.P.pools || []).filter(function (x) { return x.id === L.pool; })[0], cn = (App.P.crews || []).filter(function (x) { return x.id === L.crew; })[0];
+      var pm = L.pm && L.pm.on ? 'Cada ' + fmt(L.pm.interval, 2) + ' · ' + BS.specLabel(L.pm.dur) : '—';
+      if (!pn && !cn && !(L.delayOn && L.delay) && pm === '—') return;
+      lgRows.push([esc(d.name), esc(e.name), L.delayOn ? esc(BS.specLabel(L.delay)) : '—', pn ? esc(pn.name) : '—', cn ? esc(cn.name) : '—', esc(pm)]);
+    });
+  });
+  if (lgRows.length || (App.P.pools || []).length || (App.P.crews || []).length) {
+    body += '<section class="page-break"><h2>Logística de mantenimiento</h2>';
+    if ((App.P.pools || []).length) body += '<h3>Repuestos</h3>' + table(['Repuesto', 'Stock inicial', 'Reposición'], trs(App.P.pools.map(function (p) { return [esc(p.name), String(p.stock), p.noRestock ? 'Sin reposición' : esc(BS.specLabel(p.lead))]; })));
+    if ((App.P.crews || []).length) body += '<h3>Cuadrillas</h3>' + table(['Cuadrilla', 'Cantidad'], trs(App.P.crews.map(function (c) { return [esc(c.name), String(c.count)]; })));
+    if (lgRows.length) body += '<h3>Asignación por bloque</h3>' + table(['Diagrama', 'Bloque', 'Demora logística', 'Repuesto', 'Cuadrilla', 'Mantención preventiva'], trs(lgRows));
+    body += '<p class="muted small">Se aplica en la simulación de mantenibilidad. Los cálculos exactos de confiabilidad no dependen de la logística.</p></section>';
+  }
+
   var st = App.P.settings;
   body += '<section class="page-break"><h2>Configuración del proyecto</h2><div class="kv-list">' +
     kvRow('Unidad de tiempo', st.units) + kvRow('Unidad de capacidad', st.capUnit) +
@@ -5093,6 +5574,54 @@ function runSelfTest(quick) {
       chkT('La misma semilla da el mismo resultado', r1.rows.every(function (x, i) { return x.R === r2.rows[i].R; }));
     })();
 
+    /* ---------- 9b. Logística: repuestos, cuadrillas, demoras, PM, conmutación ---------- */
+    g('Logística (repuestos, cuadrillas, mantención)');
+    var ex = function (m) { return { type: 'exponential', lambda: 1 / m, gamma: 0 }; }, fx = function (v) { return { kind: 'fixed', value: v }; };
+    var oo = function (end, n, seed) { return { endTime: end, inc: end, outer: 4, inner: n / 4, useSeed: true, seed: seed }; };
+    (function () {
+      var P = P0(); P.crews = [{ id: 'c1', name: 'C', count: 1 }];
+      var s = nf(), nd = MODEL.newNode({ k: 1 }), us = [0, 1, 2].map(function () { return MODEL.newBlock({ failure: ex(100), canRepair: true, repair: ex(20), logi: { crew: 'c1' } }); });
+      var D = mk(P, [s].concat(us, [nd]), us.map(function (u) { return [s, u]; }).concat(us.map(function (u) { return [u, nd]; })));
+      var r = BS.simMaintainability(P, D.id, oo(200000, 40, 11)), w = [1, 0.6, 0.24, 0.048], S = 1.888;
+      chk('Reparador único, 1 de 3: A = 1 − p₃ (fuente finita)', r.system.meanA, 1 - w[3] / S, 0.004, 'teórico = 0,974576');
+      chk('Reparador único: utilización = 1 − p₀', r.crews[0].util, 1 - w[0] / S, 0.006, 'teórico = 0,470339');
+    })();
+    (function () {
+      var P = P0(); P.pools = [{ id: 'p1', name: 'R', stock: 0, lead: fx(200) }];
+      var a = MODEL.newBlock({ failure: ex(1000), canRepair: true, repair: ex(50), logi: { pool: 'p1' } });
+      var D = mk(P, [a], []), r = BS.simMaintainability(P, D.id, oo(400000, 40, 12));
+      chk('Sin stock, plazo 200: A = m/(m + plazo + MTTR)', r.system.meanA, 0.8, 0.006, '1000/1250');
+      chk('Sin stock: MDT = plazo + MTTR', r.system.mdt, 250, 6, '250');
+    })();
+    (function () {
+      var P = P0(); P.pools = [{ id: 'p1', name: 'R', stock: 1, lead: fx(500) }];
+      var a = MODEL.newBlock({ failure: ex(1000), canRepair: true, repair: ex(1e-6), logi: { pool: 'p1' } });
+      var D = mk(P, [a], []), r = BS.simMaintainability(P, D.id, oo(400000, 40, 13));
+      var W = 0, sW = 0, z = 0, n = 400000, rg = BS.mulberry32(99);
+      for (var i = 0; i < n; i++) { var X = -1000 * Math.log(1 - rg()); W = Math.max(0, 500 - W - X); sW += W; if (W === 0) z++; }
+      chk('Stock 1, uno por uno: A = E[X]/(E[X]+E[W])', r.system.meanA, 1000 / (1000 + sW / n), 0.006, 'recurrencia W = (L − W − X)⁺');
+      chk('Stock 1: tasa de llenado = P(W = 0)', r.pools[0].fill, z / n, 0.02, 'recurrencia independiente');
+    })();
+    (function () {
+      var P = P0(), a = MODEL.newBlock({ failure: ex(1000), canRepair: true, repair: ex(50), logi: { delayOn: true, delay: { kind: 'dist', dist: ex(100) } } });
+      var D = mk(P, [a], []), r = BS.simMaintainability(P, D.id, oo(400000, 40, 14));
+      chk('Demora logística media 100: A = 1000/1150', r.system.meanA, 1000 / 1150, 0.006, '0,869565');
+    })();
+    (function () {
+      var P = P0(), a = MODEL.newBlock({ failure: ex(1e15), canRepair: true, repair: ex(1), logi: { pm: { on: true, interval: 1000, first: 1000, dur: fx(50) } } });
+      var D = mk(P, [a], []), r = BS.simMaintainability(P, D.id, { endTime: 10500, inc: 10500, outer: 1, inner: 5, useSeed: true, seed: 1 });
+      chk('PM 50 cada 1000 en 10 500: A = 1 − 500/10 500', r.system.meanA, 1 - 500 / 10500, 1e-9, 'determinístico');
+      chk('PM: 10 mantenciones en el período', r.blocks[0].nom, 10, 1e-12);
+    })();
+    (function () {
+      var P = P0(), s = nf(), nd = MODEL.newNode({ k: 1, redund: 'standby', dorm: 0, pSwitch: 1, tSwitch: 2 });
+      var us = [0, 1].map(function (i) { return MODEL.newBlock({ failure: ex(100), canRepair: true, repair: ex(1e-6), y: i * 100 }); });
+      var D = mk(P, [s].concat(us, [nd]), us.map(function (u) { return [s, u]; }).concat(us.map(function (u) { return [u, nd]; })));
+      var r = BS.simMaintainability(P, D.id, oo(200000, 40, 15));
+      chk('Conmutación de 2: A = m/(m + t_conm)', r.system.meanA, 100 / 102, 0.003, '0,980392');
+      chk('Conmutación: MDT = t_conm', r.system.mdt, 2, 1e-3);
+    })();
+
     /* ---------- 10. Ajuste MLE ---------- */
     g('Ajuste de distribución (MLE)');
     (function () {
@@ -5151,7 +5680,7 @@ function runSelfTest(quick) {
 
 function cmdSelfTest() {
   var box = h('div', { class: 'stack' },
-    h('p', null, 'Se comprobará el motor de cálculo contra resultados analíticos conocidos: fórmulas cerradas de serie, paralelo y k-de-n, las distribuciones contra sus valores de tabla, la importancia contra la derivada, la simulación contra el cálculo exacto y el ajuste MLE contra datos de parámetros conocidos.'),
+    h('p', null, 'Se comprobará el motor de cálculo contra resultados analíticos conocidos: fórmulas cerradas de serie, paralelo y k-de-n, las distribuciones contra sus valores de tabla, la importancia contra la derivada, la simulación contra el cálculo exacto, la logística (repuestos, cuadrillas, mantención) contra resultados de colas e inventario, y el ajuste MLE contra datos de parámetros conocidos.'),
     h('p', { class: 'muted small' }, 'Tarda unos segundos. No modifica tu proyecto.'));
   openModal({
     title: 'Verificar el programa', body: box,
