@@ -1,0 +1,1050 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Disponibilidad Sistémica en Serie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Concepto: banco de trabajo de ingeniería (familia de SimBloques) — cadena de plantas en serie arriba, editor de la planta y su curva al centro, resultado del sistema abajo */
+:root {
+  --bg: #e8edf0; --surface: #f5f8f9; --panel: #ffffff; --ink: #15212a; --muted: #586774; --line: #c6d0d8; --soft: #dfe6ea;
+  --accent: #0b6680; --accent-ink: #ffffff; --accent-soft: #d4e8ef;
+  --ok: #2b7a4b; --ok-soft: #dcefe3; --warn: #9a5306; --warn-soft: #f6e6d2; --crit: #b42318; --crit-soft: #f8dcd9;
+  --f-display: "Archivo", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --shadow: 0 8px 24px rgba(21, 33, 42, .10);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1317; --surface: #141b21; --panel: #19222a; --ink: #e1e8ed; --muted: #95a3ae; --line: #2e3a45; --soft: #232d36;
+    --accent: #58b6cf; --accent-ink: #061217; --accent-soft: #12313c;
+    --ok: #5ccf8d; --ok-soft: #133022; --warn: #f0a33a; --warn-soft: #3a2a12; --crit: #f87171; --crit-soft: #3c1b1b;
+    --shadow: 0 8px 24px rgba(0, 0, 0, .45); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1317; --surface: #141b21; --panel: #19222a; --ink: #e1e8ed; --muted: #95a3ae; --line: #2e3a45; --soft: #232d36;
+  --accent: #58b6cf; --accent-ink: #061217; --accent-soft: #12313c;
+  --ok: #5ccf8d; --ok-soft: #133022; --warn: #f0a33a; --warn-soft: #3a2a12; --crit: #f87171; --crit-soft: #3c1b1b;
+  --shadow: 0 8px 24px rgba(0, 0, 0, .45); color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 40px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; }
+.wrap { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.muted { color: var(--muted); } .small { font-size: 12.5px; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* Encabezado */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 24px; justify-content: space-between; }
+.brand h1 { font-size: 24px; letter-spacing: -.005em; display: flex; align-items: center; gap: 10px; }
+.brand h1 svg { color: var(--accent); flex: none; }
+.brand p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+.settings { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.field > span { font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+input[type=text], textarea, select { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; min-width: 0; }
+input.n { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+input[aria-invalid=true] { border-color: var(--crit); background: var(--crit-soft); }
+.btn { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.primary:hover { color: var(--accent-ink); filter: brightness(1.08); }
+.btn.danger:hover { border-color: var(--crit); color: var(--crit); }
+.btn.sm { padding: 3px 9px; font-size: 13px; }
+.icon-btn { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 17px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+.icon-btn:hover { color: var(--crit); }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
+.panel-head h2 { font-size: 16px; }
+.eyebrow { font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+
+/* Cadena en serie */
+.chain-scroll { overflow-x: auto; padding: 4px 2px 8px; }
+.chain { display: flex; align-items: stretch; gap: 0; min-width: max-content; }
+.arrow { display: flex; align-items: center; color: var(--muted); padding: 0 4px; }
+.plant { width: 168px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; gap: 6px; position: relative; }
+.plant:hover { border-color: var(--accent); }
+.plant.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow); }
+.plant .pname { font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: .02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plant .pmeta { font-size: 12px; color: var(--muted); }
+.plant .pA { font-family: var(--f-mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; width: fit-content; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.crit { background: var(--crit-soft); color: var(--crit); }
+.pill.ex { background: var(--soft); color: var(--muted); }
+.plant .ptarget { font-family: var(--f-mono); font-size: 11.5px; margin-top: -4px; }
+.plant .bar { height: 4px; border-radius: 2px; background: var(--soft); overflow: hidden; }
+.plant .bar i { display: block; height: 100%; background: var(--accent); }
+.plant.sys { cursor: default; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); width: 190px; }
+.plant.sys .pmeta { color: var(--accent-ink); opacity: .85; }
+.addp { width: 120px; border: 1.5px dashed var(--line); background: transparent; color: var(--muted); border-radius: 9px; cursor: pointer; font-weight: 600; }
+.addp:hover { border-color: var(--accent); color: var(--accent); }
+.tag-bn { position: absolute; top: -9px; right: 8px; background: var(--crit); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 1px 7px; border-radius: 99px; }
+
+/* Zona principal */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 16px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.grow { flex: 1; }
+.banner { background: var(--warn-soft); color: var(--warn); border-radius: 7px; padding: 8px 12px; font-size: 13px; }
+.note { background: var(--surface); border: 1px solid var(--soft); border-radius: 7px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
+
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--soft); border-radius: 8px; }
+.tbl-wrap.tall { max-height: 340px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; background: var(--surface); color: var(--muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; z-index: 1; }
+th, td { padding: 6px 10px; border-bottom: 1px solid var(--soft); white-space: nowrap; }
+td.r, th.r { text-align: right; }
+td.r { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+tr.hl td { background: var(--accent-soft); }
+tr.off td { color: var(--muted); }
+tr.total td { font-weight: 700; }
+.eq td { padding: 4px 6px; }
+.eq input[type=text] { width: 100%; padding: 4px 7px; }
+.eq .c-name { min-width: 130px; }
+.eq .c-num { width: 104px; }
+.eq input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.kpi { background: var(--surface); border: 1px solid var(--soft); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kpi span { font-size: 11.5px; color: var(--muted); }
+.kpi b { font-family: var(--f-mono); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi.lead { background: var(--accent-soft); border-color: transparent; }
+
+.chart-box { position: relative; }
+.chart { width: 100%; height: auto; display: block; }
+.c-grid { stroke: var(--soft); stroke-width: 1; }
+.c-axis { stroke: var(--line); stroke-width: 1; fill: none; }
+.c-tick { fill: var(--muted); font-size: 11px; font-family: var(--f-mono); }
+.c-lab { fill: var(--ink); font-size: 12px; font-family: var(--f-body); }
+.c-break { stroke: var(--crit); stroke-width: 1; stroke-dasharray: 4 4; opacity: .55; }
+.c-curve { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; }
+.c-area { fill: var(--accent); opacity: .08; }
+.c-dem { stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 2 3; }
+.c-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2.5; }
+.c-tag { fill: var(--ink); font-size: 12px; font-family: var(--f-mono); font-weight: 600; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; }
+.c-hover { stroke: var(--muted); stroke-width: 1; }
+.readout { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); min-height: 1.4em; }
+
+details { border: 1px solid var(--soft); border-radius: 8px; background: var(--surface); }
+details > summary { cursor: pointer; padding: 8px 12px; font-weight: 600; font-size: 13px; }
+details[open] > summary { border-bottom: 1px solid var(--soft); }
+details .inner { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+pre.code { margin: 0; font-family: var(--f-mono); font-size: 12px; background: var(--panel); border: 1px solid var(--soft); border-radius: 7px; padding: 10px; overflow-x: auto; max-height: 300px; }
+
+.sys-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+.formula { font-family: var(--f-mono); font-size: 13px; background: var(--surface); border-left: 3px solid var(--accent); padding: 8px 12px; border-radius: 0 6px 6px 0; overflow-x: auto; }
+.methods p { margin: 0; max-width: 78ch; }
+.confirm { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 16px); opacity: 0; background: var(--ink); color: var(--panel);
+  padding: 8px 16px; border-radius: 8px; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100vw - 32px); font-size: 13.5px; z-index: 50; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+.rep-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.fs { border: 1px solid var(--soft); border-radius: 8px; padding: 8px 12px 12px; margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.fs legend { font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; padding: 0 4px; }
+.chk { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.chk input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; flex: none; }
+.chk-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 12px; }
+@media (max-width: 760px) { .rep-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 960px) {
+  .main, .sys-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .brand h1 { font-size: 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1><svg viewBox="0 0 32 32" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="11" width="7" height="10" rx="1.5"/><rect x="12.5" y="11" width="7" height="10" rx="1.5"/><rect x="23" y="11" width="7" height="10" rx="1.5"/><path d="M9 16h3.5M19.5 16H23"/></svg>Disponibilidad sistémica en serie</h1>
+      <p>Cada planta es un parque de compresores en paralelo. La disponibilidad de la planta es la probabilidad de que su capacidad disponible cubra la demanda; el sistema exige que todas cumplan a la vez.</p>
+    </div>
+    <div class="settings">
+      <label class="field"><span>Unidad de capacidad</span><input type="text" id="s-unit" style="width:120px"></label>
+      <label class="field"><span>Meta del sistema (%)</span><input type="text" id="s-meta" class="n" inputmode="decimal" style="width:96px"></label>
+      <button type="button" class="btn primary" id="b-rep">Generar informe</button>
+      <button type="button" class="btn" id="b-data">Guardar / cargar datos</button>
+      <span id="reset-wrap"><button type="button" class="btn danger" id="b-reset">Restablecer ejemplo</button></span>
+    </div>
+  </header>
+
+  <section class="panel" id="data-panel" hidden>
+    <div class="panel-head"><h2>Guardar o cargar datos</h2><button type="button" class="icon-btn" id="b-data-x" aria-label="Cerrar">×</button></div>
+    <p class="muted small" style="margin:0">Los datos se recuerdan en este navegador. Para guardarlos en un archivo o pasarlos a otro equipo, copia este texto y pégalo en un .json; para cargarlos, pega el texto aquí y presiona Cargar.</p>
+    <textarea id="data-text" rows="8" spellcheck="false" style="font-family:var(--f-mono);font-size:12px"></textarea>
+    <div class="row"><button type="button" class="btn" id="b-copy-json">Copiar texto</button><button type="button" class="btn primary" id="b-load-json">Cargar</button></div>
+  </section>
+
+
+  <section class="panel" id="rep-panel" hidden>
+    <div class="panel-head"><h2>Generar informe</h2><button type="button" class="icon-btn" id="b-rep-x" aria-label="Cerrar">×</button></div>
+    <p class="muted small" style="margin:0">Informe en blanco y negro con resumen ejecutivo del sistema y una sección por planta (equipos, curva, criterio N-1 y tabla COPT). Se puede abrir para imprimir o guardar como PDF, o descargar como Word editable.</p>
+    <div class="row">
+      <label class="field grow"><span>Título</span><input type="text" id="r-title"></label>
+      <label class="field"><span>Fecha</span><input type="text" id="r-date" style="width:170px"></label>
+    </div>
+    <div class="row">
+      <label class="field grow"><span>Autor</span><input type="text" id="r-author"></label>
+      <label class="field grow"><span>Cargo</span><input type="text" id="r-role"></label>
+      <label class="field grow"><span>Área</span><input type="text" id="r-area"></label>
+    </div>
+    <div class="rep-grid">
+      <fieldset class="fs"><legend>Contenido</legend>
+        <label class="chk"><input type="checkbox" id="r-exec" checked> <span>Resumen ejecutivo, resultados del sistema y conclusiones</span></label>
+        <label class="chk"><input type="checkbox" id="r-copt" checked> <span>Tabla COPT en cada planta</span></label>
+      </fieldset>
+      <fieldset class="fs"><legend>Plantas a incluir</legend>
+        <div id="r-plants" class="chk-list"></div>
+        <div class="row"><button type="button" class="btn sm" id="b-rep-all">Todas</button><button type="button" class="btn sm" id="b-rep-none">Ninguna</button></div>
+      </fieldset>
+    </div>
+    <div class="row">
+      <button type="button" class="btn primary" id="b-rep-view">Ver informe (imprimir / PDF)</button>
+      <button type="button" class="btn" id="b-rep-word">Descargar Word (.doc)</button>
+      <span class="muted small" id="rep-status" role="status" aria-live="polite"></span>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Plantas en serie">
+    <div class="panel-head">
+      <h2>Red en serie</h2>
+      <span class="muted small" id="chain-hint"></span>
+    </div>
+    <div class="chain-scroll"><div class="chain" id="chain"></div></div>
+    <div class="banner" id="meta-warn" hidden></div>
+  </section>
+
+  <div class="main">
+    <section class="panel" id="editor" aria-label="Equipos de la planta"></section>
+    <section class="panel" id="presult" aria-label="Resultado de la planta"></section>
+  </div>
+
+  <section class="panel" aria-label="Resultado del sistema">
+    <div class="panel-head">
+      <h2>Sistema completo</h2>
+      <button type="button" class="btn sm" id="b-copy-sys">Copiar tabla (Excel)</button>
+    </div>
+    <div class="sys-grid">
+      <div class="stack" style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="tbl-wrap"><table id="sys-table"></table></div>
+        <p class="muted small" style="margin:0">Peso en la indisponibilidad: parte de −ln(As) que aporta cada planta. Indica qué planta explica la mayor parte del riesgo del sistema.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <h3 style="font-size:14px">Dónde conviene mejorar</h3>
+        <div class="tbl-wrap"><table id="imp-table"></table></div>
+        <p class="muted small" style="margin:0">Importancia de Birnbaum sobre el sistema: cuánto sube As por cada punto porcentual que sube la disponibilidad del equipo. Es exacta, porque As es lineal en la disponibilidad de cada equipo.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel methods" aria-label="Método">
+    <h2>Método</h2>
+    <p>Es el mismo cálculo de <span class="num">DisponibilidadSistemica.R</span>, generalizado a varias plantas. Para cada planta se arma la tabla de estados de capacidad (COPT) combinando sus equipos, que se suponen independientes. La disponibilidad de la planta para una demanda D es la suma de las probabilidades de los estados con capacidad ≥ D. Las plantas están en serie, así que el sistema funciona solo si todas cubren su demanda:</p>
+    <div class="formula">A_planta(D) = Σ P(estado) · [capacidad ≥ D]&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;As = A_ARENAL · A_SARA · A_CULLEN · A_DAU's · A_POSESIÓN</div>
+    <p class="muted small">Meta por planta: la meta del sistema se reparte en partes iguales, meta^(1/N). Si fijas una meta propia en una planta, se respeta y el resto se reparte entre las demás para que el producto de las metas siga siendo la meta del sistema. Servicio esperado E = Σ P(estado) · mín(capacidad, D) / D: fracción media de la demanda que la planta alcanza a mover cuando no la cubre entera. Déficit esperado = Σ P(estado) · máx(0, D − capacidad). Supuestos: equipos y plantas independientes, disponibilidad estacionaria de cada equipo (por ejemplo MTBF / (MTBF + MTTR)), y cada planta con su propia demanda.</p>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+'use strict';
+var LS = 'dispo-serie.v1';
+var S;
+
+/* ---------- utilidades ---------- */
+function uid() { return Math.random().toString(36).slice(2, 9); }
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function parseNum(s) {
+  if (typeof s === 'number') return s;
+  s = String(s == null ? '' : s).trim().replace(/\s/g, '');
+  if (!s) return NaN;
+  if (s.indexOf(',') >= 0 && s.indexOf('.') >= 0) s = s.replace(/\./g, '').replace(',', '.'); else s = s.replace(',', '.');
+  return /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(s) ? Number(s) : NaN;
+}
+function f(v, d) { if (!isFinite(v)) return '—'; return v.toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fIn(v) { return isFinite(v) ? String(Number(v.toPrecision(10))).replace('.', ',') : ''; }
+function pct(v, d) { return isFinite(v) ? f(v * 100, d == null ? 3 : d) + ' %' : '—'; }
+function toast(m) { var t = $('toast'); t.textContent = m; t.className = 'toast show'; clearTimeout(toast.t); toast.t = setTimeout(function () { t.className = 'toast'; }, 2600); }
+function copy(text) {
+  try {
+    navigator.clipboard.writeText(text).then(function () { toast('Copiado al portapapeles.'); }, function () { fallbackCopy(text); });
+  } catch (e) { fallbackCopy(text); }
+}
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.select(); var ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta); toast(ok ? 'Copiado al portapapeles.' : 'No se pudo copiar: selecciona el texto y usa Ctrl+C.');
+}
+
+/* ---------- datos de ejemplo ---------- */
+function U(name, cap, av) { return { id: uid(), name: name, cap: cap, av: av, on: true }; }
+function seed() {
+  return {
+    unit: 'mil m³/d', meta: 95, sel: 0, plants: [
+      { id: uid(), name: 'ARENAL', demand: 1000, sample: false, note: 'Datos de DisponibilidadSistemica.R',
+        units: [U('Equipo A', 300, 80), U('Equipo B', 300, 95), U('Equipo C', 550, 99), U('Equipo D', 1500, 95)] },
+      { id: uid(), name: 'SARA', demand: 800, sample: true, units: [U('Compresor 1', 400, 95), U('Compresor 2', 400, 95), U('Compresor 3', 400, 95)] },
+      { id: uid(), name: 'CULLEN', demand: 900, sample: true, units: [U('Compresor 1', 600, 93), U('Compresor 2', 600, 93), U('Compresor 3', 300, 97)] },
+      { id: uid(), name: "DAU's", demand: 1000, sample: true, units: [U('DAU-1 C1', 350, 94), U('DAU-1 C2', 350, 94), U('DAU-2 C1', 350, 94), U('DAU-2 C2', 350, 94)] },
+      { id: uid(), name: 'POSESIÓN', demand: 1500, sample: true, units: [U('Compresor 1', 500, 92), U('Compresor 2', 500, 92), U('Compresor 3', 500, 92), U('Compresor 4', 500, 92)] }
+    ]
+  };
+}
+function load() { try { var o = JSON.parse(localStorage.getItem(LS)); if (o && o.plants && o.plants.length) return o; } catch (e) { /* sin almacenamiento */ } return seed(); }
+function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
+
+/* ---------- motor de cálculo (COPT por convolución) ---------- */
+function validUnit(u) { return isFinite(u.cap) && u.cap >= 0 && isFinite(u.av) && u.av >= 0 && u.av <= 100; }
+function addTo(m, k, v) { k = Math.round(k * 1e6) / 1e6; m.set(k, (m.get(k) || 0) + v); }
+function dist(units) {
+  var m = new Map([[0, 1]]);
+  units.forEach(function (u) {
+    var a = u.av / 100, n = new Map();
+    m.forEach(function (p, c) { if (a > 0) addTo(n, c + u.cap, p * a); if (a < 1) addTo(n, c, p * (1 - a)); });
+    m = n;
+  });
+  return m;
+}
+function probGE(m, d) { var s = 0; m.forEach(function (p, c) { if (c >= d - 1e-9) s += p; }); return s; }
+function calc(pl) {
+  var act = pl.units.filter(function (u) { return u.on && validUnit(u); });
+  var m = dist(act), D = pl.demand, hasD = isFinite(D) && D > 0;
+  var levels = []; m.forEach(function (p, c) { levels.push({ cap: c, p: p }); });
+  levels.sort(function (a, b) { return b.cap - a.cap; });
+  var cum = 0; levels.forEach(function (l) { cum += l.p; l.cum = cum; });
+  var total = act.reduce(function (s, u) { return s + u.cap; }, 0), mean = 0, E = 0, def = 0;
+  levels.forEach(function (l) { mean += l.p * l.cap; if (hasD) { E += l.p * Math.min(l.cap, D) / D; def += l.p * Math.max(0, D - l.cap); } });
+  var A = hasD ? probGE(m, D) : 1, imp = {};
+  act.forEach(function (u) {
+    var others = dist(act.filter(function (x) { return x !== u; }));
+    imp[u.id] = hasD ? probGE(others, D - u.cap) - probGE(others, D) : 0;
+  });
+  return { act: act, m: m, levels: levels, total: total, mean: mean, A: A, E: hasD ? E : 1, def: def, imp: imp, D: D, hasD: hasD };
+}
+function system() {
+  var R = S.plants.map(calc), N = R.length;
+  var As = R.reduce(function (s, r) { return s * r.A; }, 1);
+  var exc = R.map(function (_, i) { return R.reduce(function (s, r, k) { return k === i ? s : s * r.A; }, 1); });
+  var lnTot = R.reduce(function (s, r) { return s + (r.A > 0 ? -Math.log(r.A) : Infinity); }, 0);
+  var meta = S.meta / 100;
+  // Metas por planta: las propias se respetan; el resto se reparte en partes iguales
+  // para que el producto de todas las metas sea la meta del sistema.
+  var custom = S.plants.map(function (p) { return validMeta(p.meta) ? p.meta / 100 : null; });
+  var prodC = custom.reduce(function (s, c) { return c != null ? s * c : s; }, 1);
+  var nAuto = custom.filter(function (c) { return c == null; }).length;
+  var metaP = nAuto ? Math.pow(meta / prodC, 1 / nAuto) : NaN;
+  var targets = custom.map(function (c) { return c != null ? c : metaP; });
+  var prodT = targets.reduce(function (s, t) { return s * t; }, 1);
+  var metaWarn = nAuto && metaP > 1 ? 'imposible' : (!nAuto && prodT < meta - 1e-12 ? 'insuficiente' : (!nAuto && prodT > meta + 1e-6 ? 'exigente' : ''));
+  var minI = -1; R.forEach(function (r, i) { if (minI < 0 || r.A < R[minI].A) minI = i; });
+  return { R: R, As: As, exc: exc, lnTot: lnTot, meta: meta, metaP: metaP, targets: targets, custom: custom, nAuto: nAuto, prodT: prodT, metaWarn: metaWarn, bottleneck: N > 1 ? minI : -1 };
+}
+function validMeta(v) { return v != null && v !== '' && isFinite(v) && v > 0 && v <= 100; }
+function metaTxt(sys, i) { return pct(Math.min(sys.targets[i], 1), 2) + (sys.custom[i] != null ? ' (propia)' : ''); }
+function metaNote(sys) {
+  if (sys.metaWarn === 'imposible') return 'Las metas propias son tan bajas que el resto de las plantas necesitaría más de 100 % para alcanzar la meta del sistema. Sube alguna meta propia o baja la meta del sistema.';
+  if (sys.metaWarn === 'insuficiente') return 'Todas las plantas tienen meta propia y su producto (' + pct(sys.prodT, 2) + ') queda bajo la meta del sistema (' + pct(sys.meta, 2) + '). Aunque todas cumplan, el sistema no la alcanza.';
+  if (sys.metaWarn === 'exigente') return 'Todas las plantas tienen meta propia y su producto (' + pct(sys.prodT, 2) + ') supera la meta del sistema (' + pct(sys.meta, 2) + '): las metas por planta son más exigentes de lo necesario.';
+  return '';
+}
+function status(A, target) { return A >= target ? 'ok' : (A >= 1 - 2 * (1 - target) ? 'warn' : 'crit'); }
+var STATUS_TXT = { ok: 'Cumple', warn: 'Bajo meta', crit: 'Crítico' };
+
+/* ---------- cadena ---------- */
+function renderChain(sys) {
+  var el = $('chain'), h = '';
+  S.plants.forEach(function (pl, i) {
+    var r = sys.R[i], st = status(r.A, sys.targets[i]);
+    if (i) h += '<div class="arrow" aria-hidden="true"><svg width="26" height="14" viewBox="0 0 26 14"><path d="M0 7h22M17 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></div>';
+    h += '<button type="button" class="plant' + (i === S.sel ? ' on' : '') + '" data-i="' + i + '" aria-pressed="' + (i === S.sel) + '">' +
+      (i === sys.bottleneck ? '<span class="tag-bn">Cuello de botella</span>' : '') +
+      '<span class="pname">' + esc(pl.name || 'Planta ' + (i + 1)) + '</span>' +
+      '<span class="pmeta">' + r.act.length + ' equipo' + (r.act.length === 1 ? '' : 's') + ' · D ' + f(pl.demand, 0) + ' / ' + f(r.total, 0) + '</span>' +
+      '<span class="pA">' + pct(r.A, 2) + '</span>' +
+      '<span class="pmeta ptarget">Meta ' + metaTxt(sys, i) + '</span>' +
+      '<span class="bar"><i style="width:' + Math.max(0, Math.min(100, r.A * 100)) + '%"></i></span>' +
+      '<span class="pill ' + st + '">' + STATUS_TXT[st] + '</span>' +
+      (pl.sample ? '<span class="pill ex">Datos de ejemplo</span>' : '') + '</button>';
+  });
+  h += '<div class="arrow" aria-hidden="true"><svg width="26" height="14" viewBox="0 0 26 14"><path d="M0 7h22M17 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></div>';
+  var sst = status(sys.As, sys.meta);
+  h += '<div class="plant sys"><span class="pname">SISTEMA</span><span class="pmeta">' + S.plants.length + ' plantas en serie</span>' +
+    '<span class="pA">' + pct(sys.As, 2) + '</span><span class="pmeta">' + f((1 - sys.As) * 365, 1) + ' días/año sin cumplir</span>' +
+    '<span class="pill ' + sst + '" style="background:var(--panel)">' + STATUS_TXT[sst] + ' meta ' + f(S.meta, 1) + ' %</span></div>';
+  h += '<div class="arrow"></div><button type="button" class="addp" id="b-addp">+ Planta</button>';
+  el.innerHTML = h;
+  var nC = S.plants.length - sys.nAuto;
+  $('chain-hint').textContent = (nC === 0 ? 'Meta por planta con reparto igual: ' + pct(sys.metaP, 2) + ' (= meta^(1/' + S.plants.length + ')).'
+    : sys.nAuto ? nC + (nC === 1 ? ' planta con meta propia; ' : ' plantas con meta propia; ') + 'el resto se reparte en partes iguales: ' + pct(Math.min(sys.metaP, 1), 2) + '.'
+    : 'Todas las plantas con meta propia.') + ' Haz clic en una planta para editarla.';
+  var mw = $('meta-warn'), note = metaNote(sys); mw.textContent = note; mw.hidden = !note;
+}
+
+/* ---------- editor de la planta ---------- */
+function renderEditor() {
+  var pl = S.plants[S.sel], ed = $('editor');
+  if (!pl) { ed.innerHTML = '<p class="muted">Agrega una planta.</p>'; return; }
+  var h = '<div class="panel-head"><div><div class="eyebrow">Planta ' + (S.sel + 1) + ' de ' + S.plants.length + '</div><h2>Equipos en paralelo</h2></div>' +
+    '<div class="row"><button type="button" class="btn sm" id="b-left" ' + (S.sel === 0 ? 'disabled' : '') + ' aria-label="Mover antes">◀</button>' +
+    '<button type="button" class="btn sm" id="b-right" ' + (S.sel === S.plants.length - 1 ? 'disabled' : '') + ' aria-label="Mover después">▶</button>' +
+    '<span id="del-wrap"><button type="button" class="btn sm danger" id="b-delp">Eliminar planta</button></span></div></div>';
+  if (pl.sample) h += '<div class="banner">Datos de ejemplo: reemplázalos con las capacidades y disponibilidades reales de ' + esc(pl.name) + '.</div>';
+  else if (pl.note) h += '<div class="note">' + esc(pl.note) + '</div>';
+  h += '<div class="row"><label class="field grow"><span>Nombre de la planta</span><input type="text" id="p-name" value="' + esc(pl.name) + '"></label>' +
+    '<label class="field"><span>Demanda requerida (' + esc(S.unit) + ')</span><input type="text" id="p-dem" class="n" inputmode="decimal" style="width:150px" value="' + fIn(pl.demand) + '"></label>' +
+    '<label class="field"><span>Meta de la planta (%)</span><input type="text" id="p-meta" class="n" inputmode="decimal" style="width:130px" value="' + (validMeta(pl.meta) ? fIn(pl.meta) : '') + '"></label></div>' +
+    '<p class="muted small" id="p-meta-hint" style="margin:0"></p>';
+  h += '<div class="tbl-wrap"><table class="eq"><thead><tr><th title="En servicio">Usar</th><th>Equipo</th><th class="r">Capacidad (' + esc(S.unit) + ')</th><th class="r">Disponibilidad (%)</th><th class="r" title="∂A_planta/∂a por punto porcentual">Aporte / pto</th><th></th></tr></thead><tbody>';
+  pl.units.forEach(function (u) {
+    h += '<tr data-u="' + u.id + '"' + (u.on ? '' : ' class="off"') + '><td><input type="checkbox" data-k="on" aria-label="Usar ' + esc(u.name) + '"' + (u.on ? ' checked' : '') + '></td>' +
+      '<td class="c-name"><input type="text" data-k="name" value="' + esc(u.name) + '" aria-label="Nombre del equipo"></td>' +
+      '<td class="c-num"><input type="text" class="n" data-k="cap" inputmode="decimal" value="' + fIn(u.cap) + '" aria-label="Capacidad de ' + esc(u.name) + '"></td>' +
+      '<td class="c-num"><input type="text" class="n" data-k="av" inputmode="decimal" value="' + fIn(u.av) + '" aria-label="Disponibilidad de ' + esc(u.name) + '"></td>' +
+      '<td class="r" data-imp="' + u.id + '">—</td><td><button type="button" class="icon-btn" data-del="' + u.id + '" aria-label="Quitar ' + esc(u.name) + '">×</button></td></tr>';
+  });
+  h += '</tbody></table></div>';
+  h += '<div class="row"><button type="button" class="btn" id="b-addu">+ Equipo</button><button type="button" class="btn" id="b-paste-t">Pegar desde Excel…</button></div>';
+  h += '<div id="paste-box" hidden style="display:flex;flex-direction:column;gap:8px"><p class="muted small" style="margin:0">Pega columnas Equipo · Capacidad · Disponibilidad (en % o en fracción; 0,95 se lee como 95 %). Reemplaza los equipos de esta planta.</p>' +
+    '<textarea id="paste-ta" rows="6" spellcheck="false" placeholder="Compresor 1&#9;400&#9;95&#10;Compresor 2&#9;400&#9;0,93"></textarea>' +
+    '<div class="row"><button type="button" class="btn primary" id="b-paste-go">Reemplazar equipos</button><button type="button" class="btn" id="b-paste-x">Cancelar</button></div></div>';
+  h += '<p class="muted small" style="margin:0">Desmarca “Usar” para simular un equipo fuera de servicio o aún no instalado. Si solo tienes MTBF y MTTR, la disponibilidad es MTBF / (MTBF + MTTR).</p>';
+  ed.innerHTML = h;
+}
+function edited(pl) { if (pl.sample) { pl.sample = false; var b = document.querySelector('#editor .banner'); if (b) b.remove(); } }
+
+/* ---------- resultado de la planta ---------- */
+function curveSVG(r) {
+  var W = 640, H = 290, ml = 52, mr = 16, mt = 14, mb = 44, pw = W - ml - mr, ph = H - mt - mb;
+  var xmax = Math.max(r.total, r.hasD ? r.D : 0) * 1.06 || 1;
+  var X = function (v) { return ml + v / xmax * pw; }, Y = function (v) { return mt + (1 - v) * ph; };
+  var s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Disponibilidad de la planta según la demanda">';
+  for (var k = 0; k <= 5; k++) { var yv = k / 5; s += '<line class="c-grid" x1="' + ml + '" x2="' + (ml + pw) + '" y1="' + Y(yv) + '" y2="' + Y(yv) + '"/><text class="c-tick" x="' + (ml - 6) + '" y="' + (Y(yv) + 4) + '" text-anchor="end">' + (yv * 100) + ' %</text>'; }
+  var step = niceStep(xmax / 6);
+  for (var xv = 0; xv <= xmax + 1e-9; xv += step) s += '<line class="c-grid" x1="' + X(xv) + '" x2="' + X(xv) + '" y1="' + mt + '" y2="' + (mt + ph) + '"/><text class="c-tick" x="' + X(xv) + '" y="' + (mt + ph + 16) + '" text-anchor="middle">' + f(xv, 0) + '</text>';
+  var asc = r.levels.map(function (l) { return l.cap; }).filter(function (c) { return c > 0; }).sort(function (a, b) { return a - b; });
+  if (asc.length <= 24) asc.forEach(function (c) { s += '<line class="c-break" x1="' + X(c) + '" x2="' + X(c) + '" y1="' + mt + '" y2="' + (mt + ph) + '"/>'; });
+  // curva escalonada: en (c_{k-1}, c_k] vale P(C ≥ c_k)
+  var d = 'M' + X(0) + ' ' + Y(1), prev = 0;
+  asc.forEach(function (c) { var v = probGE(r.m, c); d += 'L' + X(prev) + ' ' + Y(v) + 'L' + X(c) + ' ' + Y(v); prev = c; });
+  d += 'L' + X(prev) + ' ' + Y(0) + 'L' + X(xmax) + ' ' + Y(0);
+  s += '<path class="c-area" d="' + d + 'L' + X(xmax) + ' ' + Y(0) + 'L' + X(0) + ' ' + Y(0) + 'Z"/><path class="c-curve" d="' + d + '"/>';
+  s += '<path class="c-axis" d="M' + ml + ' ' + mt + 'V' + (mt + ph) + 'H' + (ml + pw) + '"/>';
+  if (r.hasD) {
+    var xd = X(r.D), yd = Y(r.A), anchor = xd > ml + pw * .7 ? 'end' : 'start', dx = anchor === 'end' ? -8 : 8;
+    s += '<line class="c-dem" x1="' + xd + '" x2="' + xd + '" y1="' + mt + '" y2="' + (mt + ph) + '"/><circle class="c-dot" cx="' + xd + '" cy="' + yd + '" r="5"/>' +
+      '<text class="c-tag" x="' + (xd + dx) + '" y="' + Math.max(mt + 12, yd - 10) + '" text-anchor="' + anchor + '">D = ' + f(r.D, 0) + ' → ' + pct(r.A, 2) + '</text>';
+  }
+  s += '<text class="c-lab" x="' + (ml + pw / 2) + '" y="' + (H - 6) + '" text-anchor="middle">Demanda requerida (' + esc(S.unit) + ')</text>';
+  s += '<line class="c-hover" id="hov" x1="0" x2="0" y1="' + mt + '" y2="' + (mt + ph) + '" visibility="hidden"/>';
+  s += '<rect id="hov-area" x="' + ml + '" y="' + mt + '" width="' + pw + '" height="' + ph + '" fill="transparent"/></svg>';
+  return { svg: s, X: X, xmax: xmax, ml: ml, pw: pw, W: W };
+}
+function niceStep(x) { var p = Math.pow(10, Math.floor(Math.log10(x || 1))), e = x / p; return (e >= 5 ? 5 : e >= 2 ? 2 : 1) * p; }
+var lastR = null;
+function renderPlantResult(sys) {
+  var pl = S.plants[S.sel], box = $('presult');
+  if (!pl) { box.innerHTML = ''; return; }
+  var r = sys.R[S.sel]; lastR = r;
+  var st = status(r.A, sys.targets[S.sel]), cv = curveSVG(r);
+  var h = '<div class="panel-head"><div><div class="eyebrow">Resultado de la planta</div><h2>' + esc(pl.name) + '</h2></div><span class="pill ' + st + '">' + STATUS_TXT[st] + ' (meta ' + metaTxt(sys, S.sel) + ')</span></div>';
+  if (!r.hasD) h += '<div class="banner">Ingresa una demanda mayor que 0 para calcular la disponibilidad.</div>';
+  h += '<div class="kpis"><div class="kpi lead"><span>Disponibilidad A(D)</span><b>' + pct(r.A, 3) + '</b></div>' +
+    '<div class="kpi"><span>Servicio esperado E</span><b>' + pct(r.E, 2) + '</b></div>' +
+    '<div class="kpi"><span>Capacidad media / instalada</span><b>' + f(r.mean, 0) + ' / ' + f(r.total, 0) + '</b></div>' +
+    '<div class="kpi"><span>Días/año sin cubrir D</span><b>' + f((1 - r.A) * 365, 1) + '</b></div></div>';
+  h += '<div class="chart-box">' + cv.svg + '</div><div class="readout" id="readout">Pasa el cursor sobre la curva para leer la disponibilidad a otra demanda. Líneas rojas: quiebres en cada nivel de capacidad.</div>';
+  h += '<details open><summary>Tabla de capacidad (COPT) · ' + r.levels.length + ' niveles</summary><div class="inner"><div class="tbl-wrap tall"><table><thead><tr><th class="r">Capacidad (' + esc(S.unit) + ')</th><th class="r">% instalada</th><th class="r">Probabilidad</th><th class="r">P(capacidad ≥ nivel)</th><th class="r">Días/año</th></tr></thead><tbody>';
+  r.levels.forEach(function (l) {
+    h += '<tr' + (r.hasD && l.cap >= r.D - 1e-9 ? ' class="hl"' : '') + '><td class="r">' + f(l.cap, 0) + '</td><td class="r">' + (r.total > 0 ? f(l.cap / r.total * 100, 1) + ' %' : '—') + '</td><td class="r">' + f(l.p, 6) + '</td><td class="r">' + f(l.cum, 6) + '</td><td class="r">' + f(l.p * 365, 1) + '</td></tr>';
+  });
+  h += '</tbody></table></div><p class="muted small" style="margin:0">Filas resaltadas: niveles que cubren la demanda. Su suma es A(D). Déficit esperado: ' + f(r.def, 1) + ' ' + esc(S.unit) + '.</p></div></details>';
+  var n = r.act.length;
+  h += '<details><summary>Tabla de estados completa (como en R)' + (n > 10 ? ' · ' + n + ' equipos, se muestra hasta 10' : ' · ' + Math.pow(2, n) + ' combinaciones') + '</summary><div class="inner">';
+  if (n <= 10) {
+    var rows = [];
+    for (var mask = 0; mask < (1 << n); mask++) {
+      var p = 1, c = 0, cells = [];
+      for (var j = 0; j < n; j++) { var on = !!(mask & (1 << j)), a = r.act[j].av / 100; p *= on ? a : 1 - a; if (on) c += r.act[j].cap; cells.push(on ? 'Op' : 'Falla'); }
+      rows.push({ c: c, p: p, cells: cells });
+    }
+    rows.sort(function (a, b) { return b.c - a.c || b.p - a.p; });
+    h += '<div class="tbl-wrap tall"><table><thead><tr>' + r.act.map(function (u) { return '<th>' + esc(u.name) + '</th>'; }).join('') + '<th class="r">Capacidad</th><th class="r">Probabilidad</th></tr></thead><tbody>';
+    rows.forEach(function (x) { h += '<tr' + (r.hasD && x.c >= r.D - 1e-9 ? ' class="hl"' : '') + '>' + x.cells.map(function (t) { return '<td>' + t + '</td>'; }).join('') + '<td class="r">' + f(x.c, 0) + '</td><td class="r">' + f(x.p, 6) + '</td></tr>'; });
+    h += '</tbody></table></div>';
+  } else h += '<p class="muted small" style="margin:0">Con más de 10 equipos la tabla supera las 1024 filas; la tabla de capacidad de arriba entrega el mismo resultado agrupado.</p>';
+  h += '</div></details>';
+  h += '<details><summary>Código R equivalente para esta planta</summary><div class="inner"><pre class="code" id="rcode"></pre><div class="row"><button type="button" class="btn sm" id="b-copy-r">Copiar código R</button></div></div></details>';
+  box.innerHTML = h;
+  $('rcode').textContent = rCode(pl, r);
+  var area = $('hov-area'), hov = $('hov'), ro = $('readout'), svg = box.querySelector('svg');
+  area.addEventListener('mousemove', function (e) {
+    var rc = svg.getBoundingClientRect(), x = (e.clientX - rc.left) / rc.width * cv.W, d = (x - cv.ml) / cv.pw * cv.xmax;
+    if (d < 0) d = 0;
+    hov.setAttribute('x1', x); hov.setAttribute('x2', x); hov.setAttribute('visibility', 'visible');
+    ro.textContent = 'Demanda ' + f(d, 0) + ' ' + S.unit + ' → disponibilidad ' + pct(probGE(r.m, d), 3);
+  });
+  area.addEventListener('mouseleave', function () { hov.setAttribute('visibility', 'hidden'); });
+  // aporte por equipo en el editor
+  S.plants[S.sel].units.forEach(function (u) {
+    var cell = document.querySelector('[data-imp="' + u.id + '"]');
+    if (cell) cell.textContent = r.imp[u.id] != null ? '+' + pct(r.imp[u.id] * 0.01, 3) : '—';
+    var row = document.querySelector('tr[data-u="' + u.id + '"]');
+    if (row) { row.classList.toggle('off', !u.on);
+      var ci = row.querySelector('[data-k=cap]'), ai = row.querySelector('[data-k=av]');
+      ci.setAttribute('aria-invalid', !(isFinite(u.cap) && u.cap >= 0)); ai.setAttribute('aria-invalid', !(isFinite(u.av) && u.av >= 0 && u.av <= 100)); }
+  });
+  var di = $('p-dem'); if (di) di.setAttribute('aria-invalid', !(isFinite(pl.demand) && pl.demand > 0));
+  var mi = $('p-meta'), mh = $('p-meta-hint');
+  if (mi) {
+    var auto = isFinite(sys.metaP) ? pct(Math.min(sys.metaP, 1), 2) : '—';
+    mi.placeholder = 'Auto ' + auto;
+    mi.setAttribute('aria-invalid', mi.value.trim() !== '' && !validMeta(parseNum(mi.value)));
+    mh.textContent = validMeta(pl.meta) ? 'Meta propia de ' + pct(pl.meta / 100, 2) + '. Bórrala para volver al reparto automático.'
+      : 'Vacío = reparto automático (' + auto + '): la meta del sistema repartida entre las plantas sin meta propia.';
+  }
+}
+function rCode(pl, r) {
+  var nm = function (u) { return '`' + String(u.name).replace(/`/g, "'") + '`'; };
+  var act = r.act;
+  return '# Planta: ' + pl.name + '\n' +
+    'capacidades <- c(' + act.map(function (u) { return nm(u) + ' = ' + u.cap; }).join(', ') + ')\n' +
+    'disponibilidades <- c(' + act.map(function (u) { return nm(u) + ' = ' + (u.av / 100); }).join(', ') + ')\n' +
+    'demanda <- ' + (isFinite(pl.demand) ? pl.demand : 0) + '\n\n' +
+    'estados <- expand.grid(setNames(rep(list(c(FALSE, TRUE)), length(capacidades)), names(capacidades)))\n' +
+    'estados$Capacidad <- apply(estados[, names(capacidades)], 1, function(e) sum(capacidades[e]))\n' +
+    'estados$Probabilidad <- apply(estados[, names(capacidades)], 1, function(e) prod(ifelse(e, disponibilidades, 1 - disponibilidades)))\n' +
+    'estados <- estados[order(-estados$Capacidad), ]\n\n' +
+    'disp <- function(d) sum(estados$Probabilidad[estados$Capacidad >= d])\n' +
+    'cat("Disponibilidad para", demanda, ":", disp(demanda), "\\n")   # esta app: ' + r.A.toFixed(6) + '\n\n' +
+    'd <- seq(0, sum(capacidades), by = 0.5)\n' +
+    'plot(d, sapply(d, disp), type = "s", lwd = 2, xlab = "Demanda", ylab = "Disponibilidad")\n' +
+    'abline(v = unique(estados$Capacidad), lty = 2, col = "red")\n';
+}
+
+/* ---------- sistema ---------- */
+var sysTSV = '';
+function renderSystem(sys) {
+  var u = esc(S.unit), h = '<thead><tr><th>Planta</th><th class="r">Instalada</th><th class="r">Demanda</th><th class="r">Margen</th><th class="r">A(D)</th><th class="r">Servicio E</th><th class="r">Déficit esp.</th><th class="r">Días/año</th><th class="r">Peso en indisp.</th></tr></thead><tbody>';
+  var tsv = [['Planta', 'Instalada (' + S.unit + ')', 'Demanda (' + S.unit + ')', 'Margen', 'A(D)', 'Servicio E', 'Déficit esperado', 'Días/año sin cubrir', 'Peso en indisponibilidad']];
+  sys.R.forEach(function (r, i) {
+    var pl = S.plants[i], w = r.A > 0 && isFinite(sys.lnTot) && sys.lnTot > 0 ? -Math.log(r.A) / sys.lnTot : (r.A === 0 ? 1 : 0);
+    var mg = r.hasD ? r.total / r.D : NaN;
+    h += '<tr' + (i === sys.bottleneck ? ' class="hl"' : '') + '><td>' + esc(pl.name) + (pl.sample ? ' <span class="pill ex">ej.</span>' : '') + '</td><td class="r">' + f(r.total, 0) + '</td><td class="r">' + f(pl.demand, 0) + '</td><td class="r">' + (isFinite(mg) ? f(mg * 100, 0) + ' %' : '—') +
+      '</td><td class="r">' + pct(r.A, 3) + '</td><td class="r">' + pct(r.E, 2) + '</td><td class="r">' + f(r.def, 1) + '</td><td class="r">' + f((1 - r.A) * 365, 1) + '</td><td class="r">' + f(w * 100, 1) + ' %</td></tr>';
+    tsv.push([pl.name, f(r.total, 0), f(pl.demand, 0), isFinite(mg) ? f(mg * 100, 1) + ' %' : '', f(r.A, 6), f(r.E, 6), f(r.def, 2), f((1 - r.A) * 365, 2), f(w * 100, 2) + ' %']);
+  });
+  h += '<tr class="total"><td>Sistema (serie)</td><td></td><td></td><td></td><td class="r">' + pct(sys.As, 3) + '</td><td></td><td></td><td class="r">' + f((1 - sys.As) * 365, 1) + '</td><td class="r">100 %</td></tr></tbody>';
+  tsv.push(['Sistema (serie)', '', '', '', f(sys.As, 6), '', '', f((1 - sys.As) * 365, 2), '100 %']);
+  $('sys-table').innerHTML = h;
+  // importancia sobre el sistema
+  var list = [];
+  sys.R.forEach(function (r, i) { r.act.forEach(function (un) { list.push({ plant: S.plants[i].name, name: un.name, av: un.av, I: r.imp[un.id] * sys.exc[i] }); }); });
+  list.sort(function (a, b) { return b.I - a.I; });
+  var top = list.slice(0, 8), h2 = '<thead><tr><th>Equipo</th><th class="r">Disp.</th><th class="r">As por +1 pto</th><th class="r">As si fuera 100 %</th></tr></thead><tbody>';
+  top.forEach(function (x, k) {
+    h2 += '<tr' + (k === 0 ? ' class="hl"' : '') + '><td>' + esc(x.plant) + ' · ' + esc(x.name) + '</td><td class="r">' + f(x.av, 1) + ' %</td><td class="r">+' + pct(x.I * 0.01, 3) + '</td><td class="r">' + pct(sys.As + x.I * (1 - x.av / 100), 3) + '</td></tr>';
+  });
+  if (!top.length) h2 += '<tr><td colspan="4" class="muted">Sin equipos.</td></tr>';
+  $('imp-table').innerHTML = h2 + '</tbody>';
+  tsv.push([]); tsv.push(['Equipo', 'Disponibilidad', 'As por +1 pto', 'As si fuera 100 %']);
+  list.forEach(function (x) { tsv.push([x.plant + ' · ' + x.name, f(x.av, 2), f(x.I * 0.01, 6), f(sys.As + x.I * (1 - x.av / 100), 6)]); });
+  sysTSV = tsv.map(function (r) { return r.join('\t'); }).join('\n');
+}
+
+/* ---------- ciclo ---------- */
+function refresh() { var sys = system(); renderChain(sys); renderPlantResult(sys); renderSystem(sys); save(); }
+function full() { $('s-unit').value = S.unit; $('s-meta').value = fIn(S.meta); renderEditor(); refresh(); }
+
+/* ---------- eventos ---------- */
+document.addEventListener('click', function (e) {
+  var t = e.target, pb = t.closest('.plant[data-i]');
+  if (pb) { S.sel = +pb.getAttribute('data-i'); full(); return; }
+  if (t.id === 'b-addp') {
+    S.plants.push({ id: uid(), name: 'PLANTA ' + (S.plants.length + 1), demand: 500, sample: false, units: [U('Compresor 1', 300, 95), U('Compresor 2', 300, 95)] });
+    S.sel = S.plants.length - 1; full(); toast('Planta agregada al final de la serie.'); return;
+  }
+  var pl = S.plants[S.sel];
+  if (t.id === 'b-addu' && pl) { edited(pl); pl.units.push(U('Equipo ' + (pl.units.length + 1), 300, 95)); renderEditor(); refresh(); return; }
+  if (t.dataset && t.dataset.del && pl) { edited(pl); pl.units = pl.units.filter(function (u) { return u.id !== t.dataset.del; }); renderEditor(); refresh(); return; }
+  if ((t.id === 'b-left' || t.id === 'b-right') && pl) {
+    var j = S.sel + (t.id === 'b-left' ? -1 : 1); if (j < 0 || j >= S.plants.length) return;
+    S.plants.splice(j, 0, S.plants.splice(S.sel, 1)[0]); S.sel = j; full(); return;
+  }
+  if (t.id === 'b-delp') {
+    if (S.plants.length <= 1) { toast('Debe quedar al menos una planta.'); return; }
+    $('del-wrap').innerHTML = '<span class="confirm">¿Eliminar ' + esc(pl.name) + '? <button type="button" class="btn sm danger" id="b-delp-ok">Eliminar</button><button type="button" class="btn sm" id="b-delp-no">No</button></span>'; return;
+  }
+  if (t.id === 'b-delp-ok') { var nm = pl.name; S.plants.splice(S.sel, 1); S.sel = Math.max(0, S.sel - 1); full(); toast(nm + ' eliminada.'); return; }
+  if (t.id === 'b-delp-no') { renderEditor(); refresh(); return; }
+  if (t.id === 'b-paste-t') { $('paste-box').hidden = false; $('paste-ta').focus(); return; }
+  if (t.id === 'b-paste-x') { $('paste-box').hidden = true; return; }
+  if (t.id === 'b-paste-go') {
+    var out = [];
+    $('paste-ta').value.split(/\r?\n/).forEach(function (line) {
+      var p = line.split(/\t|;/).map(function (x) { return x.trim(); }).filter(function (x) { return x !== ''; });
+      if (p.length < 2) return;
+      var name = p.length >= 3 ? p[0] : 'Equipo ' + (out.length + 1), cap = parseNum(p[p.length - 2]), av = parseNum(p[p.length - 1]);
+      if (!isFinite(cap) || !isFinite(av)) return;
+      if (av <= 1) av *= 100;
+      out.push(U(name, cap, av));
+    });
+    if (!out.length) { toast('No se reconocieron filas. Usa columnas Equipo, Capacidad, Disponibilidad.'); return; }
+    edited(pl); pl.units = out; renderEditor(); refresh(); toast(out.length + ' equipos cargados en ' + pl.name + '.'); return;
+  }
+  if (t.id === 'b-copy-r') { copy($('rcode').textContent); return; }
+  if (t.id === 'b-copy-sys') { copy(sysTSV); return; }
+  if (t.id === 'b-data') { $('data-panel').hidden = false; $('data-text').value = JSON.stringify(S, null, 1); return; }
+  if (t.id === 'b-data-x') { $('data-panel').hidden = true; return; }
+  if (t.id === 'b-copy-json') { copy($('data-text').value); return; }
+  if (t.id === 'b-load-json') {
+    try {
+      var o = JSON.parse($('data-text').value);
+      if (!o || !Array.isArray(o.plants) || !o.plants.length) throw new Error('x');
+      o.plants.forEach(function (p) { p.id = p.id || uid(); p.units = (p.units || []).map(function (u) { return { id: u.id || uid(), name: u.name, cap: +u.cap, av: +u.av, on: u.on !== false }; }); });
+      S = { unit: o.unit || 'mil m³/d', meta: isFinite(+o.meta) ? +o.meta : 95, sel: 0, plants: o.plants };
+      $('data-panel').hidden = true; full(); toast('Datos cargados.');
+    } catch (err) { toast('El texto no es un JSON válido de esta herramienta.'); }
+    return;
+  }
+  if (t.id === 'b-reset') { $('reset-wrap').innerHTML = '<span class="confirm">¿Borrar tus datos? <button type="button" class="btn sm danger" id="b-reset-ok">Restablecer</button><button type="button" class="btn sm" id="b-reset-no">No</button></span>'; return; }
+  if (t.id === 'b-reset-ok') { S = seed(); $('reset-wrap').innerHTML = '<button type="button" class="btn danger" id="b-reset">Restablecer ejemplo</button>'; full(); toast('Ejemplo restablecido.'); return; }
+  if (t.id === 'b-reset-no') { $('reset-wrap').innerHTML = '<button type="button" class="btn danger" id="b-reset">Restablecer ejemplo</button>'; return; }
+});
+document.addEventListener('input', function (e) {
+  var t = e.target, pl = S.plants[S.sel];
+  if (t.id === 's-unit') { S.unit = t.value.trim() || 'unid.'; refresh(); return; }
+  if (t.id === 's-meta') { var v = parseNum(t.value); t.setAttribute('aria-invalid', !(v > 0 && v < 100)); if (v > 0 && v < 100) { S.meta = v; refresh(); } return; }
+  if (!pl) return;
+  if (t.id === 'p-name') { pl.name = t.value; edited(pl); refresh(); return; }
+  if (t.id === 'p-dem') { pl.demand = parseNum(t.value); edited(pl); refresh(); return; }
+  if (t.id === 'p-meta') { var mv = parseNum(t.value); if (t.value.trim() === '') delete pl.meta; else if (validMeta(mv)) pl.meta = mv; else delete pl.meta; refresh(); return; }
+  var row = t.closest('tr[data-u]'); if (!row) return;
+  var un = pl.units.filter(function (x) { return x.id === row.getAttribute('data-u'); })[0]; if (!un) return;
+  var k = t.dataset.k;
+  if (k === 'on') un.on = t.checked; else if (k === 'name') un.name = t.value; else un[k] = parseNum(t.value);
+  edited(pl); refresh();
+});
+document.addEventListener('change', function (e) { if (e.target.dataset && e.target.dataset.k === 'name') { /* re-dibuja encabezados de la tabla de estados */ refresh(); } });
+
+/* =====================================================================
+   Informe en escala de grises: resumen ejecutivo + informe por planta
+   Salidas: vista imprimible (PDF) y Word editable (.doc en formato MHTML)
+   ===================================================================== */
+var REP_DEF = { title: 'Disponibilidad sistémica de la red de compresión', author: 'Hugo Villegas Barría', role: 'Ingeniero de Estudios de Mantenimiento',
+  area: 'Ingeniería y Planificación del Mantenimiento — ENAP Magallanes', exec: true, copt: true };
+var FONT = 'Arial, Helvetica, sans-serif';
+var SYM = { ok: '○ Cumple', warn: '◐ Bajo meta', crit: '● Crítico' };
+function today() { return new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' }); }
+function svgWrap(W, H, body) {
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" font-family="' + FONT + '">' +
+    '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#ffffff"/>' + body + '</svg>';
+}
+function clip(s, n) { s = String(s); return s.length > n ? s.slice(0, Math.max(1, n - 1)) + '…' : s; }
+
+/* ---------- Figura: cadena en serie ---------- */
+function svgChain(sys) {
+  var n = S.plants.length, W = 640, gap = 22, bw = Math.min(112, (W - 12 - gap * n) / (n + 1)), bh = 78, top = 12, H = top + bh + 34;
+  var tot = (n + 1) * bw + n * gap, x0 = (W - tot) / 2, s = '', chars = Math.floor(bw / 6.6);
+  function box(x, name, A, sub, strong, dashed, metaLine) {
+    var b = '<rect x="' + x + '" y="' + top + '" width="' + bw + '" height="' + bh + '" rx="4" fill="' + (strong ? '#e6e6e6' : '#ffffff') + '" stroke="#111111" stroke-width="' + (strong || dashed ? 2.4 : 1.2) + '"' + (dashed ? ' stroke-dasharray="6 3"' : '') + '/>';
+    b += '<text x="' + (x + bw / 2) + '" y="' + (top + 18) + '" font-size="11" font-weight="bold" text-anchor="middle" fill="#000000">' + esc(clip(name, chars)) + '</text>';
+    b += '<text x="' + (x + bw / 2) + '" y="' + (top + 40) + '" font-size="14" font-weight="bold" text-anchor="middle" fill="#000000">' + esc(A) + '</text>';
+    b += '<text x="' + (x + bw / 2) + '" y="' + (top + 57) + '" font-size="9" text-anchor="middle" fill="#333333">' + esc(clip(metaLine, chars + 4)) + '</text>';
+    b += '<text x="' + (x + bw / 2) + '" y="' + (top + 70) + '" font-size="9.5" text-anchor="middle" fill="#333333">' + esc(clip(sub, chars + 2)) + '</text>';
+    return b;
+  }
+  for (var i = 0; i <= n; i++) {
+    var x = x0 + i * (bw + gap);
+    if (i < n) {
+      var r = sys.R[i], st = status(r.A, sys.targets[i]);
+      s += box(x, S.plants[i].name, pct(r.A, 2), SYM[st], false, i === sys.bottleneck, 'Meta ' + pct(Math.min(sys.targets[i], 1), 2));
+      if (i === sys.bottleneck) s += '<text x="' + (x + bw / 2) + '" y="' + (top + bh + 16) + '" font-size="9.5" font-style="italic" text-anchor="middle" fill="#000000">Cuello de botella</text>';
+      var ax = x + bw, ay = top + bh / 2;
+      s += '<line x1="' + (ax + 2) + '" y1="' + ay + '" x2="' + (ax + gap - 6) + '" y2="' + ay + '" stroke="#111111" stroke-width="1.4"/>' +
+        '<path d="M' + (ax + gap - 9) + ' ' + (ay - 4) + 'L' + (ax + gap - 2) + ' ' + ay + 'L' + (ax + gap - 9) + ' ' + (ay + 4) + 'Z" fill="#111111"/>';
+    } else s += box(x, 'SISTEMA', pct(sys.As, 2), SYM[status(sys.As, sys.meta)], true, false, 'Meta ' + pct(sys.meta, 2));
+  }
+  return { svg: svgWrap(W, H, s), w: W, h: H };
+}
+
+/* ---------- Figura: disponibilidad por planta frente a la meta ---------- */
+function svgDots(sys) {
+  var n = S.plants.length, rh = 28, W = 640, ml = 116, mr = 76, mt = 42, mb = 30, H = mt + (n + 1) * rh + 10 + mb, pw = W - ml - mr;
+  var vals = sys.R.map(function (r) { return r.A; }).concat([sys.As, sys.meta]).concat(sys.targets.map(function (t) { return Math.min(t, 1); }));
+  var mn = Math.min.apply(null, vals) * 100, lo = Math.max(0, Math.floor((mn - 1) / 2) * 2), hi = 100;
+  if (hi - lo < 4) lo = Math.max(0, hi - 4);
+  var X = function (v) { return ml + (v * 100 - lo) / (hi - lo) * pw; }, s = '', yb = mt + (n + 1) * rh + 10;
+  var st = niceStep((hi - lo) / 5);
+  for (var t = Math.ceil(lo / st) * st; t <= hi + 1e-9; t += st) {
+    s += '<line x1="' + X(t / 100) + '" x2="' + X(t / 100) + '" y1="' + (mt - 4) + '" y2="' + yb + '" stroke="#dddddd" stroke-width="1"/>' +
+      '<text x="' + X(t / 100) + '" y="' + (yb + 16) + '" font-size="10" text-anchor="middle" fill="#444444">' + f(t, st < 1 ? 1 : 0) + ' %</text>';
+  }
+  s += '<line x1="' + (ml) + '" x2="' + (ml) + '" y1="' + (mt - 30) + '" y2="' + (mt - 16) + '" stroke="#000000" stroke-width="2"/>' +
+    '<text x="' + (ml + 7) + '" y="' + (mt - 19) + '" font-size="9.5" fill="#000000">Meta de cada planta</text>' +
+    '<circle cx="' + (ml + 128) + '" cy="' + (mt - 23) + '" r="4.5" fill="#000000"/><text x="' + (ml + 137) + '" y="' + (mt - 19) + '" font-size="9.5" fill="#000000">Disponibilidad</text>' +
+    '<circle cx="' + (ml + 228) + '" cy="' + (mt - 23) + '" r="4.5" fill="#ffffff" stroke="#000000" stroke-width="2"/><text x="' + (ml + 237) + '" y="' + (mt - 19) + '" font-size="9.5" fill="#000000">Cuello de botella</text>';
+  s += '<line x1="' + X(sys.meta) + '" x2="' + X(sys.meta) + '" y1="' + (mt + n * rh) + '" y2="' + yb + '" stroke="#000000" stroke-width="1.2" stroke-dasharray="1.5 2.5"/>' +
+    ''; var metaLab = true;
+  sys.R.forEach(function (r, i) {
+    var y = mt + i * rh + rh / 2;
+    s += '<text x="' + (ml - 8) + '" y="' + (y + 4) + '" font-size="10.5" text-anchor="end" fill="#000000">' + esc(clip(S.plants[i].name, 18)) + '</text>' +
+      '<line x1="' + X(lo / 100) + '" x2="' + X(r.A) + '" y1="' + y + '" y2="' + y + '" stroke="#aaaaaa" stroke-width="2"/>' +
+      '<line x1="' + X(Math.min(sys.targets[i], 1)) + '" x2="' + X(Math.min(sys.targets[i], 1)) + '" y1="' + (y - 9) + '" y2="' + (y + 9) + '" stroke="#000000" stroke-width="2"/>' +
+      '<circle cx="' + X(r.A) + '" cy="' + y + '" r="5" fill="' + (i === sys.bottleneck ? '#ffffff' : '#000000') + '" stroke="#000000" stroke-width="2"/>' +
+      '<text x="' + (W - mr + 8) + '" y="' + (y + 4) + '" font-size="10.5" fill="#000000">' + pct(r.A, 2) + '</text>';
+  });
+  var ys = mt + n * rh + 10 + rh / 2;
+  s += '<line x1="' + (ml - 100) + '" x2="' + (W - 6) + '" y1="' + (mt + n * rh + 5) + '" y2="' + (mt + n * rh + 5) + '" stroke="#555555" stroke-width="0.8"/>' +
+    '<text x="' + (ml - 8) + '" y="' + (ys + 4) + '" font-size="10.5" font-weight="bold" text-anchor="end" fill="#000000">SISTEMA</text>' +
+    '<line x1="' + X(lo / 100) + '" x2="' + X(sys.As) + '" y1="' + ys + '" y2="' + ys + '" stroke="#555555" stroke-width="2.5"/>' +
+    '<path d="M' + X(sys.As) + ' ' + (ys - 7) + 'L' + (X(sys.As) + 7) + ' ' + ys + 'L' + X(sys.As) + ' ' + (ys + 7) + 'L' + (X(sys.As) - 7) + ' ' + ys + 'Z" fill="#000000"/>' +
+    '<text x="' + (W - mr + 8) + '" y="' + (ys + 4) + '" font-size="10.5" font-weight="bold" fill="#000000">' + pct(sys.As, 2) + '</text>'
+  s += '<text x="' + (X(sys.meta) + 5) + '" y="' + (ys - 7) + '" font-size="9.5" fill="#444444">Meta sistema ' + pct(sys.meta, 1) + '</text>';
+  return { svg: svgWrap(W, H, s), w: W, h: H };
+}
+
+/* ---------- Figura: curva de la planta ---------- */
+function svgCurveGray(r) {
+  var W = 640, H = 300, ml = 58, mr = 18, mt = 16, mb = 46, pw = W - ml - mr, ph = H - mt - mb;
+  var xmax = Math.max(r.total, r.hasD ? r.D : 0) * 1.06 || 1;
+  var X = function (v) { return ml + v / xmax * pw; }, Y = function (v) { return mt + (1 - v) * ph; }, s = '';
+  for (var k = 0; k <= 5; k++) { var yv = k / 5; s += '<line x1="' + ml + '" x2="' + (ml + pw) + '" y1="' + Y(yv) + '" y2="' + Y(yv) + '" stroke="#e0e0e0" stroke-width="1"/><text x="' + (ml - 6) + '" y="' + (Y(yv) + 4) + '" font-size="10" text-anchor="end" fill="#444444">' + (yv * 100) + ' %</text>'; }
+  var step = niceStep(xmax / 6);
+  for (var xv = 0; xv <= xmax + 1e-9; xv += step) s += '<text x="' + X(xv) + '" y="' + (mt + ph + 16) + '" font-size="10" text-anchor="middle" fill="#444444">' + f(xv, 0) + '</text>';
+  var asc = r.levels.map(function (l) { return l.cap; }).filter(function (c) { return c > 0; }).sort(function (a, b) { return a - b; });
+  if (asc.length <= 24) asc.forEach(function (c) { s += '<line x1="' + X(c) + '" x2="' + X(c) + '" y1="' + mt + '" y2="' + (mt + ph) + '" stroke="#9a9a9a" stroke-width="1" stroke-dasharray="4 3"/>'; });
+  var d = 'M' + X(0) + ' ' + Y(1), prev = 0;
+  asc.forEach(function (c) { var v = probGE(r.m, c); d += 'L' + X(prev) + ' ' + Y(v) + 'L' + X(c) + ' ' + Y(v); prev = c; });
+  d += 'L' + X(prev) + ' ' + Y(0) + 'L' + X(xmax) + ' ' + Y(0);
+  s += '<path d="' + d + 'L' + X(0) + ' ' + Y(0) + 'Z" fill="#000000" fill-opacity="0.07"/><path d="' + d + '" fill="none" stroke="#000000" stroke-width="2"/>';
+  s += '<path d="M' + ml + ' ' + mt + 'V' + (mt + ph) + 'H' + (ml + pw) + '" fill="none" stroke="#444444" stroke-width="1"/>';
+  if (r.hasD) {
+    var xd = X(r.D), yd = Y(r.A), anchor = xd > ml + pw * .65 ? 'end' : 'start', dx = anchor === 'end' ? -9 : 9;
+    s += '<line x1="' + xd + '" x2="' + xd + '" y1="' + mt + '" y2="' + (mt + ph) + '" stroke="#000000" stroke-width="1.2" stroke-dasharray="2 3"/>' +
+      '<circle cx="' + xd + '" cy="' + yd + '" r="5" fill="#000000" stroke="#ffffff" stroke-width="2"/>' +
+      '<text x="' + (xd + dx) + '" y="' + (yd < mt + 34 ? yd + 22 : yd - 10) + '" font-size="11" font-weight="bold" text-anchor="' + anchor + '" fill="#000000" stroke="#ffffff" stroke-width="4" paint-order="stroke">D = ' + f(r.D, 0) + ' ; A = ' + pct(r.A, 2) + '</text>';
+  }
+  s += '<text x="' + (ml + pw / 2) + '" y="' + (H - 8) + '" font-size="11" text-anchor="middle" fill="#000000">Demanda requerida (' + esc(S.unit) + ')</text>';
+  s += '<text x="14" y="' + (mt + ph / 2) + '" font-size="11" text-anchor="middle" fill="#000000" transform="rotate(-90 14 ' + (mt + ph / 2) + ')">Disponibilidad</text>';
+  return { svg: svgWrap(W, H, s), w: W, h: H };
+}
+
+/* ---------- SVG a PNG ---------- */
+function toPng(o) {
+  return new Promise(function (res) {
+    var img = new Image(), sc = 2;
+    img.onload = function () {
+      try {
+        var c = document.createElement('canvas'); c.width = o.w * sc; c.height = o.h * sc;
+        var g = c.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/png'));
+      } catch (e) { res(null); }
+    };
+    img.onerror = function () { res(null); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(o.svg);
+  });
+}
+
+/* ---------- Construcción del informe ---------- */
+var TD = 'border:1px solid #9a9a9a;padding:3pt 6pt;font-size:9pt;vertical-align:top;';
+function n1(r) { // equipos sin respaldo N-1: si salen, el resto no cubre la demanda
+  if (!r.hasD) return [];
+  return r.act.filter(function (u) { return r.total - u.cap < r.D - 1e-9; });
+}
+function joinY(list) { return list.length <= 1 ? list.join('') : list.slice(0, -1).join(', ') + ' y ' + list[list.length - 1]; }
+function buildReport(o) {
+  var sys = system(), u = S.unit, imgs = [], nT = 0, nF = 0, nS = 0, body = '';
+  function fig(obj, caption) { nF++; var id = 'img' + (imgs.length + 1); imgs.push({ id: id, o: obj });
+    return { n: nF, html: '<p class="fig" align="center"><img src="{{' + id + '}}" width="' + obj.w + '" height="' + obj.h + '" alt="Figura ' + nF + '"></p><p class="cap">Figura ' + nF + '. ' + esc(caption) + '</p>' }; }
+  function tbl(head, rows, al, caption, width) {
+    nT++;
+    var h = '<p class="tcap">Tabla ' + nT + '. ' + esc(caption) + '</p><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:' + (width || '100%') + ';margin:0 0 8pt">' +
+      '<tr>' + head.map(function (c, i) { return '<td style="' + TD + 'background:#e6e6e6;font-weight:bold;text-align:' + (al[i] || 'left') + '">' + esc(c) + '</td>'; }).join('') + '</tr>';
+    rows.forEach(function (r) {
+      var cells = r.cells || r, b = r.b;
+      h += '<tr>' + cells.map(function (c, i) { return '<td style="' + TD + (b ? 'font-weight:bold;background:#f2f2f2;' : '') + (al[i] === 'right' ? 'white-space:nowrap;' : '') + 'text-align:' + (al[i] || 'left') + '">' + esc(c) + '</td>'; }).join('') + '</tr>';
+    });
+    return { n: nT, html: h + '</table>' };
+  }
+  function sec(title) { nS++; return '<h2>' + nS + '. ' + esc(title) + '</h2>'; }
+  var pb = '<p class="pb" style="page-break-before:always;margin:0;font-size:1pt">&nbsp;</p>';
+  var sel = S.plants.map(function (p, i) { return i; }).filter(function (i) { return o.plants.indexOf(S.plants[i].id) >= 0; });
+  var samples = S.plants.filter(function (p) { return p.sample; }).map(function (p) { return p.name; });
+  var nEq = sys.R.reduce(function (s, r) { return s + r.act.length; }, 0);
+
+  // Encabezado
+  body += '<h1>' + esc(o.title) + '</h1>';
+  body += '<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 4pt">' +
+    [['Autor', o.author + (o.role ? ' — ' + o.role : '')], ['Área', o.area], ['Fecha', o.date],
+      ['Plantas', o.exec ? S.plants.map(function (p) { return p.name; }).join(' → ') + ' (en serie)' : sel.map(function (i) { return S.plants[i].name; }).join(', ')]]
+      .map(function (r) { return '<tr><td style="padding:1pt 10pt 1pt 0;font-size:9.5pt;font-weight:bold;vertical-align:top">' + esc(r[0]) + ':</td><td style="padding:1pt 0;font-size:9.5pt">' + esc(r[1]) + '</td></tr>'; }).join('') + '</table>';
+  body += '<hr style="border:0;border-top:1.5px solid #000;margin:6pt 0 10pt">';
+  if (samples.length) body += '<p class="note"><b>NOTA:</b> ' + esc(joinY(samples)) + (samples.length > 1 ? ' aún tienen' : ' aún tiene') + ' datos de ejemplo. Los resultados de ' + (samples.length > 1 ? 'esas plantas' : 'esa planta') + ' y del sistema no deben usarse para decisiones hasta cargar los datos reales.</p>';
+
+  var mejoras = [];
+  sys.R.forEach(function (r, i) { r.act.forEach(function (un) { mejoras.push({ plant: S.plants[i].name, name: un.name, av: un.av, I: r.imp[un.id] * sys.exc[i] }); }); });
+  mejoras.sort(function (a, b) { return b.I - a.I; });
+  var bn = sys.bottleneck, bnR = bn >= 0 ? sys.R[bn] : null, bnName = bn >= 0 ? S.plants[bn].name : '';
+  var w = function (r) { return r.A > 0 && isFinite(sys.lnTot) && sys.lnTot > 0 ? -Math.log(r.A) / sys.lnTot : (r.A === 0 ? 1 : 0); };
+  var bajo = S.plants.filter(function (p, i) { return sys.R[i].A < sys.targets[i]; }).map(function (p) { return p.name; });
+  var anyCustom = sys.nAuto < S.plants.length, mNote = metaNote(sys);
+  if (mNote) body += '<p class="note"><b>NOTA:</b> ' + esc(mNote) + '</p>';
+  var sinN1 = []; sys.R.forEach(function (r, i) { var l = n1(r); if (l.length) sinN1.push(S.plants[i].name + ' (' + l.map(function (x) { return x.name; }).join(', ') + ')'); });
+
+  if (o.exec) {
+    // 1. Resumen ejecutivo
+    body += sec('Resumen ejecutivo');
+    var cumple = sys.As >= sys.meta;
+    var fChain = fig(svgChain(sys), 'Red de compresión en serie y disponibilidad de cada planta para su demanda requerida.');
+    var tK = tbl(['Indicador', 'Valor'], [
+      { cells: ['Disponibilidad sistémica As', pct(sys.As, 3)], b: true },
+      ['Meta del sistema', pct(sys.meta, 2)],
+      ['Estado', cumple ? SYM.ok : SYM[status(sys.As, sys.meta)]],
+      ['Días al año con al menos una planta bajo su demanda', f((1 - sys.As) * 365, 1)],
+      anyCustom ? ['Metas por planta', (S.plants.length - sys.nAuto) + ' propia' + (S.plants.length - sys.nAuto === 1 ? '' : 's') + (sys.nAuto ? '; resto ' + pct(Math.min(sys.metaP, 1), 2) : '') + ' (Ver Tabla 2)']
+        : ['Meta por planta (reparto igual, meta^(1/' + S.plants.length + '))', pct(sys.metaP, 2)],
+      ['Planta con menor disponibilidad', bn >= 0 ? bnName + ' (' + pct(bnR.A, 2) + ')' : '—'],
+      ['Plantas bajo su meta', bajo.length ? bajo.join(', ') : 'Ninguna'],
+      ['Plantas / equipos evaluados', S.plants.length + ' / ' + nEq]
+    ], ['left', 'right'], 'Indicadores principales del sistema.', '78%');
+    body += '<p>Se evalúa la disponibilidad sistémica de la red de compresión compuesta por ' + S.plants.length + ' plantas en serie (' + esc(S.plants.map(function (p) { return p.name; }).join(', ')) + '), con ' + nEq + ' equipos en total. Cada planta se modela como un parque de compresores en paralelo, y su disponibilidad corresponde a la probabilidad de que la capacidad disponible cubra la demanda requerida (Ver Figura ' + fChain.n + ').</p>';
+    body += '<p>Como resultado, la disponibilidad sistémica es ' + pct(sys.As, 2) + ', ' + (cumple ? 'sobre' : 'bajo') + ' la meta de ' + pct(sys.meta, 1) + '. Esto equivale a ' + f((1 - sys.As) * 365, 1) + ' días al año en que al menos una planta no cubre su demanda (Ver Tabla ' + tK.n + ').' +
+      (bn >= 0 ? ' Ahora bien, la planta con menor disponibilidad es ' + esc(bnName) + ' (' + pct(bnR.A, 2) + '), que explica el ' + f(w(bnR) * 100, 1) + ' % de la indisponibilidad del sistema.' : '') + '</p>';
+    if (mejoras.length && mejoras[0].I > 0) body += '<p>Por lo anterior, la mejora con mayor efecto sobre el sistema es aumentar la disponibilidad de ' + esc(mejoras[0].name) + ' (' + esc(mejoras[0].plant) + '): cada punto porcentual adicional en ese equipo agrega ' + f(mejoras[0].I, 3) + ' puntos a la disponibilidad sistémica.</p>';
+    body += tK.html + fChain.html;
+
+    // 2. Metodología
+    body += sec('Metodología');
+    body += '<p>Para cada planta se construye la tabla de probabilidad de capacidad (COPT) combinando los estados operativo y fuera de servicio de sus equipos, que se suponen independientes. La probabilidad de cada estado es el producto de la disponibilidad de los equipos en servicio y de la indisponibilidad de los que están fuera. Seguido, la disponibilidad de la planta para una demanda D es la suma de las probabilidades de los estados cuya capacidad es igual o mayor que D.</p>';
+    body += '<p>Conocido esto y, sabiendo que las plantas operan en serie, el sistema cumple solo si todas las plantas cubren su demanda al mismo tiempo. La disponibilidad sistémica es entonces el producto de las disponibilidades de cada planta:</p>';
+    body += '<p class="eq">A<sub>planta</sub>(D) = Σ P(estado) · [capacidad ≥ D] &nbsp;&nbsp;&nbsp;&nbsp; A<sub>s</sub> = Π A<sub>planta i</sub></p>';
+    body += '<p>De igual forma, se calcula el servicio esperado E = Σ P(estado) · mín(capacidad, D) / D, que indica la fracción media de la demanda que la planta alcanza a mover cuando no la cubre completa, y la importancia de Birnbaum de cada equipo, que mide cuánto sube la disponibilidad (de la planta o del sistema) por cada punto porcentual de mejora en ese equipo. Como criterio, la meta del sistema se reparte en partes iguales entre las plantas como meta^(1/N); cuando una planta tiene meta propia, esta se respeta y el resto de la meta se reparte en partes iguales entre las demás, de modo que el producto de las metas por planta sea la meta del sistema.</p>';
+    body += '<p>Supuestos: equipos y plantas independientes; disponibilidad estacionaria de cada equipo, MTBF / (MTBF + MTTR); capacidad nominal por equipo; cada planta con su propia demanda requerida. Unidad de capacidad: ' + esc(u) + '.</p>';
+
+    // 3. Resultados del sistema
+    body += sec('Resultados del sistema');
+    var tSys = tbl(['Planta', 'Instalada', 'Demanda', 'Margen', 'A(D)', 'Meta', 'Días/año', 'Peso indisp.', 'Estado'],
+      sys.R.map(function (r, i) {
+        var pl = S.plants[i], mg = r.hasD ? r.total / r.D : NaN;
+        return { cells: [pl.name + (pl.sample ? ' *' : ''), f(r.total, 0), f(pl.demand, 0), isFinite(mg) ? f(mg * 100, 0) + ' %' : '—', pct(r.A, 3), pct(Math.min(sys.targets[i], 1), 2) + (sys.custom[i] != null ? ' †' : ''), f((1 - r.A) * 365, 1), f(w(r) * 100, 1) + ' %', SYM[status(r.A, sys.targets[i])]], b: i === bn };
+      }).concat([{ cells: ['Sistema (serie)', '', '', '', pct(sys.As, 3), pct(sys.meta, 2), f((1 - sys.As) * 365, 1), '100 %', SYM[status(sys.As, sys.meta)]], b: true }]),
+      ['left', 'right', 'right', 'right', 'right', 'right', 'right', 'right', 'left'], 'Disponibilidad por planta y del sistema. Capacidades en ' + u + '. Fila en negrita: cuello de botella.' + (anyCustom ? ' †: meta propia de la planta.' : ''));
+    var fDots = fig(svgDots(sys), 'Disponibilidad de cada planta frente a su meta (trazo vertical) y disponibilidad del sistema frente a su meta.');
+    var top = mejoras.filter(function (x) { return x.I > 0; }).slice(0, 5);
+    body += '<p>Como puede apreciarse, ' + (bajo.length ? 'las plantas ' + esc(joinY(bajo)) + (bajo.length > 1 ? ' quedan' : ' queda') + ' bajo ' + (anyCustom ? 'su meta' : 'la meta por planta de ' + pct(sys.metaP, 2)) : 'todas las plantas superan ' + (anyCustom ? 'su meta' : 'la meta por planta de ' + pct(sys.metaP, 2))) + ' (Ver Tabla ' + tSys.n + ' y Figura ' + fDots.n + '). La columna "Peso indisp." indica qué parte de la indisponibilidad del sistema aporta cada planta.' + (samples.length ? ' Las plantas marcadas con * tienen datos de ejemplo.' : '') + '</p>';
+    body += tSys.html + fDots.html;
+    if (top.length) {
+      var tTop = tbl(['Equipo', 'Planta', 'Disponibilidad', 'As por +1 pto', 'As si fuera 100 %'],
+        top.map(function (x, k) { return { cells: [x.name, x.plant, f(x.av, 1) + ' %', '+' + f(x.I, 3) + ' pts', pct(sys.As + x.I * (1 - x.av / 100), 3)], b: k === 0 }; }),
+        ['left', 'left', 'right', 'right', 'right'], 'Equipos con mayor efecto sobre la disponibilidad sistémica (importancia de Birnbaum).');
+      body += '<p>Seguido, la Tabla ' + tTop.n + ' ordena los equipos según su efecto sobre el sistema. Un equipo tiene alta importancia cuando su salida deja a la planta sin cubrir la demanda y, a la vez, el resto del sistema está disponible.</p>' + tTop.html;
+    }
+  }
+
+  // 4. Resultados por planta
+  if (sel.length) {
+    if (o.exec) body += pb;
+    var secPlants = nS + 1; body += sec(o.exec ? 'Resultados por planta' : 'Informe por planta');
+    sel.forEach(function (i, k) {
+      var pl = S.plants[i], r = sys.R[i], mg = r.hasD ? r.total / r.D : NaN, lst = n1(r), stp = status(r.A, sys.targets[i]);
+      if (k > 0) body += pb;
+      body += '<h3>' + secPlants + '.' + (k + 1) + ' ' + esc(pl.name) + '</h3>';
+      if (pl.sample) body += '<p class="note"><b>NOTA:</b> esta planta tiene datos de ejemplo.</p>';
+      var ranks = r.act.slice().sort(function (a, b) { return r.imp[b.id] - r.imp[a.id]; });
+      var tEq = tbl(['Equipo', 'Capacidad (' + u + ')', 'Disponibilidad', 'En servicio', 'Aporte a A por +1 pto', 'Respaldo N-1'],
+        pl.units.map(function (un) {
+          var on = un.on && validUnit(un);
+          return { cells: [un.name, f(un.cap, 0), f(un.av, 1) + ' %', on ? 'Sí' : 'No', on ? '+' + f(r.imp[un.id], 3) + ' pts' : '—', on ? (lst.indexOf(un) >= 0 ? 'No' : 'Sí') : '—'], b: on && ranks[0] === un && r.imp[un.id] > 0 };
+        }), ['left', 'right', 'right', 'left', 'right', 'left'], 'Equipos de ' + pl.name + '. Fila en negrita: equipo con mayor aporte.');
+      var fC = fig(svgCurveGray(r), 'Disponibilidad de ' + pl.name + ' según la demanda requerida. Líneas punteadas: quiebres en cada nivel de capacidad.');
+      body += '<p>La planta ' + esc(pl.name) + ' cuenta con ' + r.act.length + ' equipos en servicio en paralelo, con una capacidad instalada de ' + f(r.total, 0) + ' ' + esc(u) + ' frente a una demanda requerida de ' + f(pl.demand, 0) + ' ' + esc(u) + (isFinite(mg) ? ', es decir, un margen de ' + f(mg * 100, 0) + ' % de la demanda' : '') + ' (Ver Tabla ' + tEq.n + ').</p>';
+      if (r.hasD && r.total < r.D) body += '<p>Ahora bien, la capacidad instalada no alcanza a cubrir la demanda, por lo que la disponibilidad de la planta es 0 % independiente de la disponibilidad de sus equipos. Es necesario revisar la demanda asignada o la capacidad instalada.</p>';
+      body += tEq.html;
+      body += '<p>Conocido esto, la disponibilidad de la planta para la demanda indicada es ' + pct(r.A, 2) + ', lo que equivale a ' + f((1 - r.A) * 365, 1) + ' días al año sin cubrir la demanda. El servicio esperado es ' + pct(r.E, 2) + ': aun en los estados que no cubren la demanda, la planta mueve en promedio esa fracción del gas requerido. La capacidad media disponible es ' + f(r.mean, 0) + ' ' + esc(u) + ' y el déficit esperado es ' + f(r.def, 1) + ' ' + esc(u) + ' (Ver Figura ' + fC.n + ').</p>';
+      body += fC.html;
+      var p3 = lst.length ? 'Los equipos ' + esc(joinY(lst.map(function (x) { return x.name; }))) + ' no tienen respaldo N-1: si cualquiera de ellos sale de servicio, la capacidad restante no cubre la demanda. '
+        : (r.hasD && r.total >= r.D ? 'La planta cumple el criterio N-1: con cualquier equipo fuera de servicio, la capacidad restante cubre la demanda. ' : '');
+      if (ranks.length && r.imp[ranks[0].id] > 0) p3 += 'El equipo con mayor aporte es ' + esc(ranks[0].name) + ': cada punto porcentual de mejora en su disponibilidad sube la de la planta en ' + f(r.imp[ranks[0].id], 3) + ' puntos. ';
+      p3 += 'Por lo anterior, la planta ' + (stp === 'ok' ? 'cumple' : 'no cumple') + ' su meta' + (sys.custom[i] != null ? ' propia' : ' asignada') + ' de ' + pct(Math.min(sys.targets[i], 1), 2) + '.';
+      body += '<p>' + p3 + '</p>';
+      if (o.copt) {
+        var lv = r.levels.slice(0, 30);
+        var tC = tbl(['Capacidad (' + u + ')', '% instalada', 'Probabilidad', 'P(capacidad ≥ nivel)', 'Días/año'],
+          lv.map(function (l) { return { cells: [f(l.cap, 0), r.total > 0 ? f(l.cap / r.total * 100, 1) + ' %' : '—', f(l.p, 6), f(l.cum, 6), f(l.p * 365, 1)], b: r.hasD && l.cap >= r.D - 1e-9 }; }),
+          ['right', 'right', 'right', 'right', 'right'], 'Tabla de capacidad (COPT) de ' + pl.name + '. Filas en negrita: niveles que cubren la demanda; su suma es A(D).');
+        body += '<p>Finalmente, la Tabla ' + tC.n + ' muestra la probabilidad de cada nivel de capacidad' + (r.levels.length > 30 ? ' (se muestran los 30 niveles de mayor capacidad de un total de ' + r.levels.length + ')' : '') + '.</p>' + tC.html;
+      }
+    });
+  }
+
+  // 5. Conclusiones
+  if (o.exec) {
+    body += pb + sec('Conclusiones y recomendaciones');
+    var cc = [];
+    cc.push('La disponibilidad sistémica de la red es ' + pct(sys.As, 2) + ', ' + (sys.As >= sys.meta ? 'sobre' : 'bajo') + ' la meta de ' + pct(sys.meta, 1) + ', con ' + f((1 - sys.As) * 365, 1) + ' días al año en que al menos una planta no cubre su demanda.');
+    if (bn >= 0) {
+      var req = sys.exc[bn] > 0 ? sys.meta / sys.exc[bn] : Infinity;
+      cc.push(bnName + ' es el cuello de botella (' + pct(bnR.A, 2) + ') y explica el ' + f(w(bnR) * 100, 1) + ' % de la indisponibilidad del sistema. ' +
+        (sys.As >= sys.meta ? 'El sistema ya cumple la meta.' : req <= 1 ? 'Manteniendo el resto de las plantas, ' + bnName + ' necesita una disponibilidad de ' + pct(req, 2) + ' para que el sistema alcance la meta.' : 'Aun con ' + bnName + ' al 100 %, el sistema no alcanza la meta; se deben mejorar también otras plantas.'));
+    }
+    if (bajo.length) cc.push('Quedan bajo su meta: ' + joinY(S.plants.map(function (p, i) { return sys.R[i].A < sys.targets[i] ? p.name + ' (' + pct(sys.R[i].A, 2) + ' frente a ' + pct(Math.min(sys.targets[i], 1), 2) + ')' : null; }).filter(Boolean)) + '. Se recomienda priorizar en ellas los planes de confiabilidad y la revisión de su capacidad de respaldo.');
+    cc.push(sinN1.length ? 'Sin respaldo N-1: ' + sinN1.join('; ') + '. La salida de cualquiera de esos equipos deja a su planta bajo la demanda, por lo que es conveniente asegurar repuestos críticos y monitoreo de condición en ellos.' : 'Todas las plantas cumplen el criterio N-1 frente a su demanda.');
+    if (mejoras.length && mejoras[0].I > 0) cc.push('La acción de mayor rendimiento es mejorar ' + mejoras[0].name + ' (' + mejoras[0].plant + '): cada punto porcentual agrega ' + f(mejoras[0].I, 3) + ' puntos a As, y llevarlo al 100 % dejaría el sistema en ' + pct(sys.As + mejoras[0].I * (1 - mejoras[0].av / 100), 2) + '.');
+    if (samples.length) cc.push('Antes de emitir este informe como definitivo, se deben reemplazar los datos de ejemplo de ' + joinY(samples) + ' por las capacidades y disponibilidades reales (SAP PM, MTBF y MTTR por equipo).');
+    body += '<ol>' + cc.map(function (c) { return '<li><p>' + esc(c) + '</p></li>'; }).join('') + '</ol>';
+  }
+  body += '<p class="foot">Elaborado por ' + esc(o.author) + (o.role ? ' — ' + esc(o.role) : '') + '. Cálculo generado con la herramienta Disponibilidad sistémica en serie, ' + esc(o.date) + '.</p>';
+  return { body: body, imgs: imgs };
+}
+
+var REP_CSS = 'body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#111111;line-height:1.35}' +
+  'h1{font-size:17pt;margin:0 0 6pt;color:#000000}' +
+  'h2{font-size:13pt;margin:16pt 0 6pt;border-bottom:1px solid #000000;padding-bottom:2pt;color:#000000}' +
+  'h3{font-size:11.5pt;margin:12pt 0 5pt;color:#000000}' +
+  'p{margin:0 0 6pt;text-align:justify}' +
+  'p.cap{font-size:9pt;color:#333333;text-align:center;font-style:italic;margin-bottom:10pt}' +
+  'p.tcap{font-size:9pt;font-weight:bold;margin:8pt 0 3pt;text-align:left}' +
+  'p.fig{text-align:center;margin:8pt 0 3pt}' +
+  'p.eq{text-align:center;font-family:"Courier New",monospace;font-size:10pt;margin:6pt 0 8pt}' +
+  'p.note{border:1px solid #555555;padding:4pt 6pt;background:#f2f2f2}' +
+  'p.foot{font-size:8.5pt;color:#555555;margin-top:14pt;border-top:1px solid #999999;padding-top:4pt}' +
+  'ol{margin:0 0 6pt 18pt;padding:0} li p{margin:0 0 4pt}';
+
+function reportDoc(r, srcFor, forWord, title) {
+  var body = r.body.replace(/\{\{(img\d+)\}\}/g, function (_, id) { return srcFor(id); });
+  if (forWord) {
+    return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>' + esc(title) + '</title>' +
+      '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->' +
+      '<style>@page WordSection1{size:21.0cm 29.7cm;margin:2.0cm 2.0cm 2.0cm 2.0cm}div.WordSection1{page:WordSection1}' + REP_CSS + '</style></head><body><div class="WordSection1">' + body + '</div></body></html>';
+  }
+  return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(title) + '</title><style>' + REP_CSS +
+    '@page{size:A4;margin:18mm 18mm 18mm 18mm}html{background:#e9e9e9}body{max-width:174mm;margin:0 auto;background:#ffffff;padding:16mm 18mm}' +
+    'img{max-width:100%;height:auto}.bar{position:sticky;top:0;display:flex;gap:8px;justify-content:flex-end;align-items:center;background:#f2f2f2;border-bottom:1px solid #bbbbbb;padding:8px 12px;margin:-16mm -18mm 12mm}' +
+    '.bar span{margin-right:auto;font-size:9pt;color:#444444}.bar button{font:inherit;font-size:10pt;padding:6px 14px;border:1px solid #777777;background:#ffffff;border-radius:5px;cursor:pointer}' +
+    '.bar button.p{background:#222222;color:#ffffff;border-color:#222222}' +
+    '@media print{html{background:#ffffff}body{padding:0;max-width:none}.bar{display:none}}</style></head><body>' +
+    '<div class="bar"><span>Usa Imprimir y elige Guardar como PDF para obtener el archivo.</span><button type="button" onclick="window.close()">Cerrar</button><button type="button" class="p" onclick="window.print()">Imprimir / PDF</button></div>' +
+    body + '</body></html>';
+}
+
+/* ---------- MHTML para Word ---------- */
+function qp(str) {
+  var bytes = new TextEncoder().encode(str.replace(/\r?\n/g, '\r\n')), out = '', line = '';
+  for (var i = 0; i < bytes.length; i++) {
+    var b = bytes[i], ch;
+    if (b === 13 && bytes[i + 1] === 10) { if (/ $/.test(line)) line = line.slice(0, -1) + '=20'; out += line + '\r\n'; line = ''; i++; continue; }
+    ch = ((b >= 33 && b <= 126 && b !== 61) || b === 32) ? String.fromCharCode(b) : '=' + (b < 16 ? '0' : '') + b.toString(16).toUpperCase();
+    if (line.length + ch.length > 75) { out += line + '=\r\n'; line = ''; }
+    line += ch;
+  }
+  return out + line;
+}
+function mhtml(html, parts) {
+  var bd = '----=_NextPart_DispoSerie_' + Date.now().toString(36);
+  var out = 'MIME-Version: 1.0\r\nContent-Type: multipart/related; boundary="' + bd + '"; type="text/html"\r\n\r\n' +
+    '--' + bd + '\r\nContent-Type: text/html; charset="utf-8"\r\nContent-Transfer-Encoding: quoted-printable\r\nContent-Location: file:///C:/informe/informe.htm\r\n\r\n' + qp(html) + '\r\n';
+  parts.forEach(function (p) {
+    out += '--' + bd + '\r\nContent-Type: image/png\r\nContent-Transfer-Encoding: base64\r\nContent-Location: file:///C:/informe/' + p.name + '\r\n\r\n' + p.b64.replace(/.{76}/g, '$&\r\n') + '\r\n';
+  });
+  return out + '--' + bd + '--\r\n';
+}
+function downloadFile(name, content, type) {
+  try {
+    var blob = new Blob([content], { type: type }), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 3000);
+    return true;
+  } catch (e) { return false; }
+}
+function fileStamp() { var d = new Date(), p = function (x) { return (x < 10 ? '0' : '') + x; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+
+/* ---------- Panel del informe ---------- */
+function repOpts() {
+  return {
+    title: $('r-title').value.trim() || REP_DEF.title, author: $('r-author').value.trim(), role: $('r-role').value.trim(), area: $('r-area').value.trim(),
+    date: $('r-date').value.trim() || today(), exec: $('r-exec').checked, copt: $('r-copt').checked,
+    plants: S.plants.filter(function (p) { var c = $('rp-' + p.id); return c && c.checked; }).map(function (p) { return p.id; })
+  };
+}
+function openRepPanel() {
+  S.rep = Object.assign({}, REP_DEF, S.rep || {});
+  $('r-title').value = S.rep.title; $('r-author').value = S.rep.author; $('r-role').value = S.rep.role; $('r-area').value = S.rep.area;
+  $('r-date').value = today(); $('r-exec').checked = S.rep.exec !== false; $('r-copt').checked = S.rep.copt !== false;
+  $('r-plants').innerHTML = S.plants.map(function (p) {
+    return '<label class="chk"><input type="checkbox" id="rp-' + p.id + '" checked> <span>' + esc(p.name) + (p.sample ? ' <span class="pill ex">ej.</span>' : '') + '</span></label>';
+  }).join('');
+  $('rep-panel').hidden = false; $('rep-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function makeReport(mode) {
+  var o = repOpts();
+  if (!o.exec && !o.plants.length) { toast('Elige el resumen ejecutivo o al menos una planta.'); return; }
+  S.rep = { title: o.title, author: o.author, role: o.role, area: o.area, exec: o.exec, copt: o.copt }; save();
+  var r = buildReport(o);
+  $('rep-status').textContent = 'Generando figuras…';
+  Promise.all(r.imgs.map(function (im) { return toPng(im.o); })).then(function (pngs) {
+    var map = {}; r.imgs.forEach(function (im, k) { map[im.id] = pngs[k]; });
+    var name = 'Informe_DisponibilidadSistemica_' + fileStamp();
+    if (mode === 'word') {
+      var parts = [];
+      var html = reportDoc(r, function (id) {
+        if (!map[id]) return '';
+        parts.push({ name: id + '.png', b64: map[id].split(',')[1] });
+        return 'file:///C:/informe/' + id + '.png';
+      }, true, o.title);
+      var ok = downloadFile(name + '.doc', mhtml(html, parts), 'application/msword');
+      $('rep-status').textContent = ok ? 'Word descargado: ' + name + '.doc' : 'El navegador no permitió la descarga.';
+      if (ok) toast('Informe Word descargado.');
+    } else {
+      var view = reportDoc(r, function (id) {
+        var im = r.imgs.filter(function (x) { return x.id === id; })[0];
+        return map[id] || ('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(im.o.svg));
+      }, false, o.title);
+      var w = null;
+      try { w = window.open('', '_blank'); } catch (e) { w = null; }
+      if (w) { w.document.open(); w.document.write(view); w.document.close(); $('rep-status').textContent = 'Informe abierto en una pestaña nueva.'; }
+      else {
+        var ok2 = downloadFile(name + '.html', view, 'text/html;charset=utf-8');
+        $('rep-status').textContent = ok2 ? 'El navegador bloqueó la pestaña nueva: se descargó ' + name + '.html. Ábrelo e imprime desde ahí.' : 'El navegador bloqueó la pestaña y la descarga.';
+      }
+    }
+  });
+}
+document.addEventListener('click', function (e) {
+  var id = e.target.id;
+  if (id === 'b-rep') openRepPanel();
+  else if (id === 'b-rep-x') $('rep-panel').hidden = true;
+  else if (id === 'b-rep-view') makeReport('view');
+  else if (id === 'b-rep-word') makeReport('word');
+  else if (id === 'b-rep-all' || id === 'b-rep-none') S.plants.forEach(function (p) { var c = $('rp-' + p.id); if (c) c.checked = id === 'b-rep-all'; });
+});
+
+S = load();
+if (S.sel == null || S.sel >= S.plants.length) S.sel = 0;
+full();
+})();
+</script>
+
+</body>
+</html>
