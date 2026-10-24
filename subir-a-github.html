@@ -128,6 +128,25 @@ tr.cut td.path{color:var(--ink-3);text-decoration:line-through}
 .help li{margin-bottom:6px}
 .help code{font:12.5px var(--mono);background:var(--fill);padding:1px 5px;border-radius:4px}
 .foot{font-size:12px;color:var(--ink-3);margin-top:24px;text-align:center}
+td.type{white-space:nowrap}
+.b-type{background:var(--fill-2);color:var(--ink-2)}
+
+/* README e inventario */
+.rdlist{display:grid;gap:10px;margin-top:14px}
+.rd-item{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface)}
+.rd-item.missing{border:1px dashed var(--ink)}
+.rd-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.rd-path{font:12.5px var(--mono);word-break:break-all;flex:1;min-width:180px}
+.rd-count{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rd-item.missing .rd-count{color:var(--ink);font-weight:700}
+.rd-item.ok .rd-count::before{content:"✓ "}
+textarea.rd-in{font:14px/1.45 var(--sans);min-height:44px}
+.rd-hint{font-size:12.5px;color:var(--ink-2);margin-top:6px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.rd-hint i{color:var(--ink-3)}
+.rd-proj{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--fill)}
+.preview{background:var(--fill);border:1px solid var(--line);border-radius:8px;padding:12px;font:12px/1.55 var(--mono);white-space:pre-wrap;word-break:break-word;max-height:380px;overflow:auto;margin:0}
+.need{font-size:13px;color:var(--ink);font-weight:600;margin-top:10px;min-height:18px}
+.need button{margin-left:6px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
@@ -226,7 +245,7 @@ tr.cut td.path{color:var(--ink-3);text-decoration:line-through}
   <div class="summary" id="summary"></div>
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Ruta en el repositorio</th><th style="text-align:right">Tamaño</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th>Ruta en el repositorio</th><th>Tipo</th><th style="text-align:right">Tamaño</th><th>Estado</th><th></th></tr></thead>
       <tbody id="tbody"></tbody>
     </table>
     <div class="empty" id="emptyMsg">Aún no hay archivos en la lista.</div>
@@ -240,9 +259,34 @@ tr.cut td.path{color:var(--ink-3);text-decoration:line-through}
   </details>
 </section>
 
-<!-- 04 · Publicar -->
+<!-- 04 · README -->
+<section class="step locked" id="sR">
+  <div class="step-h"><span class="n">04</span><h2>README e inventario</h2><span class="aside" id="rdInfo" style="font-family:var(--mono)"></span></div>
+  <label class="check"><input type="checkbox" id="rdOn" checked> Documentar cada archivo en el README.md de la carpeta de destino</label>
+  <div id="rdBody">
+    <div class="status" id="rdStatus"></div>
+    <div class="rd-proj" id="rdProject" style="display:none">
+      <div class="field">
+        <label class="lbl" for="rdTitle">Título del README</label>
+        <input type="text" id="rdTitle" placeholder="ej. Análisis de detenciones TBF/TTR">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label class="lbl" for="rdDesc">Descripción general del contenido</label>
+        <textarea id="rdDesc" rows="3" style="font:14px/1.45 var(--sans)" placeholder="Qué es, para qué sirve y cómo se usa (mínimo 20 caracteres)"></textarea>
+      </div>
+    </div>
+    <div class="rdlist" id="rdList"></div>
+    <div class="empty" id="rdEmpty">Agrega archivos en el paso 03 para documentarlos aquí.</div>
+    <details class="ex" id="rdPrev">
+      <summary>Vista previa del README</summary>
+      <pre class="preview" id="rdPreview"></pre>
+    </details>
+  </div>
+</section>
+
+<!-- 05 · Publicar -->
 <section class="step locked" id="s4">
-  <div class="step-h"><span class="n">04</span><h2>Publicar</h2></div>
+  <div class="step-h"><span class="n">05</span><h2>Publicar</h2></div>
   <div class="field">
     <label class="lbl" for="msg">Mensaje del commit</label>
     <input type="text" id="msg" placeholder="Describe el cambio">
@@ -251,6 +295,7 @@ tr.cut td.path{color:var(--ink-3);text-decoration:line-through}
   <div class="row">
     <button class="big" id="btnPublish" type="button" disabled>Subir</button>
   </div>
+  <div class="need" id="need"></div>
   <div class="progress"><div id="bar"></div></div>
   <div class="ptext" id="ptext"></div>
   <div class="log" id="log"></div>
@@ -302,8 +347,11 @@ const store = {
 const S = {
   token:null, user:null, repos:[], repo:null, branches:[], branch:null, headSha:null,
   emptyRepo:false, remote:new Map(), treeTruncated:false,
-  items:[], seq:0, busy:false, msgEdited:false
+  items:[], seq:0, busy:false, msgEdited:false,
+  readme:{ key:'', path:'README.md', remote:null, entries:new Map(), loading:false, error:'' }
 };
+const MIN_DESC = 15, MIN_PROJ = 20;
+const MARK_A = '<!-- inventario:inicio -->', MARK_B = '<!-- inventario:fin -->';
 
 /* ---------------- utilidades ---------------- */
 const fmtSize = n => n < 1024 ? n + ' B' : n < MB ? (n/1024).toFixed(1) + ' KB' : (n/MB).toFixed(1) + ' MB';
@@ -392,7 +440,8 @@ function logout(){
   $('btnLogout').style.display = 'none'; $('btnConnect').style.display = '';
   $('repoSel').innerHTML = ''; $('branchSel').innerHTML = ''; $('repoLink').style.display = 'none';
   setStatus($('st1'), 'Desconectado. El token se borró de este equipo.');
-  ['s2','s3','s4'].forEach(id => lock(id, true));
+  ['s2','s3','sR','s4'].forEach(id => lock(id, true));
+  S.readme = { key:'', path:'README.md', remote:null, entries:new Map(), loading:false, error:'' };
   S.remote = new Map(); refreshStatuses();
 }
 
@@ -444,7 +493,7 @@ async function selectRepo(full){
     bs.value = S.branches.some(b => b.name === repo.default_branch) ? repo.default_branch : S.branches[0].name;
   }
   await selectBranch(bs.value);
-  lock('s3', false); lock('s4', false);
+  lock('s3', false); lock('sR', false); lock('s4', false);
 }
 
 async function selectBranch(name){
@@ -453,7 +502,7 @@ async function selectBranch(name){
   if (S.emptyRepo){
     setStatus($('st2'), 'Repositorio vacío: se inicializará con un README al subir.', 'ok');
     $('treeInfo').textContent = 'Repositorio vacío';
-    refreshStatuses(); return;
+    refreshStatuses(); scheduleReadme(); return;
   }
   const b = S.branches.find(x => x.name === name);
   S.headSha = b ? b.commit.sha : null;
@@ -468,6 +517,7 @@ async function selectBranch(name){
     setStatus($('st2'), e.message, 'err');
   }
   refreshStatuses();
+  scheduleReadme();
 }
 
 async function createRepo(){
@@ -540,9 +590,15 @@ function addFiles(list){
     const inner = normPath(x.inner);
     if (!inner) continue;
     const key = (x.root || '') + '|' + inner;
-    const it = { id: ++S.seq, file: x.file, root: x.root || '', inner, size: x.file.size, sha: undefined };
+    const old = byDest.get(key);
+    const it = { id: ++S.seq, file: x.file, root: x.root || '', inner, size: x.file.size, sha: undefined,
+                 desc: old ? old.desc : '', touched: old ? old.touched : false, prefilled: old ? old.prefilled : false, hint: '' };
     byDest.set(key, it);
     gitBlobSha(x.file).then(s => { it.sha = s; refreshStatuses(); }).catch(() => { it.sha = null; refreshStatuses(); });
+    const ext = (inner.split('.').pop() || '').toLowerCase();
+    if (TEXT_EXT.includes(ext) && x.file.size < 5 * MB){
+      x.file.slice(0, 4096).text().then(t => { it.hint = detectHeader(t, inner); if (it.hint) refreshStatuses(); }).catch(() => {});
+    }
   }
   S.items = Array.from(byDest.values());
   refreshStatuses();
@@ -562,7 +618,7 @@ function statusOf(it){
   return { k:'new', label:'Nuevo' };
 }
 
-function toUpload(){ return S.items.filter(it => { const k = statusOf(it).k; return k === 'new' || k === 'upd'; }); }
+function toUpload(){ return S.items.filter(it => { if (isReadmeItem(it)) return false; const k = statusOf(it).k; return k === 'new' || k === 'upd'; }); }
 
 function refreshStatuses(){
   const tb = $('tbody');
@@ -578,6 +634,7 @@ function refreshStatuses(){
     const warn = (it.size > WARN_SIZE && it.size <= MAX_SIZE) ? '<span class="warnmark" title="GitHub recomienda archivos bajo 50 MB">⚠ pesado</span>' : '';
     return `<tr class="${cls}">
       <td class="path">${esc(dest)}</td>
+      <td class="type"><span class="badge b-type">${esc(tipoDe(dest))}</span></td>
       <td class="size">${fmtSize(it.size)}</td>
       <td><span class="badge b-${st.k}" title="${esc(st.title || '')}">${st.label}</span>${warn}</td>
       <td class="act"><button class="icon" data-rm="${it.id}" title="Quitar de la lista">✕</button></td>
@@ -593,14 +650,30 @@ function refreshStatuses(){
     counts.big ? `<span><b>${counts.big}</b> demasiado grandes</span>` : '',
     `<span>A subir: <b>${fmtSize(bytes)}</b></span>`
   ].join('') : '';
+  // README e inventario
+  const rdList = readmeItems();
+  if (rdOn()) prefillDescs(rdList);
+  renderReadme(rdList);
+  schedulePreview();
+  const list = toUpload();
+  const nUp = list.length;
+  const doReadme = rdOn() && (rdList.length > 0 || S.items.some(isReadmeItem));
+  const blockers = [];
+  if (counts.wait) blockers.push('Analizando archivos…');
+  blockers.push(...readmeBlockers(rdList));
+
   const pb = $('btnPublish');
-  pb.textContent = n ? `Subir ${n} archivo${n === 1 ? '' : 's'} en un commit` : 'Subir';
-  pb.disabled = S.busy || !n || counts.wait > 0 || !S.repo;
+  pb.textContent = nUp ? `Subir ${nUp} archivo${nUp === 1 ? '' : 's'}${doReadme ? ' + README' : ''} en un commit`
+                 : (doReadme ? 'Actualizar solo el README' : 'Subir');
+  pb.disabled = S.busy || !S.repo || blockers.length > 0 || !(nUp || doReadme);
+  const firstMissing = rdOn() && rdList.find(it => (it.desc || '').trim().length < MIN_DESC);
+  $('need').innerHTML = (S.items.length && blockers.length)
+    ? esc(blockers.join(' · ')) + (firstMissing ? ` <button class="ghost small" type="button" id="goMissing">Ir a la que falta</button>` : '')
+    : '';
   if (!S.msgEdited){
-    const list = toUpload();
-    $('msg').value = !list.length ? '' :
-      list.length === 1 ? `${statusOf(list[0]).k === 'upd' ? 'Actualiza' : 'Agrega'} ${list[0].inner.split('/').pop()}` :
-      `Sube ${list.length} archivos` + (normPath($('destDir').value) ? ` a ${normPath($('destDir').value)}` : '');
+    $('msg').value = !nUp ? (doReadme ? 'Actualiza README' : '') :
+      nUp === 1 ? `${statusOf(list[0]).k === 'upd' ? 'Actualiza' : 'Agrega'} ${list[0].inner.split('/').pop()}` :
+      `Sube ${nUp} archivos` + (readmeDir() ? ` a ${readmeDir()}` : '');
   }
 }
 
@@ -640,7 +713,226 @@ async function handleDrop(dt){
   addFiles(out);
 }
 
-/* ---------------- 04 · publicar ---------------- */
+/* ---------------- identificación de archivos ---------------- */
+const TIPOS = {
+  r:'Script R', rmd:'R Markdown', qmd:'Quarto', rproj:'Proyecto RStudio', rds:'Datos R', rdata:'Datos R', rda:'Datos R',
+  py:'Script Python', ipynb:'Notebook Jupyter', sql:'Consulta SQL', js:'JavaScript', ts:'TypeScript',
+  html:'Página HTML', htm:'Página HTML', css:'Hoja de estilos',
+  xlsx:'Excel', xlsm:'Excel con macros', xls:'Excel', xlsb:'Excel', csv:'Datos CSV', tsv:'Datos TSV',
+  docx:'Word', doc:'Word', dotx:'Plantilla Word', pdf:'PDF', pptx:'PowerPoint', ppt:'PowerPoint', potx:'Plantilla PowerPoint',
+  md:'Markdown', txt:'Texto', json:'Configuración', yaml:'Configuración', yml:'Configuración', toml:'Configuración', ini:'Configuración',
+  png:'Imagen', jpg:'Imagen', jpeg:'Imagen', svg:'Imagen', gif:'Imagen', webp:'Imagen',
+  bas:'Módulo VBA', cls:'Módulo VBA', vbs:'Script VBS', bat:'Script de sistema', cmd:'Script de sistema', ps1:'Script PowerShell', sh:'Script de sistema',
+  pbix:'Power BI', zip:'Comprimido', '7z':'Comprimido', rar:'Comprimido', dwg:'Plano CAD', dxf:'Plano CAD'
+};
+function tipoDe(path){
+  const name = path.split('/').pop();
+  if (/^(app|ui|server|global)\.r$/i.test(name)) return 'App Shiny';
+  if (/^dockerfile$/i.test(name)) return 'Configuración';
+  const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+  return TIPOS[ext] || (ext ? 'Archivo .' + ext : 'Archivo');
+}
+const TEXT_EXT = ['r','rmd','qmd','md','py','sql','js','sh','ps1','bat','cmd','bas','vbs'];
+function detectHeader(txt, name){
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (['rmd','qmd','md'].includes(ext)){
+    const y = txt.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
+    if (y){ const t = y[1].match(/^title:\s*["']?(.+?)["']?\s*$/m); if (t) return t[1].trim(); }
+    const h = txt.match(/^#\s+(.+)$/m); if (h) return h[1].trim();
+    return '';
+  }
+  const lines = [];
+  for (const raw of txt.split(/\r?\n/)){
+    const l = raw.trim();
+    if (!l){ if (lines.length) break; else continue; }
+    const m = l.match(/^(#'?|--|\/\/|'|REM\b|::)\s?(.*)$/i);
+    if (!m) break;
+    if (m[2].startsWith('!')) continue; // shebang
+    const c = m[2].replace(/^[-=#*_~\s]+|[-=#*_~\s]+$/g, '').trim();
+    if (c && !/^(author|autor|fecha|date|version|versión|email|correo)\s*:/i.test(c)) lines.push(c);
+    if (lines.join(' ').length > 160) break;
+  }
+  let s = lines.join(' ').trim();
+  if (!s && ext === 'py'){ const d = txt.match(/^\s*("""|''')([\s\S]*?)\1/); if (d) s = d[2].replace(/\s+/g, ' ').trim(); }
+  return s.length >= 8 ? s.slice(0, 200) : '';
+}
+
+/* ---------------- 04 · README ---------------- */
+const rdOn = () => $('rdOn').checked;
+const readmeDir = () => normPath($('destDir').value);
+let rdPathCache = { key:'', val:'' };
+function readmePathFor(){
+  const dir = readmeDir();
+  const key = dir + '#' + S.headSha + '#' + S.remote.size;
+  if (rdPathCache.key === key) return rdPathCache.val;
+  const want = (dir ? dir + '/' : '') + 'README.md';
+  let val = want;
+  for (const p of S.remote.keys()) if (p.toLowerCase() === want.toLowerCase()){ val = p; break; }
+  rdPathCache = { key, val };
+  return val;
+}
+function relToReadme(dest){ const d = readmeDir(); return d && dest.startsWith(d + '/') ? dest.slice(d.length + 1) : dest; }
+function isReadmeItem(it){ return rdOn() && destOf(it).toLowerCase() === readmePathFor().toLowerCase(); }
+function readmeItems(){ return S.items.filter(it => !isReadmeItem(it) && ['new','upd','same'].includes(statusOf(it).k)); }
+const cell = s => String(s == null ? '' : s).replace(/\r?\n+/g, ' ').replace(/\|/g, '\\|').trim();
+const linkOf = rel => encodeURI(rel).replace(/\(/g, '%28').replace(/\)/g, '%29');
+function todayStr(){ const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function decodeB64utf8(b64){ const bin = atob(String(b64).replace(/\s/g, '')); return new TextDecoder('utf-8').decode(Uint8Array.from(bin, c => c.charCodeAt(0))); }
+
+function parseInventory(text){
+  const m = new Map();
+  if (!text) return m;
+  const a = text.indexOf(MARK_A), b = text.indexOf(MARK_B);
+  if (a < 0 || b < a) return m;
+  for (const line of text.slice(a, b).split('\n')){
+    const t = line.trim();
+    if (!t.startsWith('|')) continue;
+    const cells = t.replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).map(c => c.trim().replace(/\\\|/g, '|'));
+    if (cells.length < 4) continue;
+    const lk = cells[0].match(/^\[(.*)\]\((.*)\)$/);
+    if (!lk) continue;
+    let rel; try { rel = decodeURI(lk[2]); } catch(e){ rel = lk[2]; }
+    m.set(rel, { tipo: cells[1], desc: cells[2], fecha: cells[3] });
+  }
+  return m;
+}
+
+let rdTimer = null;
+function scheduleReadme(){ clearTimeout(rdTimer); rdTimer = setTimeout(() => loadReadme().catch(() => {}), 350); }
+async function loadReadme(){
+  if (!S.repo) return;
+  const path = readmePathFor();
+  const sha = S.remote.get(path) || null;
+  const key = S.repo.full_name + '@' + (sha || 'nuevo') + ':' + path;
+  if (S.readme.key === key){ refreshStatuses(); return; }
+  S.readme = { key, path, remote:null, entries:new Map(), loading:!!sha, error:'' };
+  for (const it of S.items) if (it.prefilled && !it.touched){ it.desc = ''; it.prefilled = false; }
+  refreshStatuses();
+  if (!sha) return;
+  try {
+    const blob = await gh(`/repos/${S.repo.full_name}/git/blobs/${sha}`);
+    if (S.readme.key !== key) return;
+    const txt = decodeB64utf8(blob.content);
+    S.readme.remote = { sha, text: txt };
+    S.readme.entries = parseInventory(txt);
+  } catch (e){
+    if (S.readme.key === key) S.readme.error = 'No se pudo leer el README existente: ' + e.message;
+  }
+  if (S.readme.key === key){ S.readme.loading = false; refreshStatuses(); }
+}
+
+function prefillDescs(list){
+  for (const it of list){
+    if (it.touched || it.prefilled) continue;
+    const e = S.readme.entries.get(relToReadme(destOf(it)));
+    if (e && e.desc){ it.desc = e.desc; it.prefilled = true; }
+  }
+}
+const projNeeded = () => rdOn() && !S.readme.loading && !S.readme.remote && !S.items.some(isReadmeItem);
+function readmeBlockers(list){
+  if (!rdOn()) return [];
+  const out = [];
+  if (S.readme.loading) out.push('Leyendo el README existente…');
+  const miss = list.filter(it => (it.desc || '').trim().length < MIN_DESC).length;
+  if (miss) out.push(`Falta${miss === 1 ? '' : 'n'} ${miss} ${miss === 1 ? 'descripción' : 'descripciones'} de archivo (mínimo ${MIN_DESC} caracteres)`);
+  if (projNeeded() && list.length){
+    if (!$('rdTitle').value.trim()) out.push('Falta el título del README');
+    if ($('rdDesc').value.trim().length < MIN_PROJ) out.push(`Falta la descripción general del README (mínimo ${MIN_PROJ} caracteres)`);
+  }
+  return out;
+}
+
+let rdSig = '';
+function renderReadme(list){
+  $('rdBody').style.display = rdOn() ? '' : 'none';
+  if (!rdOn()){ $('rdInfo').textContent = ''; return; }
+  const path = readmePathFor();
+  $('rdInfo').textContent = path;
+  const userBase = S.items.some(isReadmeItem);
+  let st = '', kind = '';
+  if (S.readme.loading) st = 'Leyendo el README existente…';
+  else if (S.readme.error){ st = S.readme.error; kind = 'err'; }
+  else if (userBase){ st = 'Se usará el README.md que estás subiendo como base; se le agrega el inventario.'; kind = 'ok'; }
+  else if (S.readme.remote){ st = `Se actualizará ${path}: se conserva su texto y ${S.readme.entries.size} descripción(es) ya registradas.`; kind = 'ok'; }
+  else if (S.repo) st = `Se creará ${path}. Completa el título y una descripción general.`;
+  setStatus($('rdStatus'), st, kind);
+  $('rdProject').style.display = projNeeded() && list.length ? '' : 'none';
+  if (projNeeded() && !$('rdTitle').dataset.touched){
+    const dir = readmeDir();
+    $('rdTitle').value = dir ? dir.split('/').pop() : (S.repo ? S.repo.name : '');
+  }
+  $('rdEmpty').style.display = list.length ? 'none' : '';
+
+  const sig = S.readme.key + '|' + list.map(it => [it.id, destOf(it), statusOf(it).k, it.prefilled ? 1 : 0, it.hint ? 1 : 0].join(':')).join('|');
+  if (sig !== rdSig){
+    rdSig = sig;
+    $('rdList').innerHTML = list.map(it => {
+      const st = statusOf(it);
+      const rel = relToReadme(destOf(it));
+      const hint = it.hint && !it.touched ? `<div class="rd-hint"><i>Encabezado detectado:</i> «${esc(it.hint)}» <button class="ghost small" type="button" data-use="${it.id}">Usar como base</button></div>` : '';
+      const pre = it.prefilled ? '<div class="rd-hint"><i>Descripción tomada del README actual. Edítala si el archivo cambió.</i></div>' : '';
+      return `<div class="rd-item" data-row="${it.id}">
+        <div class="rd-head">
+          <span class="rd-path">${esc(rel)}</span>
+          <span class="badge b-type">${esc(tipoDe(rel))}</span>
+          <span class="badge b-${st.k}">${st.label}</span>
+          <span class="rd-count" data-count="${it.id}"></span>
+        </div>
+        <textarea class="rd-in" rows="2" data-desc="${it.id}" placeholder="Qué hace o qué contiene este archivo (obligatorio, mínimo ${MIN_DESC} caracteres)">${esc(it.desc || '')}</textarea>
+        ${hint}${pre}
+      </div>`;
+    }).join('');
+  }
+  for (const it of list) updateRow(it);
+}
+function updateRow(it){
+  const row = document.querySelector(`[data-row="${it.id}"]`);
+  if (!row) return;
+  const n = (it.desc || '').trim().length;
+  row.classList.toggle('missing', n < MIN_DESC);
+  row.classList.toggle('ok', n >= MIN_DESC);
+  const c = row.querySelector('[data-count]');
+  if (c) c.textContent = n < MIN_DESC ? `${n} / ${MIN_DESC}` : 'Listo';
+}
+
+async function buildReadme(){
+  const today = todayStr();
+  const userItem = S.items.find(isReadmeItem);
+  const base = userItem ? await userItem.file.text() : (S.readme.remote ? S.readme.remote.text : null);
+  const entries = new Map(S.readme.entries);
+  if (userItem) for (const [k, v] of parseInventory(base)) entries.set(k, v);
+  const dir = readmeDir();
+  if (!S.treeTruncated){
+    for (const k of [...entries.keys()]){ if (!S.remote.has(dir ? dir + '/' + k : k)) entries.delete(k); }
+  }
+  for (const it of readmeItems()){
+    const st = statusOf(it).k, rel = relToReadme(destOf(it)), prev = entries.get(rel);
+    entries.set(rel, { tipo: tipoDe(rel), desc: (it.desc || '').trim(), fecha: (st === 'same' && prev && prev.fecha) ? prev.fecha : today });
+  }
+  const rows = [...entries.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'));
+  const block = [
+    MARK_A, '## Contenido', '',
+    '| Archivo | Tipo | Descripción | Actualizado |',
+    '|---|---|---|---|',
+    ...rows.map(([rel, e]) => `| [${rel.replace(/([\[\]])/g, '\\$1')}](${linkOf(rel)}) | ${cell(e.tipo)} | ${cell(e.desc)} | ${cell(e.fecha)} |`),
+    '', '_Inventario mantenido con «Subir a GitHub»: cada archivo se documenta al subirlo._',
+    MARK_B
+  ].join('\n');
+  if (base != null){
+    const a = base.indexOf(MARK_A), b = base.indexOf(MARK_B);
+    if (a >= 0 && b > a) return base.slice(0, a) + block + base.slice(b + MARK_B.length);
+    return base.replace(/\s*$/, '') + '\n\n' + block + '\n';
+  }
+  return `# ${$('rdTitle').value.trim()}\n\n${$('rdDesc').value.trim()}\n\n${block}\n`;
+}
+let prevTimer = null;
+function schedulePreview(){
+  if (!$('rdPrev').open) return;
+  clearTimeout(prevTimer);
+  prevTimer = setTimeout(() => buildReadme().then(t => { $('rdPreview').textContent = t; }).catch(e => { $('rdPreview').textContent = e.message; }), 250);
+}
+
+/* ---------------- 05 · publicar ---------------- */
 function toBase64(file){
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -659,8 +951,23 @@ function setProgress(done, total, label){
 
 async function publish(){
   const list = toUpload();
-  if (!list.length || !S.repo) return;
-  const message = $('msg').value.trim() || `Sube ${list.length} archivos`;
+  const rdList = readmeItems();
+  const doReadme = rdOn() && (rdList.length > 0 || S.items.some(isReadmeItem));
+  if ((!list.length && !doReadme) || !S.repo) return;
+  if (readmeBlockers(rdList).length) return;
+  let message = $('msg').value.trim() || (list.length ? `Sube ${list.length} archivos` : 'Actualiza README');
+  if (doReadme && list.length){
+    message += '\n\n' + list.map(it => `- ${destOf(it)}: ${(it.desc || '').replace(/\s+/g, ' ').trim()}`).join('\n');
+  }
+  let readmeText = null, readmePath = null;
+  if (doReadme){
+    readmeText = await buildReadme();
+    readmePath = readmePathFor();
+    if (!list.length && S.readme.remote && readmeText === S.readme.remote.text){
+      $('log').textContent = ''; log('El README ya está al día: no hay nada que subir.');
+      return;
+    }
+  }
   const full = S.repo.full_name;
   let branch = S.branch;
   S.busy = true; refreshStatuses();
@@ -704,11 +1011,13 @@ async function publish(){
     };
     await Promise.all([worker(), worker(), worker()]);
 
+    const treeEntries = list.map(it => ({ path: it.destFinal, mode:'100644', type:'blob', sha: it.blob }));
+    if (doReadme){
+      treeEntries.push({ path: readmePath, mode:'100644', type:'blob', content: readmeText });
+      log(`  ✓ ${readmePath} (inventario de ${parseInventory(readmeText).size} archivo(s))`);
+    }
     log('Armando el commit…');
-    const tree = await gh(`/repos/${full}/git/trees`, { method:'POST', body:{
-      base_tree: pc.tree.sha,
-      tree: list.map(it => ({ path: it.destFinal, mode:'100644', type:'blob', sha: it.blob }))
-    }});
+    const tree = await gh(`/repos/${full}/git/trees`, { method:'POST', body:{ base_tree: pc.tree.sha, tree: treeEntries } });
     setProgress(++done, steps);
     const commit = await gh(`/repos/${full}/git/commits`, { method:'POST', body:{ message, tree: tree.sha, parents:[parent] } });
     setProgress(++done, steps);
@@ -717,12 +1026,15 @@ async function publish(){
     log(`Commit ${commit.sha.slice(0, 7)} publicado en ${branch}.`);
 
     const url = commit.html_url || `${S.repo.html_url}/commit/${commit.sha}`;
-    $('result').innerHTML = `<b>Listo: ${list.length} archivo${list.length === 1 ? '' : 's'} en ${esc(full)}</b>
-      Commit <code style="font-family:var(--mono)">${commit.sha.slice(0, 7)}</code> · «${esc(message)}» ·
+    const titleLine = message.split('\n')[0];
+    $('result').innerHTML = `<b>Listo: ${list.length} archivo${list.length === 1 ? '' : 's'}${doReadme ? ' + README' : ''} en ${esc(full)}</b>
+      Commit <code style="font-family:var(--mono)">${commit.sha.slice(0, 7)}</code> · «${esc(titleLine)}» ·
       <a href="${esc(url)}" target="_blank" rel="noopener">ver el commit ↗</a> ·
       <a href="${esc(S.repo.html_url)}/tree/${esc(encRef(branch))}" target="_blank" rel="noopener">ver el repositorio ↗</a>`;
     $('result').className = 'result on';
     S.msgEdited = false;
+    for (const it of S.items){ it.touched = false; it.prefilled = true; }
+    $('rdTitle').dataset.touched = ''; $('rdDesc').value = '';
 
     // refrescar estado remoto
     S.branches = await gh(`/repos/${full}/branches?per_page=100`);
@@ -756,7 +1068,7 @@ $('btnReload').onclick = () => loadRepos(S.repo && S.repo.full_name).catch(e => 
 $('btnNewToggle').onclick = () => { const n = $('newRepo'); n.style.display = n.style.display === 'none' ? '' : 'none'; if (n.style.display === '') $('nrName').focus(); };
 $('btnCreate').onclick = createRepo;
 $('branchSel').onchange = () => selectBranch($('branchSel').value);
-$('destDir').oninput = refreshStatuses;
+$('destDir').oninput = () => { refreshStatuses(); scheduleReadme(); };
 $('destDir').onblur = () => { $('destDir').value = normPath($('destDir').value); refreshStatuses(); };
 
 $('btnFiles').onclick = () => $('inFiles').click();
@@ -788,6 +1100,34 @@ $('excl').oninput = () => { store.set('ghup.excl', $('excl').value); refreshStat
 $('btnExReset').onclick = () => { $('excl').value = DEFAULT_EXCL; store.del('ghup.excl'); refreshStatuses(); };
 $('msg').oninput = () => { S.msgEdited = $('msg').value.trim() !== ''; };
 $('btnPublish').onclick = publish;
+
+/* README: descripciones obligatorias */
+$('rdOn').checked = store.get('ghup.rdOn') !== '0';
+$('rdOn').onchange = () => { store.set('ghup.rdOn', $('rdOn').checked ? '1' : '0'); rdSig = ''; refreshStatuses(); scheduleReadme(); };
+$('rdList').addEventListener('input', e => {
+  const ta = e.target.closest('[data-desc]'); if (!ta) return;
+  const it = S.items.find(x => x.id === Number(ta.dataset.desc)); if (!it) return;
+  it.desc = ta.value; it.touched = true;
+  refreshStatuses();
+});
+$('rdList').addEventListener('click', e => {
+  const b = e.target.closest('[data-use]'); if (!b) return;
+  const it = S.items.find(x => x.id === Number(b.dataset.use)); if (!it || !it.hint) return;
+  it.desc = it.hint; it.touched = true; it.prefilled = false;
+  rdSig = '';            // reconstruye la fila: ya no muestra la sugerencia
+  refreshStatuses();
+  const ta = document.querySelector(`[data-desc="${it.id}"]`);
+  if (ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+});
+$('rdTitle').oninput = () => { $('rdTitle').dataset.touched = '1'; refreshStatuses(); };
+$('rdDesc').oninput = refreshStatuses;
+$('rdPrev').addEventListener('toggle', schedulePreview);
+$('need').addEventListener('click', e => {
+  if (!e.target.closest('#goMissing')) return;
+  const it = readmeItems().find(x => (x.desc || '').trim().length < MIN_DESC); if (!it) return;
+  const ta = document.querySelector(`[data-desc="${it.id}"]`);
+  if (ta){ ta.scrollIntoView({ behavior:'smooth', block:'center' }); setTimeout(() => ta.focus(), 300); }
+});
 
 /* arranque: reconectar si hay token guardado */
 const saved = store.get('ghup.token');

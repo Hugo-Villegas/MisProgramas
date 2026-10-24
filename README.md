@@ -21,3 +21,13 @@ Nota: usan Google Fonts, por lo que se ven mejor con conexión a internet, pero 
 ## GitHub Pages (opcional)
 
 Si el repositorio es público, puedes publicarlos en línea desde *Settings → Pages* (rama `main`, carpeta raíz).
+
+<!-- inventario:inicio -->
+## Contenido
+
+| Archivo | Tipo | Descripción | Actualizado |
+|---|---|---|---|
+| [subir-a-github.html](subir-a-github.html) | Página HTML | Sube los archivos a GitHub , se le agrego con respecto a su versión anterior el README | 2026-10-24 |
+
+_Inventario mantenido con «Subir a GitHub»: cada archivo se documenta al subirlo._
+<!-- inventario:fin -->
