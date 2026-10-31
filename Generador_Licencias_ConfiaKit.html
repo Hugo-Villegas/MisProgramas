@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generador de licencias ConfiaKit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Herramienta privada del vendedor: formulario a la izquierda, clave emitida a la derecha, registro abajo */
+:root{
+  --paper:#f2f4f5; --panel:#ffffff; --panel-2:#eaeef0; --ink:#15191c; --ink-soft:#5a646b; --line:#d3dade;
+  --accent:#0b5f6d; --accent-soft:#dfecee; --flag:#8a5200; --flag-soft:#f6ead8; --bad:#a3271b;
+  --font-sans:'IBM Plex Sans',system-ui,-apple-system,"Segoe UI",sans-serif; --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#111518;--panel:#1a1f23;--panel-2:#222a2e;--ink:#e7ecee;--ink-soft:#9aa5ac;--line:#2e3840;--accent:#4fb6c7;--accent-soft:#1d3037;--flag:#d79b4a;--flag-soft:#3a2c17;--bad:#f08a7e;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#111518;--panel:#1a1f23;--panel-2:#222a2e;--ink:#e7ecee;--ink-soft:#9aa5ac;--line:#2e3840;--accent:#4fb6c7;--accent-soft:#1d3037;--flag:#d79b4a;--flag-soft:#3a2c17;--bad:#f08a7e;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding:24px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:16px}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+h1{margin:2px 0 0;font-size:30px;letter-spacing:-.02em}
+h2{margin:0;font-size:18px}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;display:flex;flex-direction:column;gap:6px}
+.warn{background:var(--flag-soft);border-left:3px solid var(--flag);padding:10px 14px;border-radius:0 6px 6px 0;font-size:14px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+label,.lab{font-family:var(--font-mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:8px 10px;width:100%;min-width:0}
+textarea{font-family:var(--font-mono);font-size:12.5px;resize:vertical;word-break:break-all}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.radio{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.radio input{width:auto;accent-color:var(--accent)}
+.btn{font:inherit;font-size:14px;cursor:pointer;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 14px}
+.btn:hover{background:var(--panel-2)}
+.btn.key{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+:root[data-theme="dark"] .btn.key{color:#09191d}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.key{color:#09191d}}
+.btn.sm{font-size:12.5px;padding:3px 9px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.err{color:var(--bad);font-size:13.5px;margin:0;min-height:1.2em}
+.ok{color:var(--accent);font-size:13.5px;margin:0}
+.keybox{font-family:var(--font-mono);font-size:12.5px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:10px;word-break:break-all;user-select:all;min-height:70px}
+.empty{color:var(--ink-soft);font-size:14px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);font-weight:500;text-align:left;background:var(--panel-2)}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.mono{font-family:var(--font-mono);font-size:12px}
+tr.venc td{color:var(--ink-soft)}
+.pill{font-family:var(--font-mono);font-size:10.5px;padding:1px 8px;border-radius:99px;border:1px solid var(--line)}
+.pill.on{border-color:var(--accent);color:var(--accent)}
+.pill.off{border-color:var(--flag);color:var(--flag)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:820px){.grid,.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Uso exclusivo del vendedor</span>
+    <h1>Generador de licencias ConfiaKit</h1>
+    <div class="warn"><b>Este archivo es tu llave maestra.</b> Contiene la clave privada con la que se firman las licencias: quien lo tenga puede emitir licencias válidas. No lo envíes, no lo subas a la nube pública y guarda una copia de respaldo en un lugar seguro.</div>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-new">
+      <h2 id="h-new">Nueva licencia</h2>
+      <div class="f"><label for="g-n">Licenciatario (nombre)</label><input id="g-n" type="text" placeholder="Nombre y apellido"></div>
+      <div class="two">
+        <div class="f"><label for="g-o">Empresa</label><input id="g-o" type="text" placeholder="Opcional"></div>
+        <div class="f"><label for="g-e">Correo</label><input id="g-e" type="text" placeholder="Opcional"></div>
+      </div>
+      <div class="two">
+        <div class="f"><label for="g-p">Plan</label>
+          <select id="g-p"><option>Individual</option><option>Equipo</option><option>Empresa</option><option>Educacional</option><option>Prueba</option></select></div>
+        <div class="f"><span class="lab">Vigencia</span>
+          <label class="radio" for="g-v1"><input type="radio" name="vig" id="g-v1" value="fecha" checked> <span>Hasta una fecha</span></label>
+          <label class="radio" for="g-v0"><input type="radio" name="vig" id="g-v0" value="perpetua"> <span>Sin vencimiento</span></label>
+        </div>
+      </div>
+      <div class="two">
+        <div class="f"><label for="g-x">Vence el</label><input id="g-x" type="date"></div>
+        <div class="f"><label for="g-q">Atajo</label>
+          <select id="g-q"><option value="">—</option><option value="30">30 días (prueba)</option><option value="365" selected>1 año</option><option value="730">2 años</option></select></div>
+      </div>
+      <div class="f"><label for="g-nota">Nota interna (no va en la clave)</label><input id="g-nota" type="text" placeholder="Ej.: pago transferencia 24-10, factura 123"></div>
+      <div class="row"><button class="btn key" type="button" id="g-go">Emitir licencia</button></div>
+      <p class="err" id="g-err" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-out">
+      <h2 id="h-out">Clave emitida</h2>
+      <div id="out-empty" class="empty">Completa el formulario y presiona Emitir licencia. La clave aparece aquí, lista para copiar.</div>
+      <div id="out" hidden>
+        <div class="f"><span class="lab">Clave de licencia</span><div class="keybox" id="o-key"></div></div>
+        <div class="row" style="margin-top:8px"><button class="btn key" type="button" id="o-copy">Copiar clave</button><button class="btn" type="button" id="o-copymail">Copiar mensaje para el cliente</button></div>
+        <div class="f" style="margin-top:10px"><span class="lab">Mensaje sugerido</span><textarea id="o-mail" rows="11" readonly style="font-family:var(--font-sans);font-size:13.5px;word-break:normal"></textarea></div>
+      </div>
+      <hr style="border:0;border-top:1px solid var(--line);width:100%">
+      <h2>Verificar una clave</h2>
+      <textarea id="v-key" rows="3" placeholder="Pega una clave CK1-… para ver a quién pertenece y si sigue vigente"></textarea>
+      <div class="row"><button class="btn" type="button" id="v-go">Verificar</button></div>
+      <div id="v-out"></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-reg">
+    <div class="row" style="justify-content:space-between"><h2 id="h-reg">Registro de licencias emitidas</h2>
+      <div class="row"><button class="btn sm" type="button" id="r-csv">Descargar CSV</button><button class="btn sm" type="button" id="r-copy">Copiar tabla (Excel)</button></div></div>
+    <p class="empty" style="margin:0">Se guarda en este navegador. Descarga el CSV de vez en cuando como respaldo.</p>
+    <div class="tbl"><table><thead><tr><th>N°</th><th>Emitida</th><th>Licenciatario</th><th>Empresa</th><th>Plan</th><th>Vence</th><th>Estado</th><th>Nota</th><th></th></tr></thead><tbody id="r-body"></tbody></table></div>
+  </section>
+</div>
+
+<script>
+const PRIV = {"kty":"EC","crv":"P-256","x":"DnDPCioDolQX_GJix8BahXqAyiWKY_xu46rzuFEkNic","y":"BLvlMVQolDvSrP6D18FO3sHv6AyfkyRfHhs6_KZBFa4","d":"cQpMGYqdTQ357U3eD8NhNuWvFDr_ivltSceA6vBxTgg"};
+const PUB = {"kty":"EC","crv":"P-256","x":"DnDPCioDolQX_GJix8BahXqAyiWKY_xu46rzuFEkNic","y":"BLvlMVQolDvSrP6D18FO3sHv6AyfkyRfHhs6_KZBFa4"};
+const REG = 'confiakit.registro.v1';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const larga = s => s ? new Date(s + 'T12:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Sin vencimiento';
+const b64u = bytes => { let s = ''; bytes.forEach(b => s += String.fromCharCode(b)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+function load() { try { return JSON.parse(localStorage.getItem(REG)) || []; } catch (e) { return []; } }
+function store(list) { try { localStorage.setItem(REG, JSON.stringify(list)); } catch (e) { } }
+function copy(text, btn) {
+  const done = () => { const t = btn.textContent; btn.textContent = 'Copiado'; setTimeout(() => btn.textContent = t, 1400); };
+  try { navigator.clipboard.writeText(text).then(done, () => fallback(text, done)); } catch (e) { fallback(text, done); }
+}
+function fallback(text, done) { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { } ta.remove(); }
+
+function setExpiry(days) { const d = new Date(); d.setDate(d.getDate() + days); $('g-x').value = iso(d); }
+setExpiry(365);
+$('g-q').addEventListener('change', e => { if (e.target.value) { setExpiry(+e.target.value); $('g-v1').checked = true; syncVig(); } });
+function syncVig() { $('g-x').disabled = $('g-q').disabled = $('g-v0').checked; }
+$('g-v0').addEventListener('change', syncVig); $('g-v1').addEventListener('change', syncVig);
+
+async function sign(payload) {
+  const key = await crypto.subtle.importKey('jwk', PRIV, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  const data = new TextEncoder().encode(JSON.stringify(payload));
+  const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, data));
+  return 'CK1-' + b64u(data) + '.' + b64u(sig);
+}
+async function verify(k) {
+  k = (k || '').replace(/\s+/g, '');
+  const m = /^CK1-([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)$/.exec(k);
+  if (!m) return { ok: false, msg: 'Formato no válido: la clave debe empezar con CK1-.' };
+  try {
+    const pk = await crypto.subtle.importKey('jwk', PUB, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+    const data = unb64u(m[1]);
+    if (!await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, pk, unb64u(m[2]), data)) return { ok: false, msg: 'Firma inválida: la clave no fue emitida con este generador o fue modificada.' };
+    const p = JSON.parse(new TextDecoder().decode(data));
+    return { ok: true, p: p, vencida: !!(p.x && new Date(p.x + 'T23:59:59') < new Date()) };
+  } catch (e) { return { ok: false, msg: 'Clave dañada o incompleta.' }; }
+}
+function newId() {
+  const d = new Date(), a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let r = '';
+  const rnd = crypto.getRandomValues(new Uint8Array(4)); rnd.forEach(b => r += a[b % a.length]);
+  return 'CK-' + iso(d).replace(/-/g, '') + '-' + r;
+}
+function mail(p, key) {
+  return 'Estimado/a ' + p.n + ',\n\n' +
+    'Junto a este mensaje va ConfiaKit y tu clave de licencia. Para activarla, abre el archivo ConfiaKit.html en Chrome o Edge, pega la clave en la ventana "Activar licencia" y presiona Activar. La activación queda guardada en ese navegador y no requiere internet.\n\n' +
+    'Clave de licencia:\n' + key + '\n\n' +
+    'Licencia N° ' + p.id + ' · plan ' + p.p + ' · ' + (p.x ? 'vigente hasta el ' + larga(p.x) : 'sin vencimiento') + '.\n\n' +
+    'Saludos.';
+}
+$('g-go').addEventListener('click', async () => {
+  const n = $('g-n').value.trim(), perp = $('g-v0').checked, x = $('g-x').value;
+  $('g-err').textContent = '';
+  if (!n) { $('g-err').textContent = 'Escribe el nombre del licenciatario: aparece en los informes del cliente.'; return; }
+  if (!perp && !x) { $('g-err').textContent = 'Elige la fecha de vencimiento o marca Sin vencimiento.'; return; }
+  if (!perp && new Date(x + 'T23:59:59') < new Date()) { $('g-err').textContent = 'La fecha de vencimiento ya pasó.'; return; }
+  if (!(window.crypto && crypto.subtle)) { $('g-err').textContent = 'Este navegador no permite firmar. Abre el archivo en Chrome, Edge o Firefox actualizados.'; return; }
+  const p = { v: 1, id: newId(), n: n, o: $('g-o').value.trim(), e: $('g-e').value.trim(), p: $('g-p').value, i: iso(new Date()), x: perp ? '' : x };
+  let key;
+  try { key = await sign(p); } catch (e) { $('g-err').textContent = 'No se pudo firmar la licencia en este navegador.'; return; }
+  $('o-key').textContent = key; $('o-mail').value = mail(p, key);
+  $('out').hidden = false; $('out-empty').hidden = true;
+  const list = load(); list.unshift(Object.assign({ key: key, nota: $('g-nota').value.trim() }, p)); store(list); render();
+});
+$('o-copy').addEventListener('click', e => copy($('o-key').textContent, e.target));
+$('o-copymail').addEventListener('click', e => copy($('o-mail').value, e.target));
+$('v-go').addEventListener('click', async () => {
+  const r = await verify($('v-key').value), o = $('v-out');
+  if (!r.ok) { o.innerHTML = '<p class="err">' + esc(r.msg) + '</p>'; return; }
+  const p = r.p;
+  o.innerHTML = '<p class="' + (r.vencida ? 'err' : 'ok') + '">' + (r.vencida ? 'Firma válida, pero la licencia está vencida.' : 'Licencia válida y vigente.') + '</p>' +
+    '<div class="tbl" style="margin-top:6px"><table><tbody>' + [['N°', p.id], ['Licenciatario', p.n], ['Empresa', p.o || '—'], ['Correo', p.e || '—'], ['Plan', p.p], ['Emitida', larga(p.i)], ['Vence', larga(p.x)]]
+      .map(r => '<tr><td>' + r[0] + '</td><td>' + esc(r[1]) + '</td></tr>').join('') + '</tbody></table></div>';
+});
+function render() {
+  const list = load(), b = $('r-body'), now = new Date();
+  if (!list.length) { b.innerHTML = '<tr><td colspan="9" class="empty">Aún no hay licencias emitidas.</td></tr>'; return; }
+  b.innerHTML = list.map((l, i) => {
+    const venc = l.x && new Date(l.x + 'T23:59:59') < now;
+    return '<tr' + (venc ? ' class="venc"' : '') + '><td class="mono">' + esc(l.id) + '</td><td>' + esc(l.i) + '</td><td>' + esc(l.n) + '</td><td>' + esc(l.o || '—') + '</td><td>' + esc(l.p) + '</td><td>' + esc(l.x || 'Sin vencimiento') +
+      '</td><td><span class="pill ' + (venc ? 'off' : 'on') + '">' + (venc ? 'Vencida' : 'Vigente') + '</span></td><td>' + esc(l.nota || '') + '</td><td><button class="btn sm" type="button" data-i="' + i + '">Copiar clave</button></td></tr>';
+  }).join('');
+}
+$('r-body').addEventListener('click', e => { const i = e.target.dataset.i; if (i != null) copy(load()[+i].key, e.target); });
+function table() {
+  const head = ['N°', 'Emitida', 'Licenciatario', 'Empresa', 'Correo', 'Plan', 'Vence', 'Nota', 'Clave'];
+  return [head].concat(load().map(l => [l.id, l.i, l.n, l.o, l.e, l.p, l.x || 'Sin vencimiento', l.nota || '', l.key]));
+}
+$('r-copy').addEventListener('click', e => copy(table().map(r => r.join('\t')).join('\n'), e.target));
+$('r-csv').addEventListener('click', () => {
+  const csv = '﻿' + table().map(r => r.map(c => { c = String(c == null ? '' : c); return /[";\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(';')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'registro_licencias_confiakit_' + iso(new Date()) + '.csv'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+});
+render();
+</script>
+</body>
+</html>
