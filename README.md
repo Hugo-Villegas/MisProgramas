@@ -28,6 +28,7 @@ Si el repositorio es público, puedes publicarlos en línea desde *Settings → 
 | Archivo | Tipo | Descripción | Actualizado |
 |---|---|---|---|
 | [Generador_Licencias_ConfiaKit.html](Generador_Licencias_ConfiaKit.html) | Página HTML | ConfiaKit Generador de licencias, genera las licencias para el programa.. | 2026-10-31 |
+| [subir-a-github-v2.html](subir-a-github-v2.html) | Página HTML | Versión 2 dela archivo, ahora debiese subir o crear los sitios web | 2026-11-02 |
 | [subir-a-github.html](subir-a-github.html) | Página HTML | Sube los archivos a GitHub , se le agrego con respecto a su versión anterior el README | 2026-10-24 |
 
 _Inventario mantenido con «Subir a GitHub»: cada archivo se documenta al subirlo._
