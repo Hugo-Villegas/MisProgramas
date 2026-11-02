@@ -3,7 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulador HMI Sulzer – Partida, generador BBC y C-3</title>
+<meta name="description" content="Simulador de entrenamiento HMI: partida de turbina Sulzer, sincronización del generador BBC con generadores SOLAR y carga del compresor C-3, con reporte de desempeño.">
+<meta name="author" content="Hugo Villegas Barría">
+<meta name="generator" content="Simulador HMI Sulzer v2.0">
+<meta property="og:title" content="Simulador HMI Sulzer v2.0">
+<meta property="og:description" content="Partida de turbina, generador BBC, SOLAR y compresor C-3 paso a paso, con reporte de lo que hiciste y lo que está mal.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#3b4046">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%233b4046'/%3E%3Ccircle cx='32' cy='36' r='20' fill='none' stroke='%233fe6ee' stroke-width='5'/%3E%3Cpath d='M32 36 L45 22' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>Simulador HMI Sulzer v2.0 – Partida, generador BBC y C-3</title>
 <style>
 :root{--bg:#a7abb0;--pan:#c5c9cd;--pan2:#dcdfe2;--ink:#111;--cyan:#3fe6ee;--act:#22c922;--done:#a8daf7;--off:#e4e4e4;--bl:#a9c1e4;--gr:#a5d8a5;--rd:#e3a3a3;--al:#e0261b;--wa:#f3d31b;--dk:#3b4046}
 *{box-sizing:border-box}
@@ -120,7 +128,7 @@ canvas{background:#111;border:1px solid #444;width:100%;height:190px}
 </head>
 <body>
 <div id="top">
-  <h1>UCP SULZER · Tren GT – C-3 – Generador BBC · Posesión (simulador de entrenamiento)</h1>
+  <h1>UCP SULZER · Tren GT – C-3 – Generador BBC · Posesión (simulador de entrenamiento) <span style="font-weight:normal;font-size:11px;background:#15181b;border:1px solid #d5d9dd;padding:1px 6px;margin-left:6px">v2.0</span></h1>
   <span class="clock" id="clock">00:00:00</span>
   <span>Velocidad simulación:</span>
   <button class="tb" data-m="0">Pausa</button><button class="tb" data-m="1">x1</button><button class="tb" data-m="10">x10</button><button class="tb on" data-m="30">x30</button><button class="tb" data-m="60">x60</button>
@@ -196,6 +204,7 @@ canvas{background:#111;border:1px solid #444;width:100%;height:190px}
       <div class="btns" id="events"></div>
       <div class="ctrl" style="margin-top:8px" id="settings"></div>
       <div class="note">Modelo didáctico simplificado. Secuencias, condiciones, rampas y consignas salen de la narrativa de control 10003162200 y de las instrucciones HMI 10003661601. Valores marcados «(sim)» —capacidad de la GT, potencia de los Solar, carga de la red, umbrales de disparo T4/velocidad y tiempos de protección del generador— son supuestos del simulador, no datos del fabricante.</div>
+      <div class="note"><b>Simulador HMI Sulzer v2.0</b> · Autor: Hugo Villegas Barría · Herramienta de entrenamiento no oficial: no reemplaza los procedimientos de operación ni la HMI real. Atajos de pestaña en la URL: #seq, #tren, #gen, #c3, #campo, #alm, #mis, #rep.</div>
     </div>
   </div>
 </section>
@@ -856,9 +865,15 @@ function hint(){
 /* ===================== UI ===================== */
 const VIEWS=[['seq','SECUENCIA'],['tren','TREN Y ACEITE'],['gen','GENERADOR / RED'],['c3','COMPRESOR C-3'],['campo','CAMPO / ENAP'],['alm','ALARMAS'],['mis','MISIONES'],['rep','REPORTE']];
 let cur='seq', selStep=null;
+function goView(v,setHash){ if(!VIEWS.some(x=>x[0]===v)) v='seq'; cur=v;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('sel',x.dataset.v===cur));
+  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('show',x.id==='v-'+cur));
+  if(setHash){ try{ history.replaceState(null,'','#'+cur); }catch(e){ try{location.hash=cur;}catch(_){} } }
+  if(S) render(true); }
+window.addEventListener('hashchange',()=>goView((location.hash||'#seq').slice(1),false));
 function buildNav(){
   $('#nav').innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" class="${k===cur?'sel':''}">${l}<span class="flag" id="fl-${k}"></span></button>`).join('');
-  $('#nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;cur=b.dataset.v;document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('sel',x.dataset.v===cur));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('show',v.id==='v-'+cur));render(true);};
+  $('#nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;goView(b.dataset.v,true);};
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('show',v.id==='v-'+cur));
 }
 const GROUPS=[
@@ -1178,7 +1193,7 @@ function reportInner(){
 function showReport(){ $('#repbox').innerHTML=reportInner(); repShown=true; $('#repnote').textContent='Reporte actualizado a '+hms(S.t)+' de tiempo simulado.'; }
 function fullReport(){
   const css=[...document.styleSheets[0].cssRules].map(r=>r.cssText).filter(t=>t.startsWith('#repbox')).join('\n');
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte práctica Sulzer</title><style>body{margin:0;background:#fff}${css}#repbox{border:0;margin:0 auto}</style></head><body><div id="repbox">${reportInner()}</div></body></html>`;
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte práctica Sulzer – Simulador HMI v2.0</title><style>body{margin:0;background:#fff}${css}#repbox{border:0;margin:0 auto}</style></head><body><div id="repbox">${reportInner()}</div></body></html>`;
 }
 function dlReport(){
   showReport();
@@ -1210,6 +1225,7 @@ $('#bESD').onclick=()=>ask('¿Ejecutar PARADA DE EMERGENCIA?',()=>{msg('OP','Ope
 
 S=newState('normal');
 buildNav(); buildSeq(); buildEvents();
+try{ const h=(location.hash||'').slice(1); if(h) goView(h,false); }catch(e){}
 msg('PROC','Simulador listo. Tren detenido en I0. Empiece por AUTOMÁTICO y las acciones de campo.');
 render(true);
 requestAnimationFrame(loop);

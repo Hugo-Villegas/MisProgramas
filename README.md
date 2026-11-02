@@ -8,6 +8,7 @@ Colección de programas HTML de un solo archivo, sin instalación ni compilació
 | `SimBloques_1.html` | SimBloques: simulador de diagramas de bloques de confiabilidad (RBD). |
 | `Toolkit_Confiabilidad.html` | Toolkit de Confiabilidad IPM: herramientas de análisis de confiabilidad (incluye Crow-AMSAA) en un solo archivo. |
 | `Taller_M340.html` | Taller de entrenamiento y simulador del PLC Modicon M340 / Control Expert. |
+| `Simulador_HMI_Sulzer.html` | Simulador de entrenamiento HMI del tren Sulzer (turbina, generador BBC con SOLAR y compresor C-3), con reporte de desempeño. |
 
 La carpeta `documentos/` contiene manuales de apoyo (por ejemplo, `Manual_Crow-AMSAA_tiempos_2.docx`).
 
@@ -28,7 +29,7 @@ Si el repositorio es público, puedes publicarlos en línea desde *Settings → 
 | Archivo | Tipo | Descripción | Actualizado |
 |---|---|---|---|
 | [Generador_Licencias_ConfiaKit.html](Generador_Licencias_ConfiaKit.html) | Página HTML | ConfiaKit Generador de licencias, genera las licencias para el programa.. | 2026-10-31 |
-| [Simulador_HMI_Sulzer.html](Simulador_HMI_Sulzer.html) | Página HTML | Simulador version 0 del HI del Sulzer | 2026-11-02 |
+| [Simulador_HMI_Sulzer.html](Simulador_HMI_Sulzer.html) | Página HTML | Simulador HMI Sulzer v2.0: partida de la turbina paso a paso (S1–S22), sincronización del generador BBC con los SOLAR (G1–G8), carga del compresor C-3 (C1–C3), acciones de campo, eventos de instructor y reporte de desempeño descargable. Enlaces directos por pestaña: #seq, #gen, #c3, #rep. | 2026-11-02 |
 | [subir-a-github-v2.html](subir-a-github-v2.html) | Página HTML | Versión 2 dela archivo, ahora debiese subir o crear los sitios web | 2026-11-02 |
 | [subir-a-github.html](subir-a-github.html) | Página HTML | Sube los archivos a GitHub , se le agrego con respecto a su versión anterior el README | 2026-10-24 |
 
