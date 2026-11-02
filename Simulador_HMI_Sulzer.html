@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador HMI Sulzer – Partida, generador BBC y C-3</title>
+<style>
+:root{--bg:#a7abb0;--pan:#c5c9cd;--pan2:#dcdfe2;--ink:#111;--cyan:#3fe6ee;--act:#22c922;--done:#a8daf7;--off:#e4e4e4;--bl:#a9c1e4;--gr:#a5d8a5;--rd:#e3a3a3;--al:#e0261b;--wa:#f3d31b;--dk:#3b4046}
+*{box-sizing:border-box}
+body{margin:0;font:12px Tahoma,Verdana,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+button{font:inherit;cursor:pointer}
+#top{display:flex;align-items:center;gap:8px;background:var(--dk);color:#eee;padding:6px 10px;flex-wrap:wrap}
+#top h1{font-size:14px;margin:0 12px 0 0;font-weight:bold;letter-spacing:.3px}
+#top .clock{font-family:Consolas,monospace;background:#111;color:#7f7;padding:2px 8px;border-radius:2px}
+.tb{background:#15181b;color:#fff;border:1px solid #d5d9dd;padding:3px 9px;border-radius:2px;font-weight:bold;text-shadow:none}
+.tb:hover{background:#000;border-color:#fff}
+.tb.on{background:var(--cyan);color:#000}
+.tb.red{background:#b3241b;border-color:#600;font-weight:bold}
+.spacer{flex:1}
+#msgline{display:flex;align-items:center;gap:8px;padding:4px 10px;background:#eee;border-bottom:1px solid #777;min-height:28px}
+#msgtxt{flex:1;font-weight:bold;padding:3px 6px;border:1px solid #999;background:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-AL{background:var(--al)!important;color:#fff}.m-WA{background:var(--wa)!important}.m-PROC{background:#fff!important}.m-OP{background:#cfe9ff!important}.m-SYS{background:#d9b3ff!important}
+#kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:4px;padding:6px 10px;background:var(--pan)}
+.k{background:var(--pan2);border:1px solid #888;padding:3px 6px}
+.k b{display:block;font-size:10px;color:#333;font-weight:normal}
+.k span{font:bold 15px Consolas,monospace}
+.k.alarm span{color:#c00}.k.warn span{color:#a67c00}
+#nav{display:flex;gap:4px;padding:6px 10px;flex-wrap:wrap;background:var(--bg)}
+#nav button{background:#d7d9db;border:1px solid #555;padding:5px 12px;min-width:110px;font-weight:bold}
+#nav button.sel{background:var(--cyan)}
+#nav .flag{display:inline-block;min-width:14px;margin-left:4px;padding:0 3px;border-radius:2px;font-size:10px}
+#nav .flag.A{background:var(--al);color:#fff}#nav .flag.W{background:var(--wa)}
+main{padding:0 10px 14px}
+.view{display:none}.view.show{display:block}
+.panel{background:var(--pan);border:1px solid #777;padding:8px;margin-bottom:8px}
+.ptitle{background:var(--pan2);border:1px solid #888;display:inline-block;padding:2px 8px;font-weight:bold;margin-bottom:6px}
+.cols{display:grid;grid-template-columns:1.25fr .85fr;gap:8px}
+@media(max-width:1100px){.cols{grid-template-columns:1fr}}
+.seqgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:900px){.seqgrid{grid-template-columns:1fr}}
+.grp{border:1px solid #666;padding:5px;margin-bottom:6px;cursor:default}
+.grp.b{background:var(--bl)}.grp.g{background:var(--gr)}.grp.r{background:var(--rd)}
+.grp h3{font-size:12px;margin:0 0 4px}
+.st{display:flex;align-items:center;gap:6px;background:var(--off);border:1px solid #777;margin:2px 0;padding:2px 4px;cursor:pointer;font-size:11px}
+.st .id{font-weight:bold;min-width:30px}
+.st .tm{margin-left:auto;font-family:Consolas,monospace;font-size:10px}
+.st.act{background:var(--act);color:#000}.st.done{background:var(--done)}
+.st.sel{outline:2px solid #000}
+.btns{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.ob{background:#eceeef;border:1px solid #444;padding:4px 8px;font-weight:bold;font-size:11px;box-shadow:inset -1px -1px 0 #888,inset 1px 1px 0 #fff}
+.ob:hover{background:#fff}.ob:active{box-shadow:inset 1px 1px 0 #888}
+.ob.hot{background:var(--cyan)}
+.ob.stop{background:#f0b4ae}
+.cond{display:flex;align-items:center;gap:6px;padding:2px 0;border-bottom:1px dotted #999}
+.dot{width:12px;height:12px;border:1px solid #333;flex:none}
+.dot.ok{background:var(--act)}.dot.no{background:#9a9a9a}
+.det h4{margin:6px 0 4px;font-size:12px}
+.acts li{margin:2px 0}
+.hint{background:#fffbe0;border:1px solid #c9b200;padding:6px 8px;margin-bottom:8px;font-weight:bold}
+table.lst{border-collapse:collapse;width:100%;background:#fff;font-size:11px}
+table.lst td,table.lst th{border:1px solid #aaa;padding:2px 5px;text-align:left}
+table.lst tr.AL td{background:#ffd3cf}table.lst tr.WA td{background:#fff3b0}table.lst tr.OP td{background:#e6f3ff}
+.mach{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:10px 0}
+.mc{min-width:118px;background:#9aa0a6;border:1px solid #333;margin:0;padding:6px;text-align:center;color:#fff;position:relative}
+.mc h5{margin:0 0 4px;font-size:12px}
+.mc .v{background:#fff;color:#000;font:bold 12px Consolas,monospace;margin:2px 0;padding:1px 3px;border:1px solid #555}
+.shaft{width:18px;align-self:center;height:8px;background:#555}
+.shaft.cl{background:repeating-linear-gradient(90deg,#555 0 3px,#ddd 3px 6px)}
+.flame{font-size:20px}
+.fac{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px}
+.fv{background:var(--pan2);border:1px solid #888;padding:4px 6px}
+.fv b{display:block;font-size:10px;font-weight:normal;color:#333}
+.fv span{font:bold 13px Consolas,monospace}
+.fv.on span{color:#087a08}.fv.off span{color:#666}
+svg text{font-family:Tahoma,Arial,sans-serif}
+.field{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:8px}
+.fi{background:var(--pan2);border:1px solid #888;padding:6px}
+.fi h4{margin:0 0 4px;font-size:12px}
+.fi p{margin:2px 0 6px;font-size:11px;color:#333}
+.state{font-weight:bold}
+.state.ok{color:#087a08}.state.no{color:#9b1c13}
+.ctrl{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px}
+.fp{background:#e6e8ea;border:1px solid #777;padding:6px}
+.fp h4{margin:0 0 4px;font-size:12px;display:flex;justify-content:space-between}
+.fp .row{display:flex;justify-content:space-between;margin:2px 0}
+.fp input[type=number]{width:70px}
+.selc{outline:3px solid var(--act)}
+.tag{display:inline-block;padding:0 4px;border:1px solid #555;font-size:10px;background:#fff}
+.tag.g{background:var(--act)}.tag.r{background:#f6a39b}.tag.y{background:var(--wa)}
+canvas{background:#111;border:1px solid #444;width:100%;height:190px}
+.legend{background:#111;padding:4px 8px;border:1px solid #444;border-bottom:0}.legend span{margin-right:12px;font-weight:bold}
+.mis li{margin:4px 0}.mis .ok{color:#087a08;font-weight:bold}
+#repbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+#repnote{font-size:11px;color:#222}
+#repbox{background:#fff;color:#111;border:1px solid #333;padding:22px 28px;max-width:1050px;font:13px Georgia,'Times New Roman',serif}
+#repbox h1{font:bold 20px Arial,sans-serif;margin:0 0 2px;letter-spacing:.3px}
+#repbox h2{font:bold 14px Arial,sans-serif;border-bottom:2px solid #111;padding-bottom:3px;margin:20px 0 8px;text-transform:uppercase;letter-spacing:.5px}
+#repbox .sub{font:12px Arial,sans-serif;color:#444;margin-bottom:12px}
+#repbox table{border-collapse:collapse;width:100%;font:12px Arial,sans-serif;margin:4px 0}
+#repbox th{background:#222;color:#fff;text-align:left;padding:4px 6px}
+#repbox td{border-bottom:1px solid #bbb;padding:4px 6px;vertical-align:top}
+#repbox tr:nth-child(even) td{background:#f2f2f2}
+#repbox .kp{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-family:Arial,sans-serif}
+#repbox .kp div{border:1px solid #111;padding:6px}
+#repbox .kp b{display:block;font-size:10px;font-weight:normal;color:#444;text-transform:uppercase}
+#repbox .kp span{font:bold 17px Arial,sans-serif}
+#repbox .sev{display:inline-block;font:bold 10px Arial,sans-serif;padding:1px 5px;border:1px solid #111;white-space:nowrap}
+#repbox .s4{background:#111;color:#fff}#repbox .s3{background:#555;color:#fff}#repbox .s2{background:#aaa}#repbox .s1{background:#ddd}#repbox .s0{background:#fff}
+#repbox .concl{border-left:4px solid #111;padding:6px 10px;background:#f2f2f2;font-family:Arial,sans-serif}
+#repbox .foot{font:11px Arial,sans-serif;color:#555;margin-top:18px;border-top:1px solid #999;padding-top:6px}
+@media print{body>*:not(main){display:none!important}main>section{display:none!important}main>#v-rep{display:block!important}#repbar,#repnote{display:none!important}#repbox{border:0;padding:0;max-width:none}}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9}
+#modal .box{background:var(--pan);border:2px solid #333;min-width:300px;max-width:92vw}
+#modal .hd{background:#0a3d7a;color:#fff;padding:4px 8px;font-weight:bold}
+#modal .bd{padding:12px}
+#modal .ft{display:flex;gap:8px;justify-content:flex-end;padding:8px}
+.small{font-size:11px;color:#333}
+.note{font-size:11px;color:#333;background:#eef;border:1px solid #99a;padding:5px 7px;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="top">
+  <h1>UCP SULZER · Tren GT – C-3 – Generador BBC · Posesión (simulador de entrenamiento)</h1>
+  <span class="clock" id="clock">00:00:00</span>
+  <span>Velocidad simulación:</span>
+  <button class="tb" data-m="0">Pausa</button><button class="tb" data-m="1">x1</button><button class="tb" data-m="10">x10</button><button class="tb on" data-m="30">x30</button><button class="tb" data-m="60">x60</button>
+  <span class="spacer"></span>
+  <span id="modeind" class="tag">MANTENIMIENTO</span>
+  <button class="tb" id="bReset">RESET</button>
+  <button class="tb red" id="bESD">PARADA EMERGENCIA</button>
+</div>
+<div id="msgline"><span>Mensaje:</span><div id="msgtxt">—</div><button class="tb" id="bAck">Confirmar ✓</button></div>
+<div id="kpi"></div>
+<div id="nav"></div>
+<main>
+<section class="view" id="v-seq">
+  <div class="hint" id="hint"></div>
+  <div class="cols">
+    <div class="panel">
+      <span class="ptitle">SECUENCIA – VISIÓN GENERAL</span>
+      <div class="btns" style="margin-bottom:6px">
+        <button class="ob" data-b="AUTO">AUTOMÁTICO</button><button class="ob" data-b="MANT">MANTENIMIENTO</button>
+        <span class="small">Gris = no activo · Verde = activo · Celeste = ejecutado. Clic en un paso para ver sus condiciones.</span>
+      </div>
+      <div class="seqgrid" id="seqgrid"></div>
+    </div>
+    <div class="panel det" id="detail"></div>
+  </div>
+</section>
+<section class="view" id="v-tren">
+  <div class="panel"><span class="ptitle">VISIÓN GENERAL TREN Y ACEITE</span>
+    <div class="mach" id="mach"></div>
+    <div class="fac" id="trenvals"></div>
+  </div>
+  <div class="panel"><span class="ptitle">TENDENCIA</span>
+    <div class="legend"><span style="color:#5cf">Velocidad GT (0–4000 rpm)</span><span style="color:#f85">T4 (0–850 °C)</span><span style="color:#7f7">P BBC (−1…4 MW)</span><span style="color:#ff6">P C-3 (0–8 MW)</span><span style="color:#d9f">Frecuencia (47–52 Hz)</span></div>
+    <canvas id="trend" width="1200" height="190"></canvas>
+  </div>
+</section>
+<section class="view" id="v-gen">
+  <div class="panel"><span class="ptitle">REGULACIÓN DE POTENCIA &amp; COMPARTICIÓN DE CARGA</span>
+    <svg id="gensvg" viewBox="0 0 1000 300" style="width:100%;background:#c9cdd1;border:1px solid #888"></svg>
+  </div>
+  <div class="ctrl" id="genctrl"></div>
+</section>
+<section class="view" id="v-c3">
+  <div class="panel"><span class="ptitle">COMPRESOR C-3 – PROCESO</span>
+    <svg id="c3svg" viewBox="0 0 1070 330" style="width:100%;background:#c9cdd1;border:1px solid #888"></svg>
+  </div>
+  <div class="ctrl" id="c3ctrl"></div>
+</section>
+<section class="view" id="v-campo">
+  <div class="panel"><span class="ptitle">ACCIONES DE CAMPO / ENAP (fuera de la UCP)</span>
+    <p class="small">Estas maniobras no se hacen en la HMI: las ejecuta el operador local o se hacen en el panel FLUOR / Woodward de los Solar. En el juego las simulas aquí.</p>
+    <div class="field" id="field"></div>
+  </div>
+</section>
+<section class="view" id="v-alm">
+  <div class="panel"><span class="ptitle">LISTA DE MENSAJES (ALARMAS, PARADAS, PROCESO, OPERACIÓN)</span>
+    <div style="max-height:520px;overflow:auto"><table class="lst" id="alm"></table></div>
+  </div>
+</section>
+<section class="view" id="v-rep">
+  <div class="panel"><span class="ptitle">REPORTE DE DESEMPEÑO DEL OPERADOR</span>
+    <div id="repbar"><button class="ob hot" onclick="showReport()">Generar / actualizar reporte</button><button class="ob" onclick="dlReport()">Descargar reporte (.html)</button><button class="ob" onclick="copyReport()">Copiar texto</button><button class="ob" onclick="printReport()">Imprimir / PDF</button><span id="repnote"></span></div>
+    <div id="repbox"><p>Pulse «Generar / actualizar reporte».</p></div>
+  </div>
+</section>
+<section class="view" id="v-mis">
+  <div class="cols">
+    <div class="panel"><span class="ptitle">MISIONES</span><ol class="mis" id="mis"></ol>
+      <div id="score" style="font-weight:bold;margin-top:6px"></div>
+      <div class="note">Puntaje: +150 por misión, −40 por cada parada del Sulzer, −10 por cada botón pulsado con el paso ENCLAVADO, −60 por apertura del interruptor BBC por protección.</div>
+    </div>
+    <div class="panel"><span class="ptitle">INSTRUCTOR – EVENTOS Y AJUSTES</span>
+      <div class="btns" id="events"></div>
+      <div class="ctrl" style="margin-top:8px" id="settings"></div>
+      <div class="note">Modelo didáctico simplificado. Secuencias, condiciones, rampas y consignas salen de la narrativa de control 10003162200 y de las instrucciones HMI 10003661601. Valores marcados «(sim)» —capacidad de la GT, potencia de los Solar, carga de la red, umbrales de disparo T4/velocidad y tiempos de protección del generador— son supuestos del simulador, no datos del fabricante.</div>
+    </div>
+  </div>
+</section>
+</main>
+<div id="modal"><div class="box"><div class="hd" id="mh">Confirmación</div><div class="bd" id="mb"></div><div class="ft"><button class="ob" id="mok">Ajustar</button><button class="ob" id="mcancel">Cancelar</button></div></div></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const fmt=(x,d=1)=>(isFinite(x)?Number(x).toFixed(d):'—').replace('.',',');
+const hms=t=>{t=Math.floor(t);const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return [h,m,s].map(v=>String(v).padStart(2,'0')).join(':')};
+
+/* ===================== ESTADO ===================== */
+let S;
+function newState(scn){
+  const hard=scn==='hard';
+  return {
+    scn, t:0, mult:30, mode:'MANT', confirmBtns:true, hints:true,
+    main:'I0', gen:null, c3:null, done:new Set(['I0']), stepT:{main:0,gen:0,c3:0},
+    trip:false, latched:{}, errors:0, trips:0, brkTrips:0,
+    M:{M30:1,M31:0,M32:0,M33:0,M34:0,M35:0,M36:0,M43:0,M45:1,M46:0,M48:1,M49:1},
+    N:0, n0T:120, barT:0, lowT:0, ivCtl:false,
+    PIT204:0, PT301:0, PT256:0, PDT428:0, gravGT:0, LS103:false, LT101:71, LT283:86,
+    TE259:37, TE262:36, TE056:33, PT401:16, LIS129:true,
+    ZT121:0, damperSP:0,
+    LIS127:false, ZV122:false, ZV123:false, ZV125:false, aligned:!hard, s8T:0, s8msg:false, confirmEngaged:false,
+    IV118:false, iv118T:0, ZY119:0, zyMode:'off',
+    ZV114:false, ZV110:false, IV472:false, ignT:0, flame:false, flameT:0, noFlameT:0,
+    fcr:0, TCV:0, sicI:0, sicSP:3600, sicActive:false, T4:8, amb:8, decT:0, asv101:100,
+    starts:0, hours:0,
+    /* C-3 */
+    PT910:38.5, PIT704:0, PT05:0, ASV701:100, IV711:true, IV712:true, PCV702:0, PIC702SP:0, pic702on:false,
+    PCV04:8, fcr102:8, s4aT:0, purge:false, c2T:0,
+    pic101:{sp:30,out:100}, pic102:{sp:65,out:100}, tic103:{sp:775,out:100}, sel:'FCR102', readyMsg:false,
+    ZV705:false, ZV701:false, Pc3:0, Tgas:24,
+    /* campo */
+    hov702:false, selSulzer:false, fluor:false, uv01:false, uv02:true, hov701:0, hov701Cmd:0, uv05:false, e8:0, expanders:false, caboNegro:false, uv02Closing:false,
+    /* generador */
+    exc:false, Vg:0, brk:false, syncMode:null, syncT:0, phase:Math.random()*360, testOK:false,
+    droopCmd:false, pulseT:0, Pbbc:0, f:hard?49.3:49.95, Vgrid:hard?2.34:2.40,
+    jic:{on:false,sp:1.0}, lsc:false, refuseT:0,
+    prot:{ol:0,rp:0,uf:0,of:0,blk:0}, gridDown:false,
+    solar:[
+      {name:'SOLAR GT1',on:true,iso:true,jumper:false,P:0.9,Pref:0.9,fset:hard?49.3:49.95,Pmin:0.15,Pmax:1.3,uf:0},
+      {name:'SOLAR GT2',on:true,iso:hard,jumper:hard,P:0.7,Pref:0.7,fset:hard?49.3:50.0,Pmin:0.15,Pmax:1.3,uf:0}],
+    gridBase:hard?1.2:1.6, gridEv:0, load:1.6,
+    trend:[], trendT:0,
+    msgs:[], mis:{}, solarTripT:null, everTripSolar:false,
+    faults:[], acts:[], stepsLog:[], syncNoTest:false, realStart:Date.now(),
+    stat:{maxT4:0,t4High:0,tgasHigh:0,minF:99,maxF:0,maxPbbc:0,minPbbc:99,refusals:0,blackouts:0,fansLate:0}
+  };
+}
+
+/* ===================== MENSAJES ===================== */
+function msg(type,text,noAct){
+  if(type==='OP'&&!noAct&&!/^ENCLAVADO/.test(text)){ const la=S.acts[S.acts.length-1]; if(!(la&&la.text===text&&S.t-la.t<1)) S.acts.push({t:S.t,text}); }
+  const last=S.msgs[0];
+  if(last && last.text===text && S.t-last.t<5) return;
+  S.msgs.unshift({t:S.t,type,text,ack:false});
+  if(S.msgs.length>400) S.msgs.length=400;
+}
+/* registro de fallas para el reporte: sev 4 parada, 3 interruptor/red, 2 maniobra, 1 enclavado, 0 observación */
+function fault(text,advice,sev,count){
+  if(sev===undefined) sev=1;
+  const lf=S.faults.find(f=>f.text===text&&S.t-f.t<5); if(lf) return;
+  S.faults.push({t:S.t,text,advice:advice||'',sev,step:S.main+(S.gen?'·'+S.gen:'')+(S.c3?'·'+S.c3:'')});
+  if(count!==false && (sev===1||sev===2)) S.errors++;
+  if(sev<=2) msg('OP',text,true);
+}
+const ADV=[
+  [/AUTOMÁTICO/,'Seleccione AUTOMÁTICO en la pantalla SECUENCIA antes de ARRANQUE BOMBAS: el tren solo arranca en automático.'],
+  [/PDT428/,'Espere el llenado del depósito por gravedad de aceite de sello (≈ 3 min hasta 0,6 kg/cm²) antes de PRESURIZAR C-3.'],
+  [/PT910 > 8/,'Verifique presión de gas de proceso aguas arriba (PT910 > 8 kg/cm²).'],
+  [/PIT704/,'PIT704 debe estar entre 4,5 y 5,5 kg/cm²: confirme HOV702 abierta (campo) y espere el fin de la purga (IV711/IV712 cierran a los 4 min).'],
+  [/LS103/,'Espere el llenado del depósito por gravedad de la GT (LS103, ≈ 6 min con M31 en marcha).'],
+  [/IV712/,'IV712 aún abierta: espere que S4A complete la purga y cierre las válvulas de despresurización.'],
+  [/ASV701/,'La ASV701 debe estar completamente abierta (fin de la purga de 2 min o C-3 descargado).'],
+  [/CONFIRMA/,'Pulse CONFIRMA ENGANCHADO solo en S8 y con LIS127 cerrado, tras verificar por la mirilla.'],
+  [/LIS127|Acoplamiento/,'Revise el estado del acoplamiento de partida (si no engancha: alinear dientes con el mango rojo).'],
+  [/SEL SULZER/,'Seleccione SEL SULZER en el panel FLUOR antes de PARTIDA y no lo mueva con el tren en marcha.'],
+  [/3580|Velocidad/,'Espere la velocidad requerida por el paso (generador: GT > 3580 rpm, paso S22).'],
+  [/excitación/,'Pulse EXCITACIÓN y espere que la tensión llegue a 2400 V antes de sincronizar.'],
+  [/Solar/,'Necesita al menos un SOLAR en línea (y en estatismo) para esta acción.'],
+  [/PIT761|26 kg/,'Espere que PIC702 suba la succión del C-3 sobre 26 kg/cm² (rampa 1 kg/cm²/min).'],
+  [/ΔP PT910/,'Abra HOV701 completamente y espere que se igualen PT910 y PIT704 (ΔP < 0,5).'],
+  [/HOV701/,'HOV701 debe estar 100 % abierta (apertura lenta ≈ 5 min).'],
+  [/UV-05/,'Abra UV-05 en campo (solo posible con ZV705 energizada en C1).'],
+  [/CR2\.1/,'CR2.1 requiere panel FLUOR iniciado, UV-01 abierta, SEL SULZER y C-3 listo para cargar.'],
+  [/IV711/,'IV711 debe estar cerrada (C1 la deja cerrada).'],
+  [/paso previo/,'Respete el orden de la secuencia: este botón corresponde a un paso que aún no está habilitado.'],
+  [/parada pendiente|MASTER TRIP/,'Hay una parada enclavada: corrija la causa y pulse RESET.']
+];
+function adviceFor(t){ const a=ADV.find(x=>x[0].test(t)); return a?a[1]:'Revise las condiciones del paso (pantalla SECUENCIA → detalle) antes de pulsar.'; }
+const TRIPADV={
+  'TAHH T4':'La GT quedó sin margen. Con T4 cerca de 775 °C reduzca carga (JIC101 / SOLAR o producción del C-3) ANTES de que se pierda un SOLAR: LSC101 está deshabilitado y TIC103 actúa lento por PCV04.',
+  'SAHH101':'Sobrevelocidad: evite rechazos bruscos de carga con poca carga en la GT.',
+  'SALL101':'La GT cayó bajo la velocidad autosostenida: la carga superó la capacidad de la turbina; reduzca carga o pase carga a los SOLAR.',
+  'XZCALL121':'Pérdida de llama: verifique el suministro de gas combustible.',
+  'XZCAHH121A':'Ignición demasiado larga: verifique gas de ignición, M43 y presión PT401 antes de PARTIDA.',
+  'PALL401':'Gas combustible bajo: normalice PT401 (> 13 kg/cm²) antes de arrancar y vigílelo en marcha.',
+  'SEL SULZER':'No manipule el selector SEL SULZER del panel FLUOR con el tren en marcha.',
+  'ESD GEN':'Falla grave del generador (SD): revisar el panel ABB y las protecciones antes de rearrancar.'
+};
+const TYPELBL={AL:'ALARMA / PARADA',WA:'ADVERTENCIA',PROC:'PROCESO',OP:'OPERACIÓN',SYS:'SISTEMA'};
+
+/* ===================== PASOS ===================== */
+const STEP={}, ORDER=[];
+function def(id,o){o.id=id;o.lane=o.lane||'main';STEP[id]=o;ORDER.push(id);}
+const fromMain=arr=>()=>arr.includes(S.main);
+const zero60=()=>S.N<0.5&&S.n0T>=60;
+const oilOK=()=>S.PIT204>1.2;
+
+def('I0',{name:'Encendido UCP',cond:[],act:['M48 / M49 extractores de vahos en marcha','Calefactores M30 y M45/M45A en control','Operador de campo: abrir HOV 702 (permite presurizar C-3)']});
+def('S1',{name:'Arranque M31 bomba aux. aceite lub. GT',btn:'START_PUMPS',from:fromMain(['I0']),tmax:420,
+  cond:[['Modo AUTOMÁTICO seleccionado',()=>S.mode==='AUTO'],['LT101 > 60 % nivel tanque aceite GT',()=>S.LT101>60],['M48 extractor vahos en marcha',()=>!!S.M.M48],['M49 extractor vahos filtro sello en marcha',()=>!!S.M.M49],['M33 / M34 / M36 no en modo LOCAL',()=>true]],
+  act:['Arranca M31','Compuertas aire primario ZY121/122 a posición de partida 25 %'],
+  enter(){S.M.M31=1;S.damperSP=25;}});
+def('S2',{name:'Arranque M32 bomba aceite regulación GT',from:fromMain(['S1']),tmax:240,
+  cond:[['PIT204 > 1,2 kg/cm² aceite lubricante',()=>S.PIT204>1.2],['TE259 > 20 °C aceite lubricante',()=>S.TE259>20],['ZT121 = 25 %',()=>Math.abs(S.ZT121-25)<1],['ZT122 = 25 %',()=>Math.abs(S.ZT121-25)<1]],
+  act:['Arranca M32','Reset automático transmisor ZT105 (TCV101)'],enter(){S.M.M32=1;}});
+def('S3',{name:'Arranque M46 bomba aux. aceite lub. C-3',from:fromMain(['S2']),tmax:240,
+  cond:[['PT301 > 10 kg/cm² aceite regulación',()=>S.PT301>10],['TE262 > 30 °C tanque aceite C-3',()=>S.TE262>30],['LT283 > 82 % tanque aceite C-3',()=>S.LT283>82]],
+  act:['Arranca M46'],enter(){S.M.M46=1;}});
+def('S4',{name:'Arranque M35 bomba aux. aceite sello C-3',from:fromMain(['S3']),
+  cond:[['PT256 > 0,8 kg/cm² aceite lub. C-3',()=>S.PT256>0.8],['TE056 > 20 °C',()=>S.TE056>20]],
+  act:['Arranca M35','Llenado depósito gravedad VES420 (0,6 kg/cm² ≈ 3 min; 0,85 ≈ 10 min)','M45B calefactor cuando PDT428 > 0,6'],enter(){S.M.M35=1;}});
+def('S4A',{name:'Presurizar compresor C-3',btn:'PRESS_C3',from:fromMain(['S4']),
+  cond:[['Sin parada pendiente (pulse RESET)',()=>!S.trip],['PT910 > 8 kg/cm² presión succión',()=>S.PT910>8],['PDT428 > 0,6 kg/cm² depósito gravedad sello lleno',()=>S.PDT428>0.6]],
+  act:['ASV701 cerrada 2 min (purga)','A los 4 min ZV711/ZV712 cierran IV711 e IV712','IV711 controla presión: abre 6 / cierra 4,7 kg/cm²','PIC702 consigna 5 kg/cm² (compensa fugas por sellos)'],
+  enter(){S.s4aT=0;S.purge=true;S.ASV701=0;S.pic702on=true;S.PIC702SP=5;}});
+def('S5',{name:'Arranque bombas aceite a presión M33/M34',btn:'BARRING',from:fromMain(['S4A']),tmax:30,
+  cond:[['MASTER TRIP no activo',()=>!S.trip],['IV712 cerrada',()=>!S.IV712],['PIT204 > 1,2 kg/cm²',oilOK],['LS103 depósito gravedad GT lleno',()=>S.LS103],['LIS129 interruptor seguridad barring OK',()=>S.LIS129]],
+  act:['Arrancan M33 y M34 (levantan el rotor unas micras)'],enter(){S.M.M33=1;S.M.M34=1;}});
+def('S6',{name:'Barring gear en marcha (50 rpm)',from:fromMain(['S5']),
+  cond:[['M33 y M34 en marcha',()=>S.M.M33&&S.M.M34],['Presiones aceite lubricante OK',oilOK],['Velocidad GT 0 rpm durante 60 s',zero60]],
+  act:['Arranca M36 (estrella→triángulo a los 25 s), 50 rpm','A 40 rpm se detienen M33/M34'],enter(){S.M.M36=1;S.barT=0;}});
+def('S7',{name:'Parada barring gear / preparar enganche',btn:'ENGAGE',from:fromMain(['S4A','S6','S32']),
+  cond:[['MASTER TRIP no activo',()=>!S.trip],['IV712 cerrada',()=>!S.IV712],['PIT204 > 1,2 kg/cm²',oilOK],['LS103 depósito gravedad GT lleno (≈ 6 min)',()=>S.LS103],
+    ['ZV114, ZV110, IV301/302 cerradas',()=>!S.ZV114&&!S.ZV110],['TCV101 cerrada (ZT105)',()=>S.TCV<0.5],['IV118 cerrada',()=>!S.IV118],['ASV101 abierta',()=>S.asv101>99],
+    ['ASV701 abierta',()=>S.ASV701>99],['Sin llama (XZC121/122)',()=>!S.flame],['PIT704 entre 4,5 y 5,5 kg/cm²',()=>S.PIT704>=4.5&&S.PIT704<=5.5],
+    ['Acoplamiento NO enganchado (LIS127 abierto)',()=>!S.LIS127],['PCV119 cerrada (LIS128) y PS140 < 3 psi',()=>S.ZY119<0.5]],
+  act:['Se detiene M36 (barring)'],enter(){S.M.M36=0;}});
+def('S8',{name:'Enganche acoplamiento de partida',from:fromMain(['S7']),
+  cond:[['Velocidad 0 rpm durante 60 s',zero60]],
+  act:['ZV123 desbloquea (aceite regulación abre ZV124)','3 s → ZV122 intenta enganchar','12 s → verifica LIS127','Operador confirma por mirilla: CONFIRMA ENGANCHADO'],
+  enter(){S.s8T=0;S.ZV123=true;S.s8msg=false;S.confirmEngaged=false;}});
+def('S9',{name:'Partida turbina: bombas aceite a presión',btn:'START',from:fromMain(['S8','S32']),tmax:60,
+  cond:[['MASTER TRIP no activo',()=>!S.trip],['Acoplamiento enganchado (LIS127 cerrado)',()=>S.LIS127],['PIT204 > 1,2 kg/cm²',oilOK],['Botón CONFIRMA ENGANCHADO pulsado',()=>S.confirmEngaged],['SEL SULZER desde panel FLUOR',()=>S.selSulzer],['LIS129 interruptor seguridad barring OK',()=>S.LIS129]],
+  act:['Arrancan M33 y M34'],enter(){S.M.M33=1;S.M.M34=1;}});
+def('S10',{name:'Barring gear + ZV125',from:fromMain(['S9']),tmax:60,
+  cond:[['Presiones aceite lubricante OK',oilOK],['Velocidad 0 rpm 60 s (o ≥ 50 rpm en barring)',()=>zero60()||S.N>=49],['M33 y M34 en marcha (o ya en barring)',()=>S.M.M33&&S.M.M34||S.N>=49]],
+  act:['Arranca M36 (50 rpm)','Energiza ZV125 (aire a PCV119)','A 40 rpm paran M33/M34'],enter(){S.M.M36=1;S.barT=0;S.ZV125=true;}});
+def('S11',{name:'Abrir IV118 bloqueo gas de arranque',from:fromMain(['S10']),tmax:60,
+  cond:[['PCV119 cerrada (LIS128)',()=>S.ZY119<=16.7],['Salida ZY119 baja (PS140 < 3 psi)',()=>S.ZY119<0.5],['Velocidad turbina de arranque > 60 rpm',()=>nStarter()>60]],
+  act:['ZV118 abre IV118'],enter(){S.iv118T=0;}});
+def('S12',{name:'Abrir PCV119 (rampa gas de arranque)',from:fromMain(['S11']),
+  cond:[['IV118 abierta (LIS118.1)',()=>S.IV118]],
+  act:['Rampa ZY119: 28 %/min (<300 rpm), 4,4 %/min (300–1700), 1,6 %/min (>1700)','ZV126 soplado cierra a 5 psi; sobre 5 psi PCV119 abre y el tren acelera','Trip Multiplier Bently-Nevada activo'],enter(){S.zyMode='ramp';}});
+def('S13',{name:'Parada barring gear (100 rpm)',from:fromMain(['S12']),cond:[['Velocidad GT ≥ 100 rpm',()=>S.N>=100]],act:['Para M36','ZV113 abre ZV114 (gas combustible)'],enter(){S.M.M36=0;S.ZV114=true;}});
+def('S14',{name:'Comparación de velocidad (400 rpm)',from:fromMain(['S13']),cond:[['Velocidad GT ≥ 400 rpm',()=>S.N>=400]],act:['Compara velocidad turbina de arranque vs rotor GT (SDAHH104)']});
+def('S15',{name:'Ignición',from:fromMain(['S14']),
+  cond:[['Velocidad GT > 800 rpm',()=>S.N>800],['ZV114 abierta',()=>S.ZV114],['PT401 > 13 kg/cm² gas combustible',()=>S.PT401>13]],
+  act:['Se detiene la rampa de PCV119','M43 transformador de ignición','IV472 gas de ignición abre','45 s → ZV301/ZV302 y ZV110 abren'],enter(){S.zyMode='hold';S.M.M43=1;S.IV472=true;S.ignT=0;}});
+def('S16',{name:'Llama de ignición detectada',from:fromMain(['S15']),cond:[['Llama XZC121 o XZC122',()=>S.flame]],act:['TCV101 abre a 10 %'],enter(){S.fcr=10;}});
+def('S17',{name:'Llama principal encendida',from:fromMain(['S16']),
+  cond:[['Llama confirmada (2 de 3: XZC121, XZC122, gradiente T4)',()=>S.flame&&S.flameT>3],['TCV101 abierta 5–10 %',()=>S.TCV>=5&&S.TCV<=10.5]],
+  act:['Apaga M43, cierra IV472','Compuertas siguen la velocidad (100 % a 3200 rpm)','Continúa rampa PCV119','Rampa FCR101 de TCV101','Contador de arranques +1'],
+  enter(){S.M.M43=0;S.IV472=false;S.zyMode='ramp';S.starts++;}});
+def('S18',{name:'Detener bombas auxiliares (3000 rpm)',from:fromMain(['S17']),cond:[['Velocidad GT ≥ 3000 rpm',()=>S.N>=3000]],act:['Para M32 (regulación) y M35 (sello C-3) – quedan en espera'],enter(){S.M.M32=0;S.M.M35=0;}});
+def('S19',{name:'Velocidad autosostenida',from:fromMain(['S18']),
+  cond:[['Velocidad GT > 3200 rpm',()=>S.N>3200],['Compuertas aire primario 100 %',()=>S.ZT121>=99]],
+  act:['PCV119 cierra (133 %/min); ZV127 abre ZV126','ASV101 cierra en 120 s','IV118 cierra cuando ZY119 ≈ 6 psi','Trip Multiplier desactivado'],enter(){S.zyMode='down';}});
+def('S20',{name:'Desenganche acoplamiento',from:fromMain(['S19']),cond:[['IV118 cerrada (LIS118-2)',()=>!S.IV118]],act:['Se bloquea SDAHH104','ZV123 + 3 s desenergiza ZV122 → desengancha'],enter(){S.decT=0;S.ZV123=true;}});
+def('S21',{name:'Cerrar PCV119 / parar auxiliares',from:fromMain(['S20']),
+  cond:[['Velocidad GT > 3400 rpm',()=>S.N>3400],['PCV119 cerrada (LIS128)',()=>S.ZY119<=16.7],['PS140 cerrado (ZY119 baja)',()=>S.ZY119<0.5],['Acoplamiento desenganchado (LIS127 abierto)',()=>!S.LIS127]],
+  act:['Desenergiza ZV125','Para M31 y M46 (quedan en espera)'],enter(){S.ZV125=false;S.M.M31=0;S.M.M46=0;}});
+def('S22',{name:'Velocidad de funcionamiento 3600 rpm',from:fromMain(['S21']),cond:[['Velocidad GT ≥ 3600 rpm',()=>S.N>=3595]],act:['SIC101 toma el control de TCV101 (consigna fija 3600 rpm)','Se puede operar generador (G1) y/o compresor C-3 (C1)'],enter(){S.sicActive=true;}});
+
+/* --- generador --- */
+const G16=0.22; /* 5 % de 4375 kVA ≈ 0,22 MW (> 200 kW) */
+def('G1',{lane:'gen',name:'Iniciar excitación',btn:'EXC',from:()=>S.main==='S22'&&(S.gen===null||S.gen==='G8'||S.gen==='G1'),
+  cond:[['Velocidad GT > 3580 rpm',()=>S.N>3580],['UL GEN4 control generador OK',()=>true],['UL GEN9 AVR OK',()=>true],['UL GEN11 sin disparo excitación',()=>true],['UL GEN17 protección OK',()=>true],['UL GEN2 sincronización lista',()=>true]],
+  act:['Impulso US GEN3: excitación ON','Tensión sube a 2400 V','Disponible PRUEBA SINC.'],enter(){S.exc=true;S.syncMode=null;}});
+def('G2',{lane:'gen',name:'Iniciar sincronización',btn:'SYNC',from:()=>S.gen==='G1',
+  cond:[['Velocidad GT > 3580 rpm',()=>S.N>3580],['UL GEN10 interruptor excitación cerrado',()=>S.exc&&S.Vg>2.2]],
+  act:['US GEN6 habilita sincronizador','Impulso 2 s US GEN1 inicia','Prueba: relé de cierre bloqueado / Real: relé de cierre activo'],enter(){S.syncT=0;}});
+def('G3',{lane:'gen',name:'Sincronización en curso (Synchrotact)',from:()=>S.gen==='G2',cond:[['UL GEN3 sincronización en curso',()=>true]],
+  act:['Synchrotact ajusta velocidad ±0,2 %/s (límite 3570–3630 rpm)','Ajusta tensión (AVR subir/bajar)','Cierra con concordancia de fase','Máx. 270 s'],enter(){}});
+def('G4',{lane:'gen',name:'Generador sincronizado',from:()=>S.gen==='G3',cond:[['UL GEN18 interruptor generador cerrado',()=>S.brk]],
+  act:['SGT1/SGT2 DROOP: Woodward de los Solar pasan a estatismo','BBC queda isócrono (único en la red)','Impulsos de BAJAR a los Solar hasta BBC > 200 kW'],
+  enter(){droopCommand();}});
+def('G5',{lane:'gen',name:'Generador con carga',from:()=>S.gen==='G4',cond:[['UL GEN16 carga generador > 5 %',()=>S.Pbbc>G16]],
+  act:['BBC maestro de frecuencia (SIC101 3600 rpm = 50 Hz)','Se pueden descargar/desconectar los Solar','JIC101 / LSC101 disponibles']});
+def('G6',{lane:'gen',name:'Descargar generador',btn:'UNLOAD_GEN',from:()=>S.gen==='G5',
+  cond:[['Al menos un Solar en línea y cargado',()=>S.solar.some(s=>s.on)]],act:['Impulsos SUBIR a Woodward Solar: 30/min (1 s on / 1 s off)','Si el Solar no puede tomar la carga, se queda aquí']});
+def('G7',{lane:'gen',name:'Generador con carga mínima',from:()=>S.gen==='G6',cond:[['UL GEN16 carga < 5 %',()=>S.Pbbc<G16]],act:['Operador verifica capacidad remanente Solar','Pulse ABRIR INTERRUPTOR']});
+def('G8',{lane:'gen',name:'Abrir interruptor',btn:'OPEN_BRK',from:()=>S.gen==='G7',cond:[['Botón ABRIR INTERRUPTOR pulsado',()=>true]],
+  act:['US GEN8 / US GEN4: excitación OFF','Panel ABB abre interruptor','Pasos G1–G7 restablecidos'],enter(){openBreaker(false);}});
+/* --- C-3 --- */
+def('C1',{lane:'c3',name:'Preparar carga C-3',btn:'PREP_C3',from:()=>S.main==='S22'&&(S.c3===null||S.c3==='C3'),
+  cond:[['Paso S22 activo',()=>S.main==='S22']],
+  act:['IV711 deja de controlar y queda cerrada','PIC702 consigna 5 → 40 kg/cm² a 1 kg/cm²/min','ΔP PT910–PIT704 < 5,5 → «C-3 READY TO LOAD, OPEN UV05 AND HOV701»','ZV705 permite abrir UV-05 en campo'],
+  enter(){S.IV711=false;S.ivCtl=false;S.pic702on=true;S.readyMsg=false;
+    if(!S.fluor||!S.uv01||S.e8<1) fault('PREPARACIÓN C-3 sin completar acciones ENAP previas (panel FLUOR, UV-01, 1er ventilador E-8)','Antes de C1: botón inicio panel FLUOR, abrir UV-01 y arrancar el primer ventilador del radiador E-8.',0);}});
+def('C2',{lane:'c3',name:'Cargar compresor C-3',btn:'LOAD_C3',from:()=>S.c3==='C1'||S.c3==='C3',
+  cond:[['IV711 cerrada',()=>!S.IV711],['PIT761 succión > 26 kg/cm²',()=>S.PIT704>26],['ΔP PT910 / PIT704 < 0,5 kg/cm²',()=>Math.abs(S.PT910-S.PIT704)<0.5],['HOV701 abierta (LIS704-1)',()=>S.hov701>=99.5],['UV-05 abierta (LIS705-1)',()=>S.uv05],['CR2.1 panel FLUOR (listo para cargar)',()=>cr21()]],
+  act:['ZV701 energizada, FIC701 en LOAD','ASV701 rampa cierre 10 %/min hasta que FIC701 controla','1 min después: PCV04 abre (FCR102 30 %/min) hasta que PIC101 / PIC102 / TIC103 toman el control','PIC702 vuelve a 5 kg/cm²'],
+  enter(){S.c2T=0;S.ZV701=true;S.PIC702SP=5;S.fcr102=S.PCV04;}});
+def('C3',{lane:'c3',name:'Descargar compresor C-3',btn:'UNLOAD_C3',from:()=>S.c3==='C2',cond:[['Botón DESCARGAR C-3 (o CR2.1 abierto)',()=>true]],
+  act:['PCV04 cierra en rampa','ASV701 abre en rampa 10 %/min','Con ASV701 abierta: ZV701 OFF, FIC701 descargado']});
+/* --- parada --- */
+def('S31',{name:'Parada',btn:'STOP',from:()=>false,cond:[['ASV701 abierta (C-3 descargado)',()=>S.ASV701>99],['Interruptor generador abierto (UL GEN18 inactivo)',()=>!S.brk]],
+  act:['Corta gas combustible (ZV110, ZV114)','Arrancan M31, M32, M35; barring M36','ASV101 abre; IV711 / IV712 despresurizan','UV-05 cierra; FLUOR cierra UV-01 y abre UV-02']});
+def('S32',{name:'Refrigeración (36 h)',from:fromMain(['S31']),cond:[['Velocidad GT ≈ 50 rpm estable 60 s',()=>S.N<=55&&S.lowT>60]],act:['Temporizador de refrigeración 36 h','IV712 cierra; IV711 controla','Opciones: PARTIDA, ENGANCHAR o SUSPENDER REFRIG.'],enter(){S.IV712=false;S.ivCtl=true;}});
+def('S33',{name:'Despresurizar C-3',btn:'ABORT_COOL',from:fromMain(['S32']),cond:[['Paso S32 activo',()=>S.main==='S32']],act:['Para M36','IV711 / IV712 abren','PIC702 consigna 0'],enter(){S.M.M36=0;S.IV711=true;S.IV712=true;S.PIC702SP=0;S.pic702on=false;S.ivCtl=false;}});
+def('S34',{name:'Abortar pasos S5–S16',from:()=>false,cond:[],act:['Restablece S5–S16 y S4A','Para M36 y M43','IV711 / IV712 abren, PIC702 a 0']});
+def('S35',{name:'Parar bombas aceite C-3 / desenganchar',from:fromMain(['S33','S34']),cond:[['Velocidad 0 rpm 60 s',zero60],['PT910 lado C-3 despresurizado',()=>S.PIT704<0.3]],act:['Paran M46 y M35','Desengancha acoplamiento si estaba enganchado'],enter(){S.M.M46=0;S.M.M35=0;S.LIS127=false;S.ZV122=false;}});
+def('S36',{name:'Parar bombas aceite GT',from:fromMain(['S35']),cond:[['LIS127 abierto (desenganchado)',()=>!S.LIS127]],act:['Paran M31 y M32','Vuelve a I0'],enter(){S.M.M31=0;S.M.M32=0;setTimeoutSim(()=>{resetToI0();},3);}});
+
+const BTN2STEP={START_PUMPS:'S1',PRESS_C3:'S4A',BARRING:'S5',ENGAGE:'S7',START:'S9',EXC:'G1',SYNC:'G2',TEST:'G2',UNLOAD_GEN:'G6',OPEN_BRK:'G8',PREP_C3:'C1',LOAD_C3:'C2',UNLOAD_C3:'C3',ABORT_COOL:'S33'};
+const BTNLBL={START_PUMPS:'ARRANQUE BOMBAS',PRESS_C3:'PRESURIZAR C-3',BARRING:'BARRING GEAR ON',ENGAGE:'ENGANCHAR',CONFIRM:'CONFIRMA ENGANCHADO',START:'PARTIDA',EXC:'EXCITACIÓN',TEST:'PRUEBA SINC.',SYNC:'SINCRONIZAR',UNLOAD_GEN:'DESCARGAR GENERADOR',OPEN_BRK:'ABRIR INTERRUPTOR',PREP_C3:'PREPARACIÓN C-3',LOAD_C3:'CARGAR C-3',UNLOAD_C3:'DESCARGAR C-3',STOP:'PARADA',ABORT_COOL:'SUSPENDER REFRIG.',AUTO:'AUTOMÁTICO',MANT:'MANTENIMIENTO'};
+
+let simTimers=[];
+function setTimeoutSim(fn,sec){simTimers.push({at:S.t+sec,fn});}
+
+function enterStep(id){
+  const st=STEP[id];S[st.lane]=id;S.stepT[st.lane]=0;S.done.add(id);S.stepsLog.push({t:S.t,id});
+  if(st.enter) st.enter();
+  msg('PROC',`Paso ${id} activo: ${st.name}`);
+}
+function condsOK(st){return st.cond.every(c=>{try{return c[1]()}catch(e){return false}});}
+function firstFail(st){const c=st.cond.find(c=>!c[1]());return c?c[0]:'';}
+
+function pressBtn(code){
+  msg('OP',`Operador: ${BTNLBL[code]||code}`);
+  if(code==='AUTO'){ if(S.main==='I0'||S.mode==='AUTO'){S.mode='AUTO';} return;}
+  if(code==='MANT'){ if(S.main==='I0'){S.mode='MANT';} else {fault('ENCLAVADO MANTENIMIENTO: solo es posible en el paso I0','El modo mantenimiento solo se selecciona con el tren detenido (I0).');} return;}
+  if(code==='CONFIRM'){
+    if(S.main==='S8'&&S.LIS127){S.confirmEngaged=true;msg('PROC','Acoplamiento confirmado enganchado. Área de turbina de arranque despejada.');}
+    else {fault('ENCLAVADO: CONFIRMA ENGANCHADO requiere S8 activo y LIS127 cerrado',adviceFor('CONFIRMA'));}
+    return;}
+  if(code==='STOP'){doStop(false);return;}
+  const id=BTN2STEP[code]; const st=STEP[id];
+  if(!st.from()){fault(`ENCLAVADO ${id} (${BTNLBL[code]}): el paso previo requerido no está activo`,adviceFor('paso previo'));return;}
+  if(!condsOK(st)){const ff=firstFail(st);fault(`ENCLAVADO ${id} (${BTNLBL[code]}): ${ff}`,adviceFor(ff));return;}
+  if(code==='SYNC'&&!S.testOK){S.syncNoTest=true;fault('Sincronización real sin PRUEBA SINC. previa','La narrativa recomienda ejecutar primero la prueba de sincronización (verifica Synchrotact sin cerrar el interruptor).',0);}
+  if(code==='TEST') S.syncMode='test'; else if(code==='SYNC') S.syncMode='real';
+  enterStep(id);
+}
+
+/* ===================== PARADA / DISPARO ===================== */
+const idx=id=>ORDER.indexOf(id);
+function doStop(emergency,reason){
+  const m=S.main;
+  if(['S31','S32','S33','S34','S35','S36'].includes(m)){ if(!emergency) msg('OP','El tren ya está deteniéndose / en refrigeración'); return;}
+  if(m==='I0'){return;}
+  if(!emergency && idx(m)>=idx('S17')){
+    if(S.brk||S.ASV701<99){fault('ENCLAVADO PARADA: generador o C-3 aún cargados','Antes de PARADA: DESCARGAR GENERADOR + ABRIR INTERRUPTOR y DESCARGAR C-3 (ASV701 abierta).');return;}
+  }
+  shutdownCommon();
+  if(idx(m)<=idx('S2')){ S.M.M31=0;S.M.M32=0;resetToI0();msg('PROC','Secuencia vuelve a I0');return;}
+  if(idx(m)<=idx('S4A') && !['S5','S6'].includes(m) && m!=='S4A'){ S.M.M46=0;S.M.M35=0;S.M.M31=0;S.M.M32=0;resetToI0();return;}
+  if(idx(m)<idx('S17')){ S.main='S34';S.stepT.main=0;S.done.add('S34');msg('PROC','Paso S34 activo: abortar pasos S5–S16');
+    S.M.M36=0;S.M.M43=0;S.IV472=false;S.IV711=true;S.IV712=true;S.PIC702SP=0;S.pic702on=false;S.ivCtl=false;S.ZV125=false;S.IV118=false;S.zyMode='off';S.ZY119=0;S.purge=false;S.ASV701=100;
+    return;}
+  S.main='S31';S.stepT.main=0;S.done.add('S31');msg('PROC','Paso S31 activo: Parada');
+  S.M.M31=1;S.M.M32=1;S.M.M35=1;S.M.M36=1;S.barT=0;S.damperSP=0;
+  S.IV711=true;S.ivCtl=false;setTimeoutSim(()=>{if(S.main==='S31')S.IV712=true;},10);
+}
+function shutdownCommon(){
+  S.flame=false;S.ZV110=false;S.ZV114=false;S.IV472=false;S.M.M43=0;S.fcr=0;S.TCV=0;S.sicActive=false;S.zyMode='off';S.ZY119=0;S.IV118=false;S.asv101=100;
+  if(S.brk){ openBreaker(false); msg('PROC','Interruptor BBC abierto por parada del tren: los Solar quedan solos con la red'); }
+  S.gen=null;S.exc=false;S.Vg=0;S.syncMode=null;S.c3=null;S.ZV701=false;S.ASV701=100;S.ZV705=false;S.uv05=false;S.PCV04=8;S.fcr102=8;
+  if(S.fluor){S.uv01=false;S.uv02=true;}
+  S.sel='FCR102';
+}
+function resetToI0(){
+  S.main='I0';S.stepT.main=0;S.done=new Set(['I0']);S.gen=null;S.c3=null;S.confirmEngaged=false;S.ZV123=false;S.ZV122=false;S.LIS127=false;
+  S.purge=false;S.pic702on=false;S.PIC702SP=0;S.IV711=true;S.IV712=true;msg('PROC','Paso I0 activo: tren detenido. Puede rearrancar con ARRANQUE BOMBAS.');
+}
+function trip(code,text){
+  if(S.latched[code]) return;
+  S.latched[code]=text; S.trip=true; S.trips++;
+  msg('AL',`PARADA ${code}: ${text}`);
+  fault(`Parada del Sulzer ${code}: ${text}`,TRIPADV[code]||'Revise la causa en ALARMAS antes del RESET.',4);
+  doStop(true);
+}
+function tryReset(){
+  msg('OP','Operador: RESET');
+  const still=[];
+  for(const k in S.latched){ if(tripActive(k)) still.push(k); else delete S.latched[k]; }
+  S.trip=Object.keys(S.latched).length>0;
+  if(still.length) msg('WA','RESET no efectivo, señal aún fuera de rango: '+still.join(', '));
+  S.msgs.forEach(m=>m.ack=true);
+}
+function tripActive(k){
+  switch(k){
+    case 'TAHH T4': return S.T4>800;
+    case 'PALL401': return S.PT401<11;
+    case 'SEL SULZER': return !S.selSulzer;
+    case 'ESD GEN': return false;
+    default: return S.N>3960;
+  }
+}
+
+/* ===================== GENERADOR / RED ===================== */
+function droopCommand(){
+  S.droopCmd=true;
+  S.solar.forEach(s=>{ if(!s.on) return;
+    if(s.jumper){ s.iso=true; msg('WA',`${s.name}: comando DROOP enviado pero el Woodward sigue ISÓCRONO (puente RB 82-83 instalado en panel Solar). ¡Dos máquinas isócronas en la red!`);}
+    else { s.iso=false; s.Pref=s.P; }
+  });
+}
+function openBreaker(prot,why){
+  if(!S.brk) return;
+  S.brk=false; S.exc=false; S.Vg=0; S.syncMode=null; S.jic.on=false; S.droopCmd=false;
+  S.solar.forEach(s=>{ if(s.on){ s.iso=true; s.fset=50; } });
+  msg('PROC','Contactos SGT DROOP liberados: los Solar en línea vuelven a isócrono (reparto de carga entre ellos)');
+  if(prot){ S.brkTrips++; msg('AL',`AL GENERATOR FAILURE – interruptor BBC abierto (UL GEN15): ${why}`);
+    fault('Interruptor BBC abierto por protección: '+why, /INVERSIÓN/.test(why)?'Mantenga el BBC sobre 0,2 MW: si baja la carga de la red, baje carga en los SOLAR (JIC101 o Woodward) y confirme que ningún SOLAR quede isócrono (puente RB 82-83 retirado).': /sobrecarga/.test(why)?'No supere 3,5 MW en el BBC: suba carga en los SOLAR o reduzca la red antes de abrir/perder un SOLAR.':'La GT no sostuvo la carga: reduzca carga del C-3 o del generador cuando la GT esté al límite (T4 alta, TCV saturada).',3); S.gen='G8'; S.done.add('G8'); S.stepT.gen=0; }
+  /* Solar: el que estaba en estatismo debe volver a isócrono si es el único (lo hace el operador del Solar en la realidad) */
+}
+function cr21(){return S.fluor&&S.uv01&&S.selSulzer&&(S.c3==='C1'||S.c3==='C2'||S.c3==='C3')&&S.PT910-S.PIT704<5.5;}
+
+function solveGrid(dt){
+  S.load=Math.max(0,S.gridBase+S.gridEv+0.05*Math.sin(S.t/260)+0.03*Math.sin(S.t/47));
+  const on=S.solar.filter(s=>s.on);
+  if(S.brk){
+    S.f=S.N/72;
+    on.forEach(s=>{
+      if(s.iso){ /* dos isócronos: el integrador del Solar deriva hacia un extremo */
+        const dir=(s.fset-50)>=0?1:-1; s.Pref=clamp(s.Pref+dir*0.012*dt,s.Pmin,s.Pmax);
+        s.P=clamp(s.Pref+0.3*(s.fset-S.f)*s.Pmax,0,s.Pmax*1.05);
+      } else s.P=clamp(s.Pref+(50-S.f)/2*s.Pmax,0,s.Pmax*1.05);
+    });
+    S.Pbbc=S.load-on.reduce((a,s)=>a+s.P,0);
+    S.gridDown=false;
+  } else {
+    S.Pbbc=0;
+    if(!on.length){ S.f=0; if(!S.gridDown){S.gridDown=true;S.stat.blackouts++;msg('AL','RED POSESIÓN SIN GENERACIÓN (blackout): no hay Solar ni BBC en línea');fault('Red Posesión quedó sin generación (blackout)','Antes de abrir o perder el BBC confirme que los SOLAR en línea tienen capacidad para toda la carga de la red.',3);} return;}
+    S.gridDown=false;
+    const iso=on.filter(s=>s.iso), dr=on.filter(s=>!s.iso);
+    let f=S.f||50;
+    for(let k=0;k<4;k++){
+      dr.forEach(s=>s.P=clamp(s.Pref+(50-f)/2*s.Pmax,0,s.Pmax*1.05));
+      const rest=S.load-dr.reduce((a,s)=>a+s.P,0);
+      if(iso.length){
+        const fs=iso.reduce((a,s)=>a+s.fset,0)/iso.length;
+        const cap=iso.reduce((a,s)=>a+s.Pmax,0);
+        const per=rest/iso.length;
+        if(rest>cap){ iso.forEach(s=>s.P=s.Pmax*1.05); f=fs-(rest-cap)/Math.max(0.3,cap)*4; }
+        else if(rest<0){ iso.forEach(s=>s.P=0); f=fs+(-rest)*2; }
+        else { iso.forEach(s=>s.P=per); f=fs; }
+      } else {
+        const sumPref=dr.reduce((a,s)=>a+s.Pref,0), sumMax=dr.reduce((a,s)=>a+s.Pmax,0);
+        f=50+2*(sumPref-S.load)/sumMax;
+      }
+    }
+    S.f=f;
+  }
+  /* protección de baja frecuencia de los Solar */
+  on.forEach(s=>{ if(S.f<47.5){ s.uf+=dt; if(s.uf>3){ s.on=false;s.P=0;s.uf=0;msg('AL',`${s.name} disparó por baja frecuencia (sim)`);} } else s.uf=0; });
+}
+function pulseSolars(dir,why){
+  let any=false;
+  S.solar.forEach(s=>{ if(!s.on||s.iso) return;
+    const np=s.Pref+dir*0.04;
+    if(np<s.Pmin||np>s.Pmax){ return; }
+    s.Pref=np; any=true; });
+  if(!any) S.stat.refusals++;
+  if(!any && S.t-S.refuseT>30){ S.refuseT=S.t; msg('WA',`WOODWARD: los Solar no aceptan más impulsos de ${dir>0?'SUBIR':'BAJAR'} (${why}) – límite de carga ${dir>0?'máxima':'mínima'}`);}
+  return any;
+}
+
+/* ===================== FÍSICA ===================== */
+function nStarter(){return S.LIS127?S.N*1.35:0;}
+function g04(x){return x<50?0.55*Math.pow(Math.max(0,x)/50,0.25):0.55+0.45*(x-50)/50;}
+function first(cur,target,tau,dt){return cur+(target-cur)*Math.min(1,dt/tau);}
+
+function step(dt){
+  S.t+=dt; S.stepT.main+=dt; if(S.gen)S.stepT.gen+=dt; if(S.c3)S.stepT.c3+=dt;
+  for(let i=simTimers.length-1;i>=0;i--) if(S.t>=simTimers[i].at){const f=simTimers[i].fn;simTimers.splice(i,1);f();}
+  const m=S.main, im=idx(m);
+  const running=S.N>2500;
+  /* --- aceite --- */
+  S.PIT204=first(S.PIT204,(S.M.M31||running)?1.8:0,4,dt);
+  S.PT301=first(S.PT301,(S.M.M32||running)?12.5:0,5,dt);
+  S.PT256=first(S.PT256,(S.M.M46||running)?1.5:0,5,dt);
+  S.PDT428=first(S.PDT428,(S.M.M35||running)?0.9:0,(S.M.M35||running)?164:600,dt);
+  if(S.M.M31||running) S.gravGT=Math.min(400,S.gravGT+dt); else S.gravGT=Math.max(0,S.gravGT-dt*0.2);
+  S.LS103=S.gravGT>=360;
+  /* --- compuertas --- */
+  if(im>=idx('S17')&&im<=idx('S22')) S.damperSP=clamp(25+75*(S.N-850)/(3200-850),25,100);
+  S.ZT121+=clamp(S.damperSP-S.ZT121,-5*dt,5*dt);
+  /* --- acoplamiento S8 --- */
+  if(m==='S8'){ S.s8T+=dt;
+    if(S.s8T>3) S.ZV122=true;
+    if(S.ZV122 && S.aligned && !S.LIS127){ S.LIS127=true; msg('WA','ASEGÚRESE DE QUE EL ACOPLAMIENTO ESTÉ ENGANCHADO POR COMPLETO. COMPRUEBE POR LA MIRILLA (¡DOBLE COMPROBACIÓN!). DESPEJE EL ÁREA DE LA TURBINA DE ARRANQUE. Luego pulse CONFIRMA ENGANCHADO.'); setTimeoutSim(()=>{S.ZV123=false;},6);}
+    if(S.s8T>15 && !S.LIS127 && !S.s8msg){ S.s8msg=true; msg('AL','ACOPLAMIENTO DE PARTIDA NO ENGANCHADO – alinee los dientes con el mango rojo (CAMPO)'); }
+  }
+  if(m==='S20'){ S.decT+=dt; if(S.decT>3) S.ZV122=false; if(S.decT>5&&S.LIS127){S.LIS127=false; setTimeoutSim(()=>{S.ZV123=false;},6);} }
+  /* --- IV118 / PCV119 --- */
+  if(m==='S11'){ S.iv118T+=dt; if(S.iv118T>3) S.IV118=true; }
+  if(S.zyMode==='ramp'){ const r=S.N<300?28:S.N<1700?4.4:1.6; S.ZY119=Math.min(100,S.ZY119+r/60*dt); }
+  else if(S.zyMode==='down'){ S.ZY119=Math.max(0,S.ZY119-133/60*dt); if(S.ZY119<=25) S.IV118=false; }
+  /* --- barring --- */
+  if(S.M.M36){ S.barT+=dt; if(S.barT>25 && S.N<50) S.N=Math.min(50,S.N+6*dt); if(S.N>=40&&(m==='S6'||m==='S10')){S.M.M33=0;S.M.M34=0;} }
+  else S.barT=0;
+  /* --- ignición / llama --- */
+  if(m==='S15'){ S.ignT+=dt; if(S.ignT>45){S.ZV110=true;} }
+  const fuelOK=S.ZV110&&S.ZV114&&S.PT401>8;
+  if(!S.flame && fuelOK && S.IV472 && S.M.M43 && S.N>700){ S.flameT+=dt; if(S.flameT>3){S.flame=true;S.flameT=0;msg('PROC','Llama detectada XZC121 / XZC122');} }
+  if(S.flame){ S.flameT+=dt; if(!fuelOK || (S.TCV<2&&im>=idx('S17'))){ S.noFlameT+=dt; if(S.noFlameT>1.7){S.flame=false;} } else S.noFlameT=0; }
+  /* --- rampa FCR101 + SIC101 --- */
+  if(S.flame && im>=idx('S17') && im<=idx('S22')){
+    let r=S.N<2100?1.1:(S.fcr<75?5.5:2);
+    const line=t4Line(S.N);
+    if(S.N<3550 && S.T4>line-2){ r=0; if(S.T4>line) msg('WA','START RAMP TCV101 TEMPERATURE T4 VERY HIGH'); else msg('WA','START RAMP TCV101 LIMITER ACTIVE'); }
+    S.fcr=Math.min(100,S.fcr+r/60*dt);
+  }
+  if(S.gen==='G3') { const tgt=clamp((S.f+0.06)*72,3570,3630); S.sicSP+=clamp(tgt-S.sicSP,-7.2*dt,7.2*dt); }
+  else S.sicSP+=clamp(3600-S.sicSP,-7.2*dt,7.2*dt);
+  if(S.flame){
+    const e=S.sicSP-S.N, Kp=1.0, Ki=0.25;
+    S.sicI=clamp(S.sicI+Ki*e*dt,0,100);
+    let sic=clamp(Kp*e+S.sicI,0,100);
+    let cmd=Math.min(S.fcr,sic);
+    if(cmd===S.fcr && S.fcr<100) S.sicI=Math.min(S.sicI,S.fcr+3-Kp*e);
+    S.TCV=clamp(cmd,0,100);
+  } else { S.TCV=Math.max(0,S.TCV-50*dt); S.sicI=0; }
+  if(im>=idx('S19')&&im<=idx('S22')) S.asv101=Math.max(0,S.asv101-100/120*dt);
+  /* --- C-3 --- */
+  stepC3(dt,m,im);
+  /* --- red y generador --- */
+  stepGen(dt);
+  /* --- dinámica de velocidad --- */
+  const Af=100*(1-0.007*(S.amb-10));
+  const st=(S.LIS127&&S.IV118)?clamp((S.ZY119-16.7)/50,0,1):0;
+  const starter=25*st*Math.max(0,1-S.N/3800);
+  const fuel=S.flame?Af*S.TCV/100:0;
+  const drag=40*Math.pow(S.N/3600,3)+(S.N>0.5?1.5:0);
+  const Pgt=(S.brk?S.Pbbc:0)+S.Pc3;
+  let dN=starter+fuel-drag-7.5*Pgt;
+  if(S.M.M36 && S.barT>25 && S.N<=50 && dN<0) dN=0;
+  S.N=Math.max(0,S.N+dN*dt);
+  if(S.N<0.5) S.n0T+=dt; else S.n0T=0;
+  if(S.N<=55) S.lowT+=dt; else S.lowT=0;
+  /* --- T4 --- */
+  const air=0.3+0.7*S.ZT121/100;
+  const t4t=S.flame? S.amb+160*(S.N/3600)+640*(S.TCV/100)/(S.N>3000?1:air) : S.amb;
+  S.T4=first(S.T4,t4t,S.flame?5:90,dt);
+  if(S.flame) S.hours+=dt/3600;
+  /* --- transiciones automáticas --- */
+  autoTransitions();
+  /* --- protecciones (paradas) --- */
+  protections(dt,m,im);
+  /* --- tendencias --- */
+  { const st=S.stat; if(S.flame){ st.maxT4=Math.max(st.maxT4,S.T4); if(S.T4>775) st.t4High+=dt; }
+    if(S.c3&&S.Tgas>30) st.tgasHigh+=dt;
+    if(S.brk){ st.minF=Math.min(st.minF,S.f); st.maxF=Math.max(st.maxF,S.f); st.maxPbbc=Math.max(st.maxPbbc,S.Pbbc); st.minPbbc=Math.min(st.minPbbc,S.Pbbc); }
+    const req=(S.PIT704>=15?3:S.PIT704>=10?2:1); if(S.c3&&S.e8<req){ st.fansLate+=dt; } }
+  S.trendT+=dt; if(S.trendT>=2){S.trendT=0;S.trend.push([S.N,S.T4,S.brk?S.Pbbc:0,S.Pc3,S.f]); if(S.trend.length>900) S.trend.shift();}
+  missions();
+}
+function t4Line(N){ const L=180; if(N<850) return L; if(N<2300) return L+(600-L)*(N-850)/1450; if(N<3550) return 600+100*(N-2300)/1250; return 9999; }
+
+function stepC3(dt,m,im){
+  /* S4A: purga y presurización */
+  if(m==='S4A'||(S.purge&&im>idx('S4A'))){ S.s4aT+=dt;
+    if(S.purge && S.s4aT>120 && S.ASV701<100){ S.ASV701=100; }
+    if(S.purge && S.s4aT>240){ S.IV711=false;S.IV712=false;S.purge=false;S.ivCtl=true;msg('PROC','IV711 e IV712 cerradas: C-3 presurizándose con PIC702');}
+  }
+  /* control on/off IV711 (S4A en adelante, salvo C1/C2) */
+  if(S.main==='S31'){ if(S.IV712&&S.PIT704<4.7&&S.stepT.main>10){S.IV712=false;} if(S.PIT704<4.7) S.ivCtl=true; }
+  if(S.ivCtl && !S.purge && !S.c3){ if(S.PIT704>6) S.IV711=true; else if(S.PIT704<4.7) S.IV711=false; }
+  if(S.c3==='C2' && !cr21()){ msg('WA','CR2.1 abierto desde panel FLUOR: C-3 a recirculación'); enterStep('C3'); }
+  /* PIC702: rampa en C1 */
+  if(S.c3==='C1') S.PIC702SP=Math.min(40,S.PIC702SP+dt/60);
+  /* presión de succión PIT704 */
+  let p=S.PIT704;
+  if(S.pic702on && S.hov702){ const tg=Math.min(S.PIC702SP,S.PT910); if(tg>p) p=first(p,tg,20,dt); }
+  if(S.hov701>0) p=first(p,S.PT910-(S.c3==='C2'?0.2:0),60/(S.hov701/100+0.05),dt);
+  p-=p*0.0004*dt;
+  if(S.IV711) p=first(p,0,12,dt);
+  if(S.IV712) p=first(p,0,15,dt);
+  S.PIT704=Math.max(0,p);
+  S.PCV702=S.pic702on&&S.hov702?clamp((S.PIC702SP-S.PIT704)*20,0,100):0;
+  /* campo: HOV701 lenta (5 min) */
+  S.hov701+=clamp(S.hov701Cmd-S.hov701,-100/300*dt,100/300*dt);
+  if(S.uv02Closing) { S.uv02=false; }
+  /* listo para cargar */
+  if(S.c3==='C1' && S.PT910-S.PIT704<5.5){ S.ZV705=true; if(!S.readyMsg){S.readyMsg=true;msg('WA','C-3 COMPRESSOR READY TO LOAD, OPEN UV05 AND HOV701');} }
+  if(S.c3==='C1'||S.c3==='C2'||S.c3==='C3') S.ZV705=S.ZV705||S.PT910-S.PIT704<5.5;
+  /* C2: carga */
+  if(S.c3==='C2'){ S.c2T+=dt;
+    const ficMin=S.PCV04<35?(35-S.PCV04)*1.4:0;
+    S.ASV701=Math.max(ficMin,S.ASV701-10/60*dt);
+    if(S.c2T>60){
+      S.fcr102=Math.min(100,S.fcr102+30/60*dt);
+      const e1=S.PT910-S.pic101.sp, e2=S.pic102.sp-S.PT05, e3=S.tic103.sp-S.T4;
+      S.pic101.out=clamp(S.pic101.out+0.6*e1*dt,8,100);
+      S.pic102.out=clamp(S.pic102.out+0.6*e2*dt,8,100);
+      S.tic103.out=clamp(S.tic103.out+0.06*e3*dt,8,100);
+      const cand=[['FCR102',S.fcr102],['PIC101',S.pic101.out],['PIC102',S.pic102.out],['TIC103',S.tic103.out]];
+      cand.sort((a,b)=>a[1]-b[1]);
+      const sel=cand[0];
+      if(sel[0]!==S.sel){ if(sel[0]==='TIC103') msg('WA','SUCTION PRESSURE CONTROL ON – T4 HIGH (TIC103 reduce carga C-3 con PCV04)'); S.sel=sel[0]; }
+      S.PCV04=clamp(sel[1],8,100);
+      ['pic101','pic102','tic103'].forEach(k=>{S[k].out=Math.min(S[k].out,S.PCV04+8);});
+      if(S.fcr102>=100) S.fcr102=100;
+    }
+  } else if(S.c3==='C3'){
+    S.PCV04=Math.max(8,S.PCV04-30/60*dt); S.fcr102=S.PCV04;
+    S.ASV701=Math.min(100,S.ASV701+10/60*dt);
+    if(S.ASV701>=100){ S.ZV701=false; }
+  } else {
+    S.pic101.out=100;S.pic102.out=100;S.tic103.out=100;
+  }
+  /* presiones de proceso */
+  const loaded=S.c3==='C2'||S.c3==='C3';
+  const gx=loaded?g04(S.PCV04)*(1-0.6*S.ASV701/100):0;
+  S.PT910=first(S.PT910,38.5-11.5*gx+0.15*Math.sin(S.t/90),8,dt);
+  const rr=S.N/3600;
+  S.PT05=first(S.PT05,loaded? (45+24*gx)*rr*rr : S.PIT704*(1+0.15*rr*rr),6,dt);
+  S.Pc3=Math.pow(rr,3)*(0.25+0.6*S.PIT704/38+(loaded?5.6*gx:0));
+  /* temperatura salida E-8 */
+  const req=(S.c3?1:0)+(S.PIT704>=10?1:0)+(S.PIT704>=15?1:0)+(S.c3==='C2'?1:0);
+  const tt=24+5*Math.max(0,req-S.e8)-1.5*Math.max(0,S.e8-req)+(S.c3==='C2'?2*S.PCV04/100:0);
+  S.Tgas=first(S.Tgas,tt,60,dt);
+}
+
+function stepGen(dt){
+  /* excitación y tensión */
+  if(S.exc){ let vt=2.40; if(S.gen==='G3') vt=S.Vgrid; if(S.brk) vt=S.Vgrid; S.Vg+=clamp(vt-S.Vg,-0.25*dt,0.25*dt);} else S.Vg=Math.max(0,S.Vg-0.5*dt);
+  /* sincronizador */
+  if(S.gen==='G2'){ enterStep('G3'); }
+  if(S.gen==='G3'){
+    S.syncT+=dt;
+    const fg=S.N/72, df=fg-S.f;
+    S.phase=((S.phase+360*df*dt)%360+360)%360;
+    const ph=S.phase>180?S.phase-360:S.phase;
+    const ok=Math.abs(df)<0.1 && Math.abs(S.Vg-S.Vgrid)<0.05 && Math.abs(ph)<8 && S.f>0;
+    if(ok){
+      if(S.syncMode==='test'){ S.testOK=true; msg('PROC','Prueba de sincronización OK (UL GEN20 Synchrotest FB OK). Ahora pulse EXCITACIÓN / SINCRONIZAR para sincronización real.'); S.gen='G1'; S.stepT.gen=0; S.syncMode=null; }
+      else { S.brk=true; S.phase=0; msg('PROC','Interruptor generador BBC CERRADO (UL GEN18)'); }
+    } else if(S.syncT>270){
+      msg('AL','SYNCHRONIZING TIME TOO LONG – sincronización detenida (US GEN2) y excitación OFF (US GEN4)');
+      if(S.f*72<3570||S.f*72>3630) msg('WA',`La frecuencia de la red (${fmt(S.f,2)} Hz) está fuera del rango que permite la GT (3570–3630 rpm = 49,58–50,42 Hz). Ajuste la velocidad de los SOLAR.`);
+      S.exc=false;S.gen=null;S.syncMode=null;
+      fault(`Sincronización fallida por tiempo (270 s) con red en ${fmt(S.f,2)} Hz`,'Ajuste la frecuencia de los SOLAR (Woodward) a 49,58–50,42 Hz antes de pulsar SINCRONIZAR.',2);
+    }
+  }
+  solveGrid(dt);
+  /* pulsos UCP → Woodward cada 2 s (30/min) */
+  S.pulseT+=dt;
+  if(S.pulseT>=2){ S.pulseT=0;
+    if(S.gen==='G4' && S.Pbbc<G16) pulseSolars(-1,'carga mínima BBC');
+    else if(S.gen==='G6' && S.Pbbc>G16) pulseSolars(+1,'descarga del BBC');
+    else if(S.gen==='G5' && S.jic.on){
+      if(!S.solar.some(s=>s.on&&!s.iso)){ S.jic.on=false; msg('WA','JIC101 detenido: no hay ningún Solar en línea en estatismo'); }
+      else if(S.Pbbc<S.jic.sp-0.05) pulseSolars(-1,'JIC101'); else if(S.Pbbc>S.jic.sp+0.05) pulseSolars(+1,'JIC101');
+    } else if(S.gen==='G5' && S.lsc && S.sel==='TIC103'){ pulseSolars(+1,'LSC101'); }
+  }
+  /* transiciones gen automáticas */
+  /* protecciones del generador (AL → abre interruptor) */
+  if(S.brk){
+    const P=S.prot;
+    if(S.Pbbc>3.85){P.ol+=dt; if(P.ol>5) openBreaker(true,'sobrecarga 49G / 50-51G (> 110 % de 3,5 MW) (sim)');} else P.ol=0;
+    if(S.Pbbc<-0.15){P.rp+=dt; if(P.rp>3) openBreaker(true,'INVERSIÓN DE POTENCIA – la red quedó con menos carga que lo que entregan los Solar (sim: −0,15 MW, 3 s)');} else P.rp=0;
+    if(S.f<48.5){P.uf+=dt; if(P.uf>2) openBreaker(true,'baja frecuencia 81 (< 48,5 Hz) – la GT no alcanza a sostener la carga (sim)');} else P.uf=0;
+    if(S.f>51.5){P.of+=dt; if(P.of>2) openBreaker(true,'sobrefrecuencia 81 (sim)');} else P.of=0;
+    if(S.Pbbc>3.5 && S.t%30<dt) msg('WA','UL GEN14: generador BBC sobre 3,5 MW nominal');
+  }
+}
+
+function autoTransitions(){
+  for(const id of ORDER){
+    const st=STEP[id]; if(st.btn||id==='I0'||id==='S31'||id==='S34') continue;
+    if(!st.from()) continue;
+    if(condsOK(st)){ enterStep(id); }
+  }
+  /* timeouts */
+  const st=STEP[S.main];
+  if(st&&st.tmax&&S.stepT.main>st.tmax&&S.stepT.main-0.5<st.tmax+0.01) msg('WA',`${S.main}: TIEMPO PERMITIDO EXPIRADO – corrija la causa o aborte (PARADA)`);
+}
+
+function protections(dt,m,im){
+  const n0=S.trips;
+  const chk=(c,code,txt)=>{ if(S.trips===n0 && c) trip(code,txt); };
+  if(S.T4>800 && S.flame) trip('TAHH T4','Temperatura muy alta entrada turbina T4 > 800 °C (sim)');
+  chk(S.N>3960,'SAHH101','Sobrevelocidad GT 2oo3 (> 110 %, sim)');
+  chk(im>=idx('S19')&&im<=idx('S22')&&S.N<2800,'SALL101','Turbina por debajo de la velocidad autosostenida (< 2800 rpm, sim)');
+  chk(im>=idx('S17')&&im<=idx('S22')&&!S.flame,'XZCALL121','Ausencia de llama en cámara de combustión');
+  chk(m==='S15'&&S.ignT>180&&!S.flame,'XZCAHH121A','Tiempo de ignición demasiado largo (180 s)');
+  chk(im>=idx('S14')&&im<=idx('S22')&&S.PT401<11,'PALL401','Presión muy baja gas combustible PT401 (sim < 11 kg/cm²)');
+  chk(im>=idx('S9')&&im<=idx('S22')&&!S.selSulzer,'SEL SULZER','Selector SEL SULZER manipulado en panel FLUOR durante la operación');
+  if(S.T4>775 && S.flame && S.t%20<dt) msg('WA','TAH T4: temperatura entrada turbina sobre 775 °C – reduzca carga (generador o planta)');
+  if(S.c3&&S.Tgas>31&&S.t%60<dt) msg('WA',`Temperatura gas salida radiador E-8 ${fmt(S.Tgas,0)} °C (> 30 °C): arranque más ventiladores`);
+}
+
+/* ===================== MISIONES ===================== */
+const MIS=[
+  ['m1','Llevar la turbina Sulzer a 3600 rpm (paso S22)',()=>S.done.has('S22')],
+  ['m2','Hacer la PRUEBA SINC. y luego sincronizar el generador BBC (G5: BBC > 5 %)',()=>S.testOK&&S.gen==='G5'],
+  ['m3','Pasar carga desde los Solar: BBC ≥ 1,0 MW con al menos un Solar en línea',()=>S.brk&&S.Pbbc>=1.0&&S.solar.some(s=>s.on)],
+  ['m4','Cargar el C-3 (C2) con PCV04 bajo control de PIC101/PIC102/TIC103',()=>S.c3==='C2'&&S.sel!=='FCR102'&&S.c2T>70],
+  ['m5','Acciones ENAP: expansores C1/C2, poliducto a Cabo Negro y UV-02 cerrada',()=>S.expanders&&S.caboNegro&&!S.uv02&&S.c3==='C2'],
+  ['m6','Desafío: disparar un Solar (Instructor) y mantener el Sulzer en servicio 2 min',()=>S.solarTripT!==null&&S.t-S.solarTripT>=120&&S.flame&&S.main==='S22']
+];
+function missions(){ MIS.forEach(([k,,f])=>{ if(!S.mis[k]&&f()){S.mis[k]=S.t;msg('PROC','✔ Misión cumplida: '+MIS.find(x=>x[0]===k)[1]);} }); }
+function score(){ return Object.keys(S.mis).length*150-S.trips*40-S.errors*10-S.brkTrips*60; }
+
+/* ===================== AYUDA ===================== */
+function hint(){
+  const m=S.main;
+  if(S.trip) return 'Hay una PARADA enclavada: revise ALARMAS, corrija la causa y pulse RESET.';
+  if(m==='I0'){ if(S.mode!=='AUTO') return 'Seleccione AUTOMÁTICO (solo se puede arrancar en modo automático).';
+    if(!S.hov702) return 'CAMPO: abra la válvula manual HOV 702 (permite presurizar el C-3). Luego ARRANQUE BOMBAS.';
+    return 'Pulse ARRANQUE BOMBAS (S1).'; }
+  if(['S1','S2','S3'].includes(m)) return 'Secuencia automática: espere que suban las presiones de aceite (S1→S4).';
+  if(m==='S4') return S.PDT428<0.6?`Espere el llenado del depósito por gravedad de sello (PDT428 ${fmt(S.PDT428,2)} → 0,6 kg/cm², ≈ 3 min).`:'Pulse PRESURIZAR C-3 (S4A).';
+  if(m==='S4A'){ if(S.purge) return 'Purga del C-3 en curso: a los 4 min cierran IV711/IV712.';
+    if(!S.hov702) return 'PIT704 no sube: CAMPO → abrir HOV 702.';
+    if(!(S.PIT704>=4.5&&S.PIT704<=5.5)) return `Espere PIT704 entre 4,5 y 5,5 kg/cm² (ahora ${fmt(S.PIT704,1)}).`;
+    if(!S.LS103) return 'Espere el llenado del depósito por gravedad de la GT (LS103, ≈ 6 min con M31).';
+    return 'Pulse ENGANCHAR (arranque rápido) o BARRING GEAR ON (arranque normal).'; }
+  if(m==='S5'||m==='S6') return 'Barring en marcha. Pulse ENGANCHAR cuando quiera continuar.';
+  if(m==='S7') return 'Esperando 0 rpm durante 60 s para enganchar.';
+  if(m==='S8'){ if(!S.LIS127&&S.s8msg) return 'CAMPO: alinee los dientes del acoplamiento con el mango rojo.';
+    if(!S.LIS127) return 'Enganchando acoplamiento (ZV123 / ZV122)…';
+    if(!S.confirmEngaged) return 'Verifique por la mirilla y pulse CONFIRMA ENGANCHADO.';
+    if(!S.selSulzer) return 'CAMPO: seleccione SEL SULZER en el panel FLUOR (condición de PARTIDA).';
+    return 'Pulse PARTIDA (S9).'; }
+  if(idx(m)>=idx('S9')&&idx(m)<idx('S22')) return 'Arranque automático en curso. Observe velocidad, ZY119, TCV101 y T4 en la pantalla TREN.';
+  if(m==='S22'){
+    if(!S.gen||S.gen==='G8'){ if(S.f*72<3570||S.f*72>3630) return `Antes de sincronizar: la red está en ${fmt(S.f,2)} Hz. Ajuste la velocidad del Solar isócrono (GENERADOR → Woodward) a 49,6–50,4 Hz.`;
+      if(S.solar.some(s=>s.jumper)) return 'Revise en GENERADOR el puente RB 82-83 de los Solar: si queda instalado, el Solar no pasará a estatismo. Luego pulse EXCITACIÓN.';
+      return 'Pulse EXCITACIÓN (G1).'; }
+    if(S.gen==='G1') return S.testOK?'Pulse SINCRONIZAR (sincronización real).':'Pulse PRUEBA SINC. (recomendado antes de la real).';
+    if(S.gen==='G3') return 'Synchrotact igualando frecuencia, tensión y fase (vea el sincronoscopio en GENERADOR).';
+    if(S.gen==='G4') return 'UCP baja carga de los Solar hasta que el BBC supere 200 kW.';
+    if(S.gen==='G5'&&!S.mis.m3) return 'Para pasar carga al BBC: active JIC101 con consigna (p. ej. 1,0 MW) o baje carga en el Woodward de un Solar.';
+    if(!S.c3) return S.fluor&&S.uv01&&S.e8>=1?'Pulse PREPARACIÓN C-3 (C1).':'CAMPO (ENAP): botón inicio panel FLUOR, abrir UV-01 y 1er ventilador E-8. Luego PREPARACIÓN C-3.';
+    if(S.c3==='C1'){ if(S.PT910-S.PIT704>=5.5) return `Presurizando C-3 con PIC702 (PIT704 ${fmt(S.PIT704,1)}). Ventiladores E-8: 2º a 10 y 3º a 15 kg/cm².`;
+      if(S.hov701<99.5) return S.hov701Cmd?'HOV701 abriendo (≈ 5 min)…':'CAMPO: abra lentamente HOV 701.';
+      if(!S.uv05) return 'CAMPO: abra UV-05 localmente (tirando del mango).';
+      return 'Pulse CARGAR C-3 (C2).'; }
+    if(S.c3==='C2'&&!S.mis.m5) return 'CAMPO (ENAP): expansores C1/C2, poliducto a Cabo Negro y cerrar UV-02. Vigile T4 y E-8.';
+    if(!S.mis.m6) return 'Instructor: dispare un Solar y mantenga el Sulzer en servicio. Vigile T4, frecuencia y P BBC.';
+    return 'Tren en operación normal. Puede practicar DESCARGAR GENERADOR / DESCARGAR C-3 / PARADA.';
+  }
+  if(m==='S31') return 'Tren desacelerando. Barring a 50 rpm luego refrigeración (S32).';
+  if(m==='S32') return 'Refrigeración: PARTIDA (acoplamiento enganchado), ENGANCHAR o SUSPENDER REFRIG.';
+  return 'Secuencia de parada en curso.';
+}
+
+/* ===================== UI ===================== */
+const VIEWS=[['seq','SECUENCIA'],['tren','TREN Y ACEITE'],['gen','GENERADOR / RED'],['c3','COMPRESOR C-3'],['campo','CAMPO / ENAP'],['alm','ALARMAS'],['mis','MISIONES'],['rep','REPORTE']];
+let cur='seq', selStep=null;
+function buildNav(){
+  $('#nav').innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" class="${k===cur?'sel':''}">${l}<span class="flag" id="fl-${k}"></span></button>`).join('');
+  $('#nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;cur=b.dataset.v;document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('sel',x.dataset.v===cur));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('show',v.id==='v-'+cur));render(true);};
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('show',v.id==='v-'+cur));
+}
+const GROUPS=[
+  ['b','Arranque bombas de aceite',['S1','S2','S3','S4','S4A'],['START_PUMPS','PRESS_C3']],
+  ['b','Barring gear antes de partida (opcional)',['S5','S6'],['BARRING']],
+  ['b','Enganche acoplamiento de partida',['S7','S8'],['ENGAGE','CONFIRM']],
+  ['b','Partida turbina',['S9','S10','S11','S12','S13','S14'],['START']],
+  ['b','Ignición',['S15','S16','S17'],[]],
+  ['b','Aceleración',['S18','S19','S20','S21','S22'],[]],
+  ['g','Operación compresor C-3',['C1','C2','C3'],['PREP_C3','LOAD_C3','UNLOAD_C3']],
+  ['g','Operación generador',['G1','G2','G3','G4','G5','G6','G7','G8'],['EXC','TEST','SYNC','UNLOAD_GEN','OPEN_BRK']],
+  ['r','Parada',['S31','S32','S33','S34','S35','S36'],['STOP','ABORT_COOL']]
+];
+function buildSeq(){
+  const col=(sel)=>GROUPS.filter(g=>sel(g)).map(([c,t,ids,btns])=>`<div class="grp ${c}"><h3>${t}</h3>${ids.map(id=>`<div class="st" data-s="${id}"><span class="id">${id}</span><span>${STEP[id].name}</span><span class="tm" id="tm-${id}"></span></div>`).join('')}
+    ${btns.length?`<div class="btns">${btns.map(b=>`<button class="ob${b==='STOP'?' stop':''}" data-b="${b}">${BTNLBL[b]}</button>`).join('')}</div>`:''}</div>`).join('');
+  $('#seqgrid').innerHTML=`<div><div class="grp b" style="background:#d9dde1"><div class="st" data-s="I0"><span class="id">I0</span><span>Encendido UCP</span></div></div>${col(g=>g[0]==='b')}</div><div>${col(g=>g[0]==='g')}</div><div>${col(g=>g[0]==='r')}</div>`;
+  $('#seqgrid').onclick=e=>{const s=e.target.closest('.st');if(s){selStep=s.dataset.s;render(true);}};
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-b]');if(!b)return;const code=b.dataset.b;
+  if(S.confirmBtns&&code!=='AUTO'&&code!=='MANT') ask(`¿Ejecutar «${BTNLBL[code]}»?`,()=>pressBtn(code)); else pressBtn(code); render(true);});
+let modalFn=null;
+function ask(text,fn,title){ $('#mh').textContent=title||'Confirmación'; $('#mb').innerHTML=text; modalFn=fn; $('#modal').style.display='flex'; }
+$('#mok').onclick=()=>{ $('#modal').style.display='none'; if(modalFn) modalFn(); modalFn=null; render(true); };
+$('#mcancel').onclick=()=>{ $('#modal').style.display='none'; modalFn=null; };
+
+function stepState(id){ const st=STEP[id]; return S[st.lane]===id?'act':S.done.has(id)?'done':''; }
+function nextCandidates(){ return ORDER.filter(id=>{const st=STEP[id]; if(id==='I0'||id==='S31'||id==='S34') return false; try{return st.from()&&S[st.lane]!==id;}catch(e){return false;}}); }
+function renderDetail(){
+  let html='';
+  const show=selStep?[selStep]:nextCandidates();
+  html+=`<span class="ptitle">${selStep?'DETALLE DEL PASO '+selStep:'PRÓXIMOS PASOS – CONDICIONES (bloque AND)'}</span>`;
+  if(selStep) html+=` <button class="ob" onclick="selStep=null;render(true)">Ver próximos pasos</button>`;
+  if(!show.length) html+='<p class="small">No hay pasos pendientes desde el estado actual.</p>';
+  show.forEach(id=>{const st=STEP[id];const ss=stepState(id);
+    html+=`<h4>${id} – ${st.name} ${ss==='act'?'<span class="tag g">ACTIVO</span>':ss==='done'?'<span class="tag" style="background:var(--done)">EJECUTADO</span>':''} ${st.btn?`<span class="tag">botón: ${BTNLBL[st.btn==='SYNC'?'SYNC':st.btn]}</span>`:'<span class="tag">automático</span>'}</h4>`;
+    st.cond.forEach(([l,f])=>{let ok=false;try{ok=f()}catch(e){} html+=`<div class="cond"><span class="dot ${ok?'ok':'no'}"></span>${l}</div>`;});
+    html+=`<div class="small" style="margin-top:4px"><b>Acciones:</b><ul class="acts">${st.act.map(a=>`<li>${a}</li>`).join('')}</ul></div>`;
+  });
+  $('#detail').innerHTML=html;
+}
+function kpis(){
+  const sol=S.solar.map(s=>s.on?fmt(s.P,2):'OFF');
+  const items=[
+    ['Paso secuencia',`${S.main}${S.gen?' · '+S.gen:''}${S.c3?' · '+S.c3:''}`],
+    ['Velocidad GT',fmt(S.N,0)+' rpm',S.N>3700?'alarm':''],
+    ['T4 entrada turbina',fmt(S.T4,0)+' °C',S.T4>775?'alarm':S.T4>740?'warn':''],
+    ['TCV101',fmt(S.TCV,1)+' %'],
+    ['Frecuencia red',S.gridDown?'SIN RED':fmt(S.f,2)+' Hz',(S.f<49.5||S.f>50.5)?'warn':''],
+    ['P BBC',S.brk?fmt(S.Pbbc,2)+' MW':'abierto',S.brk&&(S.Pbbc<0||S.Pbbc>3.5)?'alarm':''],
+    ['P SOLAR 1 / 2',sol.join(' / ')+' MW'],
+    ['P C-3 (eje)',fmt(S.Pc3,2)+' MW'],
+    ['Carga red Posesión',fmt(S.load,2)+' MW'],
+    ['Puntaje',String(score())]
+  ];
+  $('#kpi').innerHTML=items.map(([b,v,c])=>`<div class="k ${c||''}"><b>${b}</b><span>${v}</span></div>`).join('');
+}
+function renderSeq(){
+  ORDER.forEach(id=>{const el=document.querySelector(`.st[data-s="${id}"]`);if(!el)return;const ss=stepState(id);el.className='st'+(ss?' '+ss:'')+(selStep===id?' sel':'');
+    const tm=document.getElementById('tm-'+id); if(tm){ const st=STEP[id]; tm.textContent=ss==='act'?hms(S.stepT[st.lane])+(st.tmax?' / '+hms(st.tmax):''):''; }});
+  document.querySelector('[data-b="AUTO"]').classList.toggle('hot',S.mode==='AUTO');
+  document.querySelector('[data-b="MANT"]').classList.toggle('hot',S.mode==='MANT');
+  $('#hint').style.display=S.hints?'block':'none';
+  $('#hint').textContent='▶ Siguiente: '+hint();
+  renderDetail();
+}
+function fv(label,val,cls){return `<div class="fv ${cls||''}"><b>${label}</b><span>${val}</span></div>`;}
+const onoff=b=>b?'ON':'OFF';
+function renderTren(){
+  const fl=S.flame?'<span class="flame">🔥</span>':'<span class="flame" style="opacity:.25">🔥</span>';
+  $('#mach').innerHTML=`
+   <div class="mc" style="background:#7d858c"><h5>Turbina de gas</h5>${fl}<div class="v">${fmt(S.N,0)} rpm</div><div class="v">T4 ${fmt(S.T4,0)} °C</div><div class="v">TCV ${fmt(S.TCV,1)} %</div></div><div class="shaft"></div>
+   <div class="mc"><h5>Compresor aire</h5><div class="v">Compuertas ${fmt(S.ZT121,0)} %</div><div class="v">ASV101 ${fmt(S.asv101,0)} %</div></div><div class="shaft"></div>
+   <div class="mc"><h5>Caja NHY</h5><div class="v">Barring ${S.M.M36?'ON':'OFF'}</div><div class="v">M33/M34 ${onoff(S.M.M33)}/${onoff(S.M.M34)}</div></div><div class="shaft"></div>
+   <div class="mc" style="background:#6f8fb0"><h5>Compresor C-3</h5><div class="v">PIT704 ${fmt(S.PIT704,1)}</div><div class="v">PT05 ${fmt(S.PT05,1)}</div><div class="v">${fmt(S.Pc3,2)} MW</div></div><div class="shaft"></div>
+   <div class="mc"><h5>Caja NHX</h5><div class="v">${fmt(S.N*1,0)} rpm</div></div><div class="shaft"></div>
+   <div class="mc" style="background:${S.brk?'#c0574a':'#9aa0a6'}"><h5>Generador BBC</h5><div class="v">${fmt(S.Vg,2)} kV</div><div class="v">${S.brk?fmt(S.Pbbc,2)+' MW':'52G abierto'}</div></div><div class="shaft ${S.LIS127?'cl':''}"></div>
+   <div class="mc" style="background:#8a7a5a"><h5>Turbina de partida</h5><div class="v">${S.LIS127?'ENGANCHADO':'desenganchado'}</div><div class="v">ZY119 ${fmt(S.ZY119,1)} %</div><div class="v">IV118 ${S.IV118?'ABIERTA':'cerrada'}</div><div class="v">${fmt(nStarter(),0)} rpm</div></div>`;
+  $('#trenvals').innerHTML=[
+    fv('PIT204 aceite lub. GT',fmt(S.PIT204,2)+' kg/cm²'),fv('PT301 aceite regulación',fmt(S.PT301,1)+' kg/cm²'),fv('PT256 aceite lub. C-3',fmt(S.PT256,2)+' kg/cm²'),
+    fv('PDT428 depósito gravedad sello',fmt(S.PDT428,2)+' kg/cm²'),fv('LS103 depósito gravedad GT',S.LS103?'LLENO':'llenando '+fmt(S.gravGT/3.6,0)+' %',S.LS103?'on':'off'),
+    fv('TE259 aceite GT',fmt(S.TE259,0)+' °C'),fv('PT401 gas combustible',fmt(S.PT401,1)+' kg/cm²'),
+    fv('M31 / M32 aux. GT',onoff(S.M.M31)+' / '+onoff(S.M.M32)),fv('M46 / M35 aux. C-3',onoff(S.M.M46)+' / '+onoff(S.M.M35)),fv('M43 ignición / IV472',onoff(S.M.M43)+' / '+(S.IV472?'ABIERTA':'cerrada')),
+    fv('ZV114 / ZV110 gas',(S.ZV114?'ABIERTA':'cerrada')+' / '+(S.ZV110?'ABIERTA':'cerrada')),fv('FCR101 rampa / SIC101 SP',fmt(S.fcr,1)+' % / '+fmt(S.sicSP,0)+' rpm'),
+    fv('Línea límite T4 arranque',S.N<3550&&S.flame?fmt(t4Line(S.N),0)+' °C':'—'),fv('Arranques / horas',S.starts+' / '+fmt(S.hours,2)+' h')
+  ].join('');
+  drawTrend();
+}
+function drawTrend(){
+  const c=$('#trend'); if(!c) return; const x=c.getContext('2d'); const W=c.width,H=c.height; x.clearRect(0,0,W,H);
+  x.strokeStyle='#333'; for(let i=1;i<5;i++){x.beginPath();x.moveTo(0,H*i/5);x.lineTo(W,H*i/5);x.stroke();}
+  const d=S.trend; if(d.length<2) return;
+  const ser=[[0,0,4000,'#5cf'],[1,0,850,'#f85'],[2,-1,4,'#7f7'],[3,0,8,'#ff6'],[4,47,52,'#d9f']];
+  ser.forEach(([k,lo,hi,col])=>{x.strokeStyle=col;x.lineWidth=1.6;x.beginPath();d.forEach((p,i)=>{const X=W*i/(900-1);const Y=H-(clamp(p[k],lo,hi)-lo)/(hi-lo)*H;i?x.lineTo(X,Y):x.moveTo(X,Y);});x.stroke();});
+  x.fillStyle='#aaa';x.font='11px Tahoma';x.fillText('últimos '+Math.round(d.length*2/60)+' min (tiempo simulado)',8,14);
+}
+function genSVG(){
+  const s1=S.solar[0],s2=S.solar[1];
+  const brk=(x,on,lbl)=>`<rect x="${x-9}" y="135" width="18" height="18" fill="${on?'#d33':'#3c3'}" stroke="#000"/><text x="${x+14}" y="149" font-size="11">${lbl} ${on?'CERRADO':'ABIERTO'}</text>`;
+  const gen=(x,title,sub,col)=>`<rect x="${x-70}" y="185" width="140" height="80" fill="${col}" stroke="#222"/><text x="${x}" y="220" text-anchor="middle" font-weight="bold" font-size="14">${title}</text><text x="${x}" y="240" text-anchor="middle" font-size="12">${sub}</text>`;
+  const sol=(s,x)=>`${gen(x,s.name,s.on?(s.iso?'ISÓCRONO':'ESTATISMO (droop)'):'FUERA DE LÍNEA',s.on?'#b9c4cf':'#888')}<line x1="${x}" y1="100" x2="${x}" y2="185" stroke="#000" stroke-width="3"/>${brk(x,s.on,'')}<rect x="${x-45}" y="160" width="90" height="20" fill="#fff" stroke="#555"/><text x="${x}" y="175" text-anchor="middle" font-family="Consolas" font-weight="bold">${s.on?fmt(s.P,2)+' MW':'—'}</text>${s.jumper?`<text x="${x}" y="282" text-anchor="middle" fill="#a00" font-size="11" font-weight="bold">Puente RB 82-83 instalado</text>`:''}`;
+  const ph=S.gen==='G3'?S.phase:0;
+  const nx=860+40*Math.sin(ph*Math.PI/180), ny=60-40*Math.cos(ph*Math.PI/180);
+  $('#gensvg').innerHTML=`
+   <line x1="80" y1="100" x2="940" y2="100" stroke="#000" stroke-width="5"/><text x="90" y="92" font-size="12" font-weight="bold">Barra Posesión · ${S.gridDown?'SIN TENSIÓN':fmt(S.f,2)+' Hz · '+fmt(S.Vgrid,2)+' kV'} · Carga ${fmt(S.load,2)} MW</text>
+   ${gen(250,'BBC Generator',S.brk?'ISÓCRONO (maestro)':(S.exc?'excitado '+fmt(S.Vg,2)+' kV':'sin excitación'),S.brk?'#e07a6a':'#a9adb2')}
+   <line x1="250" y1="100" x2="250" y2="185" stroke="#000" stroke-width="3"/>${brk(250,S.brk,'52G')}
+   <rect x="205" y="160" width="90" height="20" fill="#fff" stroke="#555"/><text x="250" y="175" text-anchor="middle" font-family="Consolas" font-weight="bold">${S.brk?fmt(S.Pbbc,2)+' MW':'0,00 MW'}</text>
+   <text x="40" y="200" font-size="11">2400 V · 50 Hz</text><text x="40" y="215" font-size="11">3,5 MW · 4375 kVA</text><text x="40" y="230" font-size="11">GT ${fmt(S.N,0)} rpm</text>
+   ${sol(s1,560)}${sol(s2,760)}
+   <circle cx="860" cy="60" r="44" fill="#fff" stroke="#333"/><text x="860" y="12" text-anchor="middle" font-size="11">Sincronoscopio</text>
+   <line x1="860" y1="60" x2="${nx}" y2="${ny}" stroke="${S.gen==='G3'?'#c00':'#999'}" stroke-width="3"/><line x1="860" y1="16" x2="860" y2="24" stroke="#0a0" stroke-width="4"/>
+   <text x="760" y="40" font-size="11" text-anchor="end">Δf ${S.gen==='G3'?fmt(S.N/72-S.f,2):'—'} Hz</text><text x="760" y="56" font-size="11" text-anchor="end">ΔV ${S.exc?fmt(S.Vg-S.Vgrid,2):'—'} kV</text><text x="760" y="72" font-size="11" text-anchor="end">t ${S.gen==='G3'?fmt(S.syncT,0)+' / 270 s':'—'}</text>`;
+}
+function solarPanel(i){
+  const s=S.solar[i];
+  return `<div class="fp"><h4>${s.name} – Woodward (local, campo) <span class="tag ${s.on?'g':'r'}">${s.on?'EN LÍNEA':'FUERA'}</span></h4>
+   <div class="row"><span>Modo</span><b>${s.on?(s.iso?'ISÓCRONO':'ESTATISMO'):'—'}</b></div>
+   <div class="row"><span>Potencia / referencia</span><b>${fmt(s.P,2)} / ${fmt(s.Pref,2)} MW</b></div>
+   <div class="row"><span>Consigna frecuencia (isócrono)</span><b>${fmt(s.fset,2)} Hz</b></div>
+   <div class="row"><span>Límites (sim)</span><b>${fmt(s.Pmin,2)} – ${fmt(s.Pmax,2)} MW</b></div>
+   <div class="btns"><button class="ob" onclick="solarRef(${i},-1)">▼ Bajar</button><button class="ob" onclick="solarRef(${i},1)">▲ Subir</button>
+   <button class="ob" onclick="solarBrk(${i})">${s.on?'Abrir interruptor':'Cerrar / sincronizar'}</button><button class="ob" onclick="solarMode(${i})">Modo ISO / DROOP</button>
+   <button class="ob" onclick="S.solar[${i}].jumper=!S.solar[${i}].jumper;msg('OP','${s.name}: puente RB 82-83 '+(S.solar[${i}].jumper?'INSTALADO':'RETIRADO'));render(true)">${s.jumper?'Retirar':'Instalar'} puente RB 82-83</button></div>
+   <p class="small">«Subir/Bajar» mueve la consigna de velocidad: en isócrono cambia la frecuencia; en estatismo con el BBC en línea cambia la carga del Solar.</p></div>`;
+}
+function solarRef(i,d){const s=S.solar[i]; if(!s.on){msg('OP',s.name+' fuera de línea');return;}
+  if(s.iso&&!S.brk){ s.fset=clamp(s.fset+0.05*d,48,52); msg('OP',`${s.name}: consigna de frecuencia ${fmt(s.fset,2)} Hz`);}
+  else if(s.iso&&S.brk){ s.fset=clamp(s.fset+0.05*d,48,52); msg('OP',`${s.name} isócrono contra el BBC: consigna ${fmt(s.fset,2)} Hz (las dos máquinas pelean)`);}
+  else { const np=s.Pref+0.05*d; if(np<s.Pmin||np>s.Pmax){msg('WA',`WOODWARD ${s.name}: rechaza, límite de carga`);return;} s.Pref=np; msg('OP',`${s.name}: referencia de carga ${fmt(s.Pref,2)} MW`);} render(true);}
+function solarBrk(i){const s=S.solar[i];
+  if(s.on){ s.on=false; s.P=0; msg('OP',`${s.name}: interruptor abierto por el operador`); }
+  else if(S.gridDown){ s.on=true; s.iso=true; s.fset=50; s.Pref=0; msg('OP',`${s.name}: arranque en negro, isócrono 50 Hz`); }
+  else { s.on=true; s.iso=S.brk? s.jumper : !S.solar.some((o,j)=>j!==i&&o.on&&o.iso); s.Pref=s.Pmin; s.fset=S.f>0?S.f:50;
+    msg('OP',`${s.name}: sincronizado a la red en ${s.iso?'isócrono':'estatismo'} con ${fmt(s.Pmin,2)} MW`); }
+  render(true);}
+function solarMode(i){const s=S.solar[i]; if(!s.on){msg('OP',s.name+' fuera de línea');return;}
+  if(s.iso){ if(s.jumper){msg('WA',`${s.name}: no cambia a estatismo – puente RB 82-83 instalado`);return;} s.iso=false; s.Pref=s.P; }
+  else { s.iso=true; s.fset=S.f>0?S.f:50; if(S.brk) msg('WA',`${s.name} en ISÓCRONO con el BBC en línea: dos máquinas isócronas`); }
+  msg('OP',`${s.name}: modo ${s.iso?'ISÓCRONO':'ESTATISMO'}`); render(true);}
+function renderGen(force){
+  genSVG();
+  if(!force && document.activeElement && document.activeElement.tagName==='INPUT' && document.activeElement.closest('#genctrl')) return;
+  $('#genctrl').innerHTML=`
+   <div class="fp"><h4>Secuencia generador (HMI)</h4>
+     <div class="btns">${['EXC','TEST','SYNC','UNLOAD_GEN','OPEN_BRK'].map(b=>`<button class="ob" data-b="${b}">${BTNLBL[b]}</button>`).join('')}</div>
+     <div class="row"><span>Paso</span><b>${S.gen||'—'}</b></div><div class="row"><span>Prueba sincronización (UL GEN20)</span><b>${S.testOK?'OK':'—'}</b></div>
+     <div class="row"><span>Excitación / tensión</span><b>${S.exc?'ON':'OFF'} / ${fmt(S.Vg,2)} kV</b></div>
+     <div class="row"><span>Ventana de sincronización GT</span><b>3570–3630 rpm (49,58–50,42 Hz)</b></div></div>
+   <div class="fp"><h4>JIC101 regulación potencia generador <span class="tag ${S.jic.on?'g':''}">${S.jic.on?'ACTIVO':'parado'}</span></h4>
+     <div class="row"><span>Potencia BBC (EI GEN)</span><b>${fmt(S.brk?S.Pbbc:0,2)} MW</b></div>
+     <div class="row"><span>Consigna</span><span><input type="number" step="0.1" min="0.2" max="3.5" value="${S.jic.sp}" onchange="S.jic.sp=clamp(+this.value,0.2,3.5);msg('OP','JIC101 consigna '+fmt(S.jic.sp,2)+' MW')"> MW</span></div>
+     <div class="btns"><button class="ob" onclick="jicToggle()">${S.jic.on?'PARAR':'ARRANCAR'}</button></div>
+     <p class="small">Solo funciona con al menos un Solar en línea: la UCP manda impulsos INC/DEC al Woodward del Solar (SGT1/2 INC-DEC) y el BBC isócrono toma la diferencia.</p></div>
+   <div class="fp"><h4>LSC101 compartición de carga <span class="tag ${S.lsc?'y':'r'}">${S.lsc?'HABILITADO (hipotético)':'DESHABILITADO oct-2022'}</span></h4>
+     <p class="small">En la planta real LSC101 está deshabilitado desde la puesta en marcha (oct-2022). Si lo habilitas aquí, cuando TIC103 tome el control por T4 alta, la UCP pedirá más carga a los Solar (objetivo 710 °C).</p>
+     <div class="btns"><button class="ob" onclick="S.lsc=!S.lsc;msg('OP','LSC101 '+(S.lsc?'habilitado (hipotético)':'deshabilitado'));render(true)">${S.lsc?'Deshabilitar':'Habilitar (what-if)'}</button></div></div>
+   ${solarPanel(0)}${solarPanel(1)}`;
+}
+function jicToggle(){ if(!S.jic.on){ if(S.gen!=='G5'){fault('ENCLAVADO JIC101: generador debe estar en G5','Arranque JIC101 solo con el BBC sincronizado y cargado (G5).');return;} if(!S.solar.some(s=>s.on&&!s.iso)){fault('ENCLAVADO JIC101: requiere un Solar en línea en estatismo',adviceFor('Solar'));return;} }
+  S.jic.on=!S.jic.on; msg('OP','JIC101 '+(S.jic.on?'ARRANCADO':'PARADO')); render(true); }
+function c3SVG(){
+  const vcol=(o)=>o?'#3c3':'#d33';
+  const valve=(x,y,open,lbl,val)=>`<polygon points="${x-12},${y-9} ${x+12},${y+9} ${x+12},${y-9} ${x-12},${y+9}" fill="${vcol(open)}" stroke="#000"/><text x="${x}" y="${y-14}" text-anchor="middle" font-size="11" font-weight="bold">${lbl}</text>${val!==undefined?`<text x="${x}" y="${y+24}" text-anchor="middle" font-size="11" font-family="Consolas">${val}</text>`:''}`;
+  const box=(x,y,t,v)=>`<rect x="${x-42}" y="${y-11}" width="84" height="22" fill="#fff" stroke="#555"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" font-family="Consolas" font-weight="bold">${v}</text><text x="${x}" y="${y-15}" text-anchor="middle" font-size="10">${t}</text>`;
+  $('#c3svg').innerHTML=`
+   <text x="20" y="22" font-size="12" font-weight="bold">Gas proceso desde planta (UV-01 ${S.uv01?'ABIERTA':'cerrada'} · UV-02 bypass ${S.uv02?'ABIERTA':'cerrada'})</text>
+   <line x1="20" y1="150" x2="900" y2="150" stroke="#333" stroke-width="4"/>
+   ${box(90,120,'PT910 succión aguas arriba',fmt(S.PT910,1)+' kg/cm²')}
+   ${valve(190,150,S.PCV04>9,'PCV04',fmt(S.PCV04,0)+' %')}
+   ${valve(290,150,S.hov701>1,'HOV701',fmt(S.hov701,0)+' %')}
+   ${box(390,120,'PIT704 succión C-3',fmt(S.PIT704,1)+' kg/cm²')}
+   <rect x="470" y="110" width="110" height="80" fill="#6f8fb0" stroke="#000"/><text x="525" y="145" text-anchor="middle" font-weight="bold" fill="#fff">C-3</text><text x="525" y="163" text-anchor="middle" fill="#fff" font-size="11">${fmt(S.Pc3,2)} MW</text>
+   ${box(650,120,'PT05 descarga',fmt(S.PT05,1)+' kg/cm²')}
+   <rect x="720" y="128" width="70" height="44" fill="#ddd" stroke="#000"/><text x="755" y="146" text-anchor="middle" font-size="11" font-weight="bold">E-8</text><text x="755" y="162" text-anchor="middle" font-size="10">${S.e8} vent. · ${fmt(S.Tgas,0)} °C</text>
+   ${valve(830,150,S.uv05,'UV-05')}
+   <text x="905" y="145" font-size="11">→ expansores C1/C2</text><text x="905" y="160" font-size="11">→ Cabo Negro ${S.caboNegro?'✓':''}</text>
+   <path d="M 650 150 L 650 240 L 430 240 L 430 150" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="6 3"/>${valve(540,240,S.ASV701>1,'ASV701 antisurge',fmt(S.ASV701,0)+' %')}
+   <path d="M 150 150 L 150 60 L 340 60 L 340 150" fill="none" stroke="#666" stroke-width="2"/>${valve(205,60,S.hov702,'HOV702')}${valve(285,60,S.PCV702>1,'PCV702',fmt(S.PCV702,0)+' %')}
+   <text x="245" y="106" text-anchor="middle" font-size="10">PIC702 SP ${fmt(S.PIC702SP,1)} ${S.pic702on?'':'(rastreo)'}</text>
+   <line x1="400" y1="150" x2="400" y2="290" stroke="#666" stroke-width="2"/>${valve(360,290,S.IV711,'IV711')}${valve(440,290,S.IV712,'IV712')}<text x="400" y="320" text-anchor="middle" font-size="10">despresurización (verde = abierta)</text>`;
+}
+function renderC3(force){
+  c3SVG();
+  if(!force && document.activeElement && document.activeElement.tagName==='INPUT' && document.activeElement.closest('#c3ctrl')) return;
+  const fp=(k,tag,name,unit,lo,hi,pv,d)=>`<div class="fp ${S.sel===tag?'selc':''}"><h4>${tag} ${name} ${S.sel===tag?'<span class="tag g">EN CONTROL</span>':''}</h4>
+    <div class="row"><span>PV</span><b>${fmt(pv,d)} ${unit}</b></div>
+    <div class="row"><span>SP (${lo}–${hi})</span><span><input type="number" value="${S[k].sp}" min="${lo}" max="${hi}" step="1" onchange="S.${k}.sp=clamp(+this.value,${lo},${hi});msg('OP','${tag} consigna '+S.${k}.sp)"></span></div>
+    <div class="row"><span>Salida</span><b>${fmt(S[k].out,0)} %</b></div></div>`;
+  $('#c3ctrl').innerHTML=`
+   <div class="fp"><h4>Secuencia C-3 (HMI)</h4><div class="btns">${['PREP_C3','LOAD_C3','UNLOAD_C3'].map(b=>`<button class="ob" data-b="${b}">${BTNLBL[b]}</button>`).join('')}</div>
+    <div class="row"><span>Paso</span><b>${S.c3||'—'}</b></div><div class="row"><span>ΔP PT910 – PIT704</span><b>${fmt(S.PT910-S.PIT704,2)} kg/cm²</b></div>
+    <div class="row"><span>ZV705 (permite UV-05)</span><b>${S.ZV705?'ENERGIZADA':'—'}</b></div><div class="row"><span>CR2.1 FLUOR</span><b>${cr21()?'CERRADO':'abierto'}</b></div>
+    <div class="row"><span>Selector mínimo FCS102</span><b>${S.sel} (FCR102 ${fmt(S.fcr102,0)} %)</b></div></div>
+   ${fp('pic101','PIC101','presión succión (PT910)','kg/cm²',20,40,S.PT910,1)}
+   ${fp('pic102','PIC102','limitador presión descarga (PT05)','kg/cm²',40,80,S.PT05,1)}
+   ${fp('tic103','TIC103','limitador T4 de la GT','°C',750,780,S.T4,0)}
+   <div class="fp"><h4>Nota operativa</h4><p class="small">Bajo 50 % de apertura, cerrar PCV04 tiene poco efecto sobre T4. Si T4 se acerca a 775 °C hay que bajar carga del generador o producción de planta.</p></div>`;
+}
+function fieldItem(title,desc,state,ok,btn){return `<div class="fi"><h4>${title}</h4><p>${desc}</p><div>Estado: <span class="state ${ok?'ok':'no'}">${state}</span></div><div class="btns">${btn}</div></div>`;}
+function renderCampo(){
+  const b=(t,fn)=>`<button class="ob" onclick="${fn};render(true)">${t}</button>`;
+  $('#field').innerHTML=[
+    fieldItem('HOV 702 – bypass succión manual','Paso I0. Permite presurizar el C-3 (PIC702 / PCV702).',S.hov702?'ABIERTA':'cerrada',S.hov702,b(S.hov702?'Cerrar':'Abrir','S.hov702=!S.hov702;msg(\'OP\',\'CAMPO: HOV702 \'+(S.hov702?\'abierta\':\'cerrada\'))')),
+    fieldItem('SEL SULZER – panel FLUOR','Condición de PARTIDA (S9). ¡Moverlo con el tren en marcha dispara la turbina!',S.selSulzer?'SULZER SELECCIONADO':'no seleccionado',S.selSulzer,b('Conmutar','S.selSulzer=!S.selSulzer;msg(\'OP\',\'CAMPO: SEL SULZER \'+(S.selSulzer?\'ON\':\'OFF\'))')),
+    fieldItem('Acoplamiento de partida – mango rojo','Si aparece «ACOPLAMIENTO NO ENGANCHADO»: alinear dientes con la caja de la turbina de arranque y retirar el mango.',S.aligned?'alineado':'dientes desalineados',S.aligned,b('Alinear dientes','S.aligned=true;msg(\'OP\',\'CAMPO: dientes del acoplamiento alineados, mango retirado\')')),
+    fieldItem('Panel FLUOR – botón inicio','Energiza UV-01…UV-05 (antes de operar el C-3).',S.fluor?'INICIADO':'—',S.fluor,b('Pulsar inicio','S.fluor=true;msg(\'OP\',\'CAMPO: panel FLUOR iniciado, UV-01..05 energizadas\')')),
+    fieldItem('UV-01 – entrada de proceso','Abrir manualmente tras el inicio FLUOR.',S.uv01?'ABIERTA':'cerrada',S.uv01,b(S.uv01?'Cerrar':'Abrir','if(!S.fluor){msg(\'OP\',\'UV-01 sin energía: falta inicio panel FLUOR\')}else{S.uv01=!S.uv01;msg(\'OP\',\'CAMPO: UV-01 \'+(S.uv01?\'abierta\':\'cerrada\'))}')),
+    fieldItem('Ventiladores radiador E-8','1º antes de C1; 2º a 10 kg/cm²; 3º a 15 kg/cm²; más si la salida supera 30 °C.',S.e8+' en marcha · salida '+fmt(S.Tgas,0)+' °C',S.Tgas<=30,b('− Parar uno','S.e8=Math.max(0,S.e8-1)')+b('+ Arrancar uno','S.e8=Math.min(6,S.e8+1);msg(\'OP\',\'CAMPO: ventiladores E-8 = \'+S.e8)')),
+    fieldItem('HOV 701 – succión 16"','Abrir lentamente (~5 min) cuando aparezca READY TO LOAD.',fmt(S.hov701,0)+' % '+(S.hov701Cmd?'(abriendo)':''),S.hov701>=99.5,b('Abrir lentamente','if(S.PT910-S.PIT704>5.5){msg(\'WA\',\'CAMPO: apertura de HOV701 con ΔP alto\');fault(\'Maniobra de campo: HOV701 abierta con ΔP \'+fmt(S.PT910-S.PIT704,1)+\' kg/cm² (> 5,5)\',\'Abra HOV701 solo cuando aparezca READY TO LOAD (ΔP PT910–PIT704 < 5,5 kg/cm²).\',2)}S.hov701Cmd=100')+b('Cerrar','S.hov701Cmd=0')),
+    fieldItem('UV-05 – salida C-3','Solo se puede abrir con ZV705 energizada (C1, listo para cargar). Abrir local y lento.',S.uv05?'ABIERTA':'cerrada',S.uv05,b(S.uv05?'Cerrar':'Abrir','if(!S.ZV705&&!S.uv05){fault(\'Maniobra de campo: intento de abrir UV-05 sin ZV705 energizada\',adviceFor(\'UV-05\'),2)}else{S.uv05=!S.uv05;msg(\'OP\',\'CAMPO: UV-05 \'+(S.uv05?\'abierta\':\'cerrada\'))}')),
+    fieldItem('Expansores C1 y C2','Acción ENAP tras CARGAR C-3.',S.expanders?'EN MARCHA':'—',S.expanders,b('Poner en marcha','if(S.c3!==\'C2\'){msg(\'OP\',\'Primero cargue el C-3 (C2)\')}else{S.expanders=true;msg(\'OP\',\'CAMPO: expansores C1/C2 en marcha\')}')),
+    fieldItem('Poliducto a Cabo Negro','Acción ENAP tras CARGAR C-3.',S.caboNegro?'ABIERTO':'—',S.caboNegro,b('Abrir','if(S.c3!==\'C2\'){msg(\'OP\',\'Primero cargue el C-3 (C2)\')}else{S.caboNegro=true;msg(\'OP\',\'CAMPO: poliducto a Cabo Negro abierto\')}')),
+    fieldItem('UV-02 – bypass de planta','Cerrar lentamente y sin interrupción tras CARGAR C-3.',S.uv02?'ABIERTA':'CERRADA',!S.uv02,b('Cerrar lentamente','if(S.c3!==\'C2\'){msg(\'OP\',\'Primero cargue el C-3 (C2)\')}else{S.uv02=false;msg(\'OP\',\'CAMPO: UV-02 cerrada\')}')),
+    fieldItem('Gas combustible PT401','Debe estar > 13 kg/cm² para la ignición.',fmt(S.PT401,1)+' kg/cm²',S.PT401>13,b('Normalizar presión','S.PT401=16;msg(\'OP\',\'CAMPO: gas combustible normalizado\')'))
+  ].join('');
+}
+function renderAlm(){
+  $('#alm').innerHTML='<tr><th>Hora sim</th><th>Tipo</th><th>Mensaje</th></tr>'+S.msgs.slice(0,250).map(m=>`<tr class="${m.type}"><td>${hms(m.t)}</td><td>${TYPELBL[m.type]}</td><td>${m.text}</td></tr>`).join('');
+}
+function renderMis(){
+  $('#mis').innerHTML=MIS.map(([k,t])=>`<li class="${S.mis[k]!==undefined?'ok':''}">${S.mis[k]!==undefined?'✔ ':''}${t}${S.mis[k]!==undefined?` <span class="small">(${hms(S.mis[k])})</span>`:''}</li>`).join('');
+  $('#score').textContent=`Puntaje: ${score()} · Paradas del Sulzer: ${S.trips} · Aperturas 52G por protección: ${S.brkTrips} · Botones enclavados: ${S.errors}`;
+}
+function buildEvents(){
+  const ev=[['Disparo SOLAR GT1','evTrip(0)'],['Disparo SOLAR GT2','evTrip(1)'],['+0,8 MW carga red','evLoad(0.8)'],['−0,8 MW carga red','evLoad(-0.8)'],['Caída gas combustible','evGas()'],['Falla grave generador (SD → ESD GEN)','evESD()'],['Reiniciar escenario normal','restart(\'normal\')'],['Reiniciar con fallas ocultas','restart(\'hard\')']];
+  $('#events').innerHTML=ev.map(([t,f])=>`<button class="ob" onclick="${f};render(true)">${t}</button>`).join('');
+}
+function renderSettings(force){
+  if(!force && document.activeElement && document.activeElement.tagName==='INPUT' && document.activeElement.closest('#settings')) return;
+  $('#settings').innerHTML=`
+   <div class="fp"><h4>Ambiente y red</h4>
+    <div class="row"><span>Temperatura ambiente</span><span><input type="number" value="${S.amb}" min="-10" max="30" onchange="S.amb=clamp(+this.value,-10,30)"> °C</span></div>
+    <div class="row"><span>Carga base red Posesión (sim)</span><span><input type="number" value="${S.gridBase}" step="0.1" min="0.3" max="4" onchange="S.gridBase=clamp(+this.value,0.3,4)"> MW</span></div>
+    <div class="row"><span>Pmax de cada Solar (sim)</span><span><input type="number" value="${S.solar[0].Pmax}" step="0.1" min="0.5" max="4" onchange="S.solar.forEach(s=>s.Pmax=clamp(+this.value,0.5,4))"> MW</span></div></div>
+   <div class="fp"><h4>Ayudas</h4>
+    <div class="row"><span>Confirmación de botones (PCS7)</span><input type="checkbox" ${S.confirmBtns?'checked':''} onchange="S.confirmBtns=this.checked"></div>
+    <div class="row"><span>Mostrar «Siguiente paso»</span><input type="checkbox" ${S.hints?'checked':''} onchange="S.hints=this.checked;render(true)"></div>
+    <p class="small">Escenario actual: <b>${S.scn==='hard'?'con fallas ocultas':'normal'}</b>.</p></div>`;
+}
+function evTrip(i){const s=S.solar[i]; if(!s.on){msg('OP',s.name+' ya está fuera');return;} s.on=false;s.P=0;S.everTripSolar=true; if(S.flame&&S.main==='S22') S.solarTripT=S.t; msg('AL',`${s.name} DISPARÓ (evento instructor) – su carga pasa instantáneamente al resto de la red`);}
+function evLoad(d){S.gridEv+=d;msg('WA',`Cambio de carga en la red: ${d>0?'+':''}${fmt(d,1)} MW`);}
+function evGas(){S.PT401=10.2;msg('WA','Caída de presión de gas combustible PT401 (evento instructor)');}
+function evESD(){ if(!S.flame){msg('OP','La turbina no está en marcha');return;} trip('ESD GEN','SD GENERATOR FAILURE desde panel generador ABB (ESD GEN) – detiene el tren'); }
+
+let lastFull=0;
+function render(force){
+  $('#clock').textContent=hms(S.t);
+  const un=S.msgs.find(m=>!m.ack);
+  const mt=$('#msgtxt'); mt.className=un?'m-'+un.type:''; mt.textContent=un?`${hms(un.t)}  ${TYPELBL[un.type]}: ${un.text}`:'—';
+  $('#modeind').textContent=S.mode==='AUTO'?'AUTOMÁTICO':'MANTENIMIENTO'; $('#modeind').className='tag '+(S.mode==='AUTO'?'g':'');
+  kpis();
+  const al=S.msgs.some(m=>!m.ack&&m.type==='AL'), wa=S.msgs.some(m=>!m.ack&&m.type==='WA');
+  const fl=$('#fl-alm'); if(fl){fl.className='flag '+(al?'A':wa?'W':''); fl.textContent=al?'A':wa?'W':'';}
+  if(cur==='seq') renderSeq();
+  if(cur==='tren') renderTren();
+  if(cur==='gen') renderGen(force);
+  if(cur==='c3') renderC3(force);
+  if(cur==='campo') renderCampo();
+  if(cur==='alm') renderAlm();
+  if(cur==='mis'){ renderMis(); renderSettings(force); }
+  if(cur==='rep' && force){ showReport(); }
+}
+
+
+/* ===================== REPORTE ===================== */
+let repShown=false;
+const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const SEVLBL=['Observación','Enclavado','Maniobra','Interruptor / red','Parada Sulzer'];
+function reportInner(){
+  const now=new Date(), st=S.stat;
+  const nMis=Object.keys(S.mis).length;
+  const fl=[...S.faults].sort((a,b)=>b.sev-a.sev||a.t-b.t);
+  const cnt=k=>S.faults.filter(f=>f.sev===k).length;
+  const fmtT=x=>hms(x);
+  /* observaciones derivadas de estadísticas */
+  const obs=[];
+  if(st.t4High>30) obs.push([`T4 sobre 775 °C durante ${fmtT(st.t4High)} (máx. ${fmt(st.maxT4,0)} °C)`,'Opere con margen de T4: si se acerca a 775 °C baje carga del generador o de la planta; un SOLAR que se pierda en ese momento puede llevar al disparo.']);
+  if(st.tgasHigh>120) obs.push([`Gas a la salida del E-8 sobre 30 °C durante ${fmtT(st.tgasHigh)}`,'Arranque ventiladores del E-8 según la presión de succión (2º a 10 y 3º a 15 kg/cm²) para mantener 25–30 °C.']);
+  if(st.fansLate>120) obs.push([`Ventiladores E-8 atrasados respecto a la presión de succión durante ${fmtT(st.fansLate)}`,'Siga la regla de la narrativa: 1º antes de C1, 2º a 10 kg/cm², 3º a 15 kg/cm².']);
+  if(st.refusals>10) obs.push([`${st.refusals} impulsos rechazados por los Woodward (SOLAR en límite)`,'Revise la consigna de JIC101 o la capacidad de los SOLAR: la UCP no mide su potencia (SGTxPOW sin cablear).']);
+  if(S.brk&&st.minPbbc<0.1) obs.push([`El BBC operó con carga muy baja (mín. ${fmt(st.minPbbc,2)} MW)`,'Cerca de la inversión de potencia: mantenga al menos 0,2–0,3 MW en el BBC.']);
+  const allProb=fl.map(f=>[f.t,f.sev,f.text,f.advice,f.step]).concat(obs.map(o=>[null,0,o[0],o[1],'—']));
+  /* conclusión */
+  let concl;
+  if(!S.stepsLog.length) concl='No se registraron pasos de secuencia: el ejercicio no se inició.';
+  else {
+    const parts=[];
+    parts.push(`Se completaron ${nMis} de ${MIS.length} misiones${S.done.has('S22')?', con la turbina llevada a 3600 rpm':' y la turbina no alcanzó 3600 rpm'}.`);
+    if(S.trips) parts.push(`Hubo ${S.trips} parada(s) del Sulzer: es el punto más importante a corregir.`);
+    if(S.brkTrips) parts.push(`El interruptor del BBC abrió ${S.brkTrips} vez/veces por protección.`);
+    if(cnt(1)) parts.push(`Se pulsaron ${cnt(1)} botones con el paso enclavado; revise las condiciones antes de operar.`);
+    if(cnt(2)) parts.push(`Se registraron ${cnt(2)} maniobra(s) incorrecta(s) de campo o de sincronización.`);
+    if(!S.trips&&!S.brkTrips&&!cnt(1)&&!cnt(2)) parts.push('No se registraron errores de operación.');
+    concl=parts.join(' ');
+  }
+  const misRows=MIS.map(([k,t])=>`<tr><td>${S.mis[k]!==undefined?'✔ Cumplida':'Pendiente'}</td><td>${esc(t)}</td><td>${S.mis[k]!==undefined?fmtT(S.mis[k]):'—'}</td></tr>`).join('');
+  const seen=new Set(), stepRows=S.stepsLog.filter(x=>{const k=x.id;if(seen.has(k))return false;seen.add(k);return true;}).map(x=>`<tr><td>${fmtT(x.t)}</td><td>${x.id}</td><td>${esc(STEP[x.id].name)}</td></tr>`).join('');
+  const probRows=allProb.length?allProb.map(([t,sev,txt,adv,stp])=>`<tr><td>${t===null?'acumulado':fmtT(t)}</td><td><span class="sev s${sev}">${SEVLBL[sev]}</span></td><td>${esc(txt)}</td><td>${esc(stp)}</td><td>${esc(adv)}</td></tr>`).join(''):'<tr><td colspan="5">Sin problemas registrados.</td></tr>';
+  const actRows=S.acts.slice(-200).map(a=>`<tr><td>${fmtT(a.t)}</td><td>${esc(a.text.replace(/^Operador: /,'HMI: '))}</td></tr>`).join('')||'<tr><td colspan="2">Sin acciones registradas.</td></tr>';
+  const k=(l,v)=>`<div><b>${l}</b><span>${v}</span></div>`;
+  return `
+  <h1>Reporte de práctica – Partida tren Sulzer (GT · C-3 · Generador BBC)</h1>
+  <div class="sub">Simulador de entrenamiento HMI · Planta Posesión · Generado ${now.toLocaleString('es-CL')} · Escenario: ${S.scn==='hard'?'con fallas ocultas':'normal'} · Tiempo simulado: ${fmtT(S.t)}</div>
+  <h2>Resumen</h2>
+  <div class="kp">${k('Puntaje',score())}${k('Misiones',nMis+' / '+MIS.length)}${k('Paradas Sulzer',S.trips)}${k('Aperturas 52G por protección',S.brkTrips)}
+   ${k('Botones enclavados',cnt(1))}${k('Maniobras incorrectas',cnt(2))}${k('T4 máxima',st.maxT4?fmt(st.maxT4,0)+' °C':'—')}${k('Tiempo T4 > 775 °C',fmtT(st.t4High))}
+   ${k('Frecuencia mín/máx (BBC)',st.maxF?fmt(st.minF,2)+' / '+fmt(st.maxF,2)+' Hz':'—')}${k('P BBC máxima',st.maxPbbc?fmt(st.maxPbbc,2)+' MW':'—')}${k('Blackouts red',st.blackouts)}${k('Paso final',S.main+(S.gen?' · '+S.gen:'')+(S.c3?' · '+S.c3:''))}</div>
+  <h2>Conclusión</h2><div class="concl">${esc(concl)}</div>
+  <h2>Lo que está mal y cómo corregirlo</h2>
+  <table><tr><th style="width:70px">Hora sim</th><th style="width:105px">Gravedad</th><th>Problema</th><th style="width:80px">Paso</th><th>Recomendación</th></tr>${probRows}</table>
+  <h2>Misiones</h2><table><tr><th style="width:90px">Estado</th><th>Misión</th><th style="width:80px">Hora sim</th></tr>${misRows}</table>
+  <h2>Pasos de secuencia alcanzados</h2><table><tr><th style="width:80px">Hora sim</th><th style="width:60px">Paso</th><th>Descripción</th></tr>${stepRows||'<tr><td colspan="3">—</td></tr>'}</table>
+  <h2>Lo que hiciste (acciones del operador)</h2><table><tr><th style="width:80px">Hora sim</th><th>Acción</th></tr>${actRows}</table>
+  <div class="foot">Referencias: Narrativa de control 10003162200 · Instrucciones HMI 10003661601 · Diagrama UCP 10003566576. Modelo didáctico: los valores marcados «(sim)» en el simulador son supuestos, no datos del fabricante. Gravedad: Parada Sulzer &gt; Interruptor / red &gt; Maniobra &gt; Enclavado &gt; Observación.</div>`;
+}
+function showReport(){ $('#repbox').innerHTML=reportInner(); repShown=true; $('#repnote').textContent='Reporte actualizado a '+hms(S.t)+' de tiempo simulado.'; }
+function fullReport(){
+  const css=[...document.styleSheets[0].cssRules].map(r=>r.cssText).filter(t=>t.startsWith('#repbox')).join('\n');
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte práctica Sulzer</title><style>body{margin:0;background:#fff}${css}#repbox{border:0;margin:0 auto}</style></head><body><div id="repbox">${reportInner()}</div></body></html>`;
+}
+function dlReport(){
+  showReport();
+  try{ const blob=new Blob([fullReport()],{type:'text/html'}); const a=document.createElement('a'); const d=new Date();
+    a.href=URL.createObjectURL(blob); a.download=`reporte_partida_sulzer_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.html`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    $('#repnote').textContent='Descarga iniciada. Si no aparece, el visor la bloqueó: abra este simulador como archivo HTML local o use «Copiar texto».';
+  }catch(e){ $('#repnote').textContent='El visor bloqueó la descarga: abra el simulador como archivo HTML local o use «Copiar texto».'; }
+}
+function copyReport(){ showReport(); const t=$('#repbox').innerText;
+  try{ navigator.clipboard.writeText(t).then(()=>{$('#repnote').textContent='Texto del reporte copiado al portapapeles.';},()=>{$('#repnote').textContent='No se pudo copiar: seleccione el reporte y use Ctrl+C.';}); }catch(e){ $('#repnote').textContent='No se pudo copiar: seleccione el reporte y use Ctrl+C.'; } }
+function printReport(){ showReport(); try{ window.print(); }catch(e){} $('#repnote').textContent='Si no se abrió el diálogo de impresión, abra el simulador como archivo HTML local (Ctrl+P → Guardar como PDF).'; }
+
+/* ===================== BUCLE ===================== */
+let lastReal=performance.now(), acc=0, rAcc=0;
+function loop(now){
+  const dtr=Math.min(0.25,(now-lastReal)/1000); lastReal=now;
+  let simdt=dtr*S.mult; const h=0.1;
+  while(simdt>1e-9){ const d=Math.min(h,simdt); step(d); simdt-=d; }
+  rAcc+=dtr; if(rAcc>0.2){rAcc=0;render(false);}
+  requestAnimationFrame(loop);
+}
+function restart(scn){ S=newState(scn); simTimers=[]; msg('PROC',`Escenario ${scn==='hard'?'con fallas ocultas':'normal'} cargado. Tren detenido en I0.`); setMult(S.mult); renderSettings(true); render(true); }
+function setMult(m){ S.mult=m; document.querySelectorAll('#top [data-m]').forEach(b=>b.classList.toggle('on',+b.dataset.m===m)); }
+document.querySelectorAll('#top [data-m]').forEach(b=>b.onclick=()=>setMult(+b.dataset.m));
+$('#bReset').onclick=()=>{tryReset();render(true);};
+$('#bAck').onclick=()=>{const u=S.msgs.find(m=>!m.ack); if(u) u.ack=true; render(true);};
+$('#bESD').onclick=()=>ask('¿Ejecutar PARADA DE EMERGENCIA?',()=>{msg('OP','Operador: PARADA EMERGENCIA');doStop(true);},'PARADA EMERGENCIA');
+
+S=newState('normal');
+buildNav(); buildSeq(); buildEvents();
+msg('PROC','Simulador listo. Tren detenido en I0. Empiece por AUTOMÁTICO y las acciones de campo.');
+render(true);
+requestAnimationFrame(loop);
+window.__sim={get S(){return S},step,pressBtn,setMult,restart,solarRef,solarBrk,evTrip,jicToggle};
+</script>
+</body>
+</html>
