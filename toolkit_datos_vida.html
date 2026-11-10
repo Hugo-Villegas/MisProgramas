@@ -1,0 +1,1239 @@
+<title>Toolkit IPM Datos de Vida</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: índice tabular de herramientas (como el Toolkit original) → ficha de cálculo → hoja de informe A4 en B/N */
+:root{
+  --paper:#f2f4f5;
+  --panel:#ffffff;
+  --panel-2:#eaeef0;
+  --ink:#15191c;
+  --ink-soft:#5a646b;
+  --line:#d3dade;
+  --accent:#0b5f6d;
+  --accent-soft:#dfecee;
+  --flag:#8a5200;
+  --font-sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#111518;--panel:#1a1f23;--panel-2:#222a2e;--ink:#e7ecee;--ink-soft:#9aa5ac;
+    --line:#2e3840;--accent:#4fb6c7;--accent-soft:#1d3037;--flag:#d79b4a;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111518;--panel:#1a1f23;--panel-2:#222a2e;--ink:#e7ecee;--ink-soft:#9aa5ac;
+  --line:#2e3840;--accent:#4fb6c7;--accent-soft:#1d3037;--flag:#d79b4a;color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-sans);font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:26px 44px}
+header.top{display:flex;flex-direction:column;gap:5px;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:20px}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+h1{font-size:clamp(25px,4.2vw,36px);line-height:1.1;margin:0;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+.lede{color:var(--ink-soft);max-width:66ch;margin:3px 0 0;font-size:14.5px}
+
+/* ---- índice tabular ---- */
+.idx{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line)}
+.idx th{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);font-weight:500;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.idx td{border-bottom:1px solid var(--line);padding:11px 12px;vertical-align:top}
+.idx tr:last-child td{border-bottom:0}
+.idx tr.sect td{background:var(--panel-2);padding:6px 12px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.idx td.num{font-family:var(--font-mono);font-size:13px;color:var(--ink-soft);width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.idx td.thumb{width:146px}
+.idx td.thumb svg{width:132px;height:60px;display:block;border:1px solid var(--line);background:var(--panel-2);border-radius:3px}
+.idx a.tool{color:var(--accent);font-weight:600;text-decoration:none;border-bottom:1px solid transparent;cursor:pointer;font-size:15px}
+.idx a.tool:hover{border-bottom-color:var(--accent)}
+.idx td.desc{color:var(--ink-soft);font-size:13.5px;line-height:1.5}
+.idx tr.row:hover td{background:var(--accent-soft)}
+@media (max-width:700px){
+  .idx,.idx tbody,.idx tr,.idx td{display:block;width:100%}
+  .idx thead{display:none}
+  .idx tr.row{border-bottom:1px solid var(--line);padding:10px 0}
+  .idx td{border:0;padding:3px 12px}
+  .idx td.num{display:inline-block;width:auto;text-align:left}
+  .idx td.thumb{width:auto}
+  .idx td.thumb svg{width:100%;max-width:220px;height:auto}
+}
+
+/* ---- barra de ficha ---- */
+.crumb{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.btn{font:inherit;font-size:13.5px;cursor:pointer;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 13px}
+.btn:hover{background:var(--panel-2)}
+.btn.key{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:500}
+:root[data-theme="dark"] .btn.key,:root:not([data-theme="light"]) .btn.key{color:#09191d}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .btn.key{color:#fff}}
+.crumb .path{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+section.mod{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:22px}
+@media (max-width:480px){section.mod{padding:15px}}
+section.mod>h2{margin:0;font-size:21px;letter-spacing:-.01em;font-weight:600}
+section.mod>p.note{margin:4px 0 20px;color:var(--ink-soft);font-size:14px;max-width:64ch}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px 16px}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f.wide{grid-column:1/-1}
+label{font-family:var(--font-mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:8px 10px;width:100%;min-width:0}
+input[type=number],textarea{font-family:var(--font-mono);font-size:14px}
+textarea{resize:vertical;min-height:80px;line-height:1.5}
+.hint{font-size:12px;color:var(--ink-soft)}
+.out{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+.grid-out{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.cell{background:var(--panel);padding:10px 13px;min-width:0}
+.cell .k{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);display:block}
+.cell .v{font-family:var(--font-mono);font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;display:block;margin-top:2px;overflow-wrap:anywhere}
+.cell .u{font-size:12px;color:var(--ink-soft);font-weight:400}
+.cell.hi{background:var(--accent-soft)}
+.cell.hi .v{color:var(--accent)}
+.verdict{margin-top:13px;display:flex;gap:9px;align-items:flex-start;font-size:14px;background:var(--panel-2);border-left:3px solid var(--accent);padding:10px 13px;border-radius:0 5px 5px 0}
+.verdict.flag{border-left-color:var(--flag)}
+.verdict .tag{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap;padding-top:3px}
+.sec-t{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:22px 0 8px;padding-top:14px;border-top:1px dashed var(--line)}
+.sec-t b{color:var(--ink);font-weight:600}
+.linkrow{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+figure{margin:18px 0 0}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:12px;color:var(--ink-soft);margin-top:6px;font-family:var(--font-mono)}
+.tbl-scroll{overflow-x:auto;margin-top:16px}
+table.data{border-collapse:collapse;font-family:var(--font-mono);font-size:13px;font-variant-numeric:tabular-nums;width:100%;min-width:360px}
+table.data th,table.data td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.data th{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);font-weight:500}
+table.data td:first-child,table.data th:first-child{text-align:left}
+table.data tr.mark td{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.assump{margin-top:18px;font-size:13px;color:var(--ink-soft);border-top:1px dashed var(--line);padding-top:12px}
+.assump b{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;color:var(--ink-soft);display:block}
+footer.end{margin-top:28px;border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--ink-soft);max-width:72ch}
+code{font-family:var(--font-mono);font-size:.92em;background:var(--panel-2);padding:1px 5px;border-radius:4px}
+.err{color:var(--flag)}
+
+/* ---- hoja de informe: siempre blanco y negro ---- */
+.rbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:16px}
+.rbar .f{max-width:230px}
+.sheet{
+  background:#fff;color:#000;border:1px solid #bbb;
+  width:100%;max-width:210mm;margin:0 auto;padding:14mm 15mm;
+  font-size:10.5pt;line-height:1.42;
+}
+.sheet *{color:#000;border-color:#999}
+.sheet .sh-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1.5pt solid #000;padding-bottom:5pt}
+.sheet .sh-head .org{font-family:var(--font-mono);font-size:7.5pt;letter-spacing:.12em;text-transform:uppercase;color:#444}
+.sheet .sh-head .doc{font-family:var(--font-mono);font-size:7.5pt;text-align:right;color:#444;white-space:nowrap}
+.sheet h2{font-size:15pt;margin:8pt 0 1pt;font-weight:700;letter-spacing:-.01em}
+.sheet .sub{font-size:9pt;color:#333;margin:0 0 9pt}
+.sheet h3{font-family:var(--font-mono);font-size:7.5pt;letter-spacing:.13em;text-transform:uppercase;color:#444;margin:10pt 0 4pt;border-bottom:.5pt solid #999;padding-bottom:2pt;font-weight:500}
+.sheet table.kv{width:100%;border-collapse:collapse;font-size:9pt}
+.sheet table.kv td{padding:2.5pt 6pt 2.5pt 0;border-bottom:.5pt dotted #bbb;vertical-align:top}
+.sheet table.kv td.k{width:46%;color:#333}
+.sheet table.kv td.v{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.sheet .two{display:grid;grid-template-columns:1fr 1fr;gap:0 18pt}
+.sheet .res{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#999;border:1px solid #999}
+.sheet .res .cell{background:#fff;padding:4pt 5pt}
+.sheet .res .cell.hi{background:#ececec}
+.sheet .res .k{font-family:var(--font-mono);font-size:6.8pt;letter-spacing:.07em;text-transform:uppercase;color:#444;display:block}
+.sheet .res .v{font-family:var(--font-mono);font-size:11pt;font-weight:600;display:block;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.sheet .res .u{font-size:7.5pt;font-weight:400;color:#444}
+.sheet figure{margin:7pt auto 0;max-width:122mm}
+.sheet figcaption{font-size:7.5pt;color:#444;text-align:center;font-family:var(--font-mono);margin-top:3pt}
+.sheet svg rect{stroke:#000;fill:none}
+.sheet svg line{stroke:#999}
+.sheet svg path{stroke:#000}
+.sheet svg circle{fill:#000}
+.sheet svg text{fill:#333}
+.sheet .figs.n2{display:grid;grid-template-columns:1fr 1fr;gap:0 10pt}
+.sheet .figs.n2 figure{max-width:none;margin-top:6pt}
+.sheet .figs.n2 svg text{font-size:15px}
+.sheet.dense{font-size:9.5pt;line-height:1.35}
+.sheet.dense h3{margin:7pt 0 3pt}
+.sheet.dense h2{margin:6pt 0 1pt}
+.sheet.dense .sub{margin-bottom:5pt}
+.sheet.dense .res .cell{padding:3pt 5pt}
+.sheet.dense .foot{margin-top:7pt}
+.sheet.dense .sign{margin-top:10pt}
+.sheet p.lect{font-size:9.5pt;margin:3pt 0 0;text-align:justify}
+.sheet .foot{margin-top:11pt;border-top:.5pt solid #999;padding-top:5pt;display:grid;grid-template-columns:1fr 46mm;gap:14pt;font-size:7.8pt;color:#333}
+.sheet .sign{border-top:.5pt solid #000;padding-top:3pt;margin-top:16pt;text-align:center;font-size:8pt}
+@page{size:A4 portrait;margin:12mm}
+@media print{
+  body{background:#fff}
+  .noprint,header.top,footer.end,.rbar{display:none!important}
+  .wrap{padding:0;max-width:none}
+  .sheet{border:0;padding:0;max-width:none;width:100%;font-size:10pt}
+  .sheet figure{max-width:118mm}
+}
+
+/* ---- extensión: tablas comparativas y barras de histograma ---- */
+table.data td.l,table.data th.l{text-align:left}
+table.data tbody tr[data-id]{cursor:pointer}
+table.data tbody tr[data-id]:hover td{background:var(--accent-soft)}
+table.data td.par{font-size:12px;color:var(--ink-soft)}
+table.data tr.mark td.par{color:var(--accent)}
+table.data tr.na td{color:var(--ink-soft)}
+.hint.st{min-height:18px;margin:10px 0 0}
+.sheet table.data{font-size:7.3pt;min-width:0}
+.sheet table.data th,.sheet table.data td{padding:1.6pt 4pt;border-bottom:.5pt dotted #bbb}
+.sheet table.data th{font-size:6.3pt;border-bottom:.5pt solid #777}
+.sheet table.data td.par{font-size:6.8pt}
+.sheet table.data tr.mark td{background:#ececec;color:#000;font-weight:600}
+.sheet .tbl-scroll{overflow:visible;margin-top:2pt}
+.sheet svg rect.bar{fill:#d2d2d2;fill-opacity:1;stroke:#000}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">Ingeniería y Planificación del Mantenimiento · ENAP Magallanes</span>
+  <h1>Toolkit IPM · Datos de vida</h1>
+  <p class="lede">Extensión del Toolkit de Confiabilidad IPM. Revisa si tus tiempos entre fallas sirven para ajustar una distribución e identifica cuál les corresponde con Kolmogorov-Smirnov y Anderson-Darling, como el Distribution ID de Minitab. Cada herramienta trae datos de ejemplo y genera el mismo informe ejecutivo de una página en blanco y negro.</p>
+</header>
+
+<!-- ÍNDICE -->
+<div id="v-index">
+  <table class="idx"><thead><tr><th></th><th>Concepto</th><th>Herramienta</th><th>Qué calcula</th></tr></thead>
+  <tbody id="idx-body"></tbody></table>
+</div>
+
+<!-- FICHAS -->
+<div id="v-calc" hidden>
+  <div class="crumb noprint">
+    <button class="btn" type="button" id="back-idx">← Índice</button>
+    <button class="btn key" type="button" id="go-report">Informe ejecutivo</button>
+    <span class="path" id="crumb-path"></span>
+  </div>
+  <main id="main">
+
+  <section class="mod" id="m-verif" hidden>
+    <h2>Verificación previa de los datos</h2>
+    <p class="note">Antes de ajustar una distribución a tiempos entre fallas, comprueba que no tengan tendencia ni dependencia y que no haya atípicos. Si hay tendencia, una distribución única no describe al equipo: corresponde Crow-AMSAA.</p>
+    <div class="fields">
+      <div class="f wide"><label for="v-data">Tiempos entre fallas, en orden cronológico (h)</label>
+        <textarea id="v-data">620
+860
+830
+740
+940
+430
+760
+430
+630
+370
+440
+330</textarea>
+        <span class="hint">Un valor por línea, coma o espacio, <b>en el orden en que ocurrieron las fallas</b>. Acepta coma decimal. Son los mismos tiempos del ejemplo de Crow-AMSAA del Toolkit, expresados como diferencias.</span></div>
+      <div class="f"><label for="v-a">Significancia α</label>
+        <select id="v-a"><option value="0.01">0,01</option><option value="0.05" selected>0,05</option><option value="0.10">0,10</option></select></div>
+    </div>
+    <div class="out" id="v-out"></div>
+    <div class="assump"><b>Supuestos</b>Laplace usa los tiempos acumulados cerrando la observación en la última falla. Mann-Kendall es no paramétrico y se aplica a los TBF en orden. La autocorrelación de rezago 1 es una aproximación normal y pierde potencia con menos de 10 datos. Los atípicos se buscan con el criterio de Tukey sobre ln(TBF), que es lo apropiado para datos asimétricos.</div>
+  </section>
+
+  <section class="mod" id="m-ident" hidden>
+    <h2>Identificación de distribución</h2>
+    <p class="note">Ajusta 13 distribuciones por máxima verosimilitud y las compara con Kolmogorov-Smirnov y Anderson-Darling. Presiona Analizar para calcular; tocar una fila de la tabla cambia los parámetros y gráficos mostrados.</p>
+    <div class="fields">
+      <div class="f wide"><label for="i-data">Datos (h) — tiempos entre fallas u otra variable de vida</label>
+        <textarea id="i-data"></textarea>
+        <span class="hint">Un valor por línea, coma o espacio. Acepta coma decimal. Puedes pegar la columna desde Excel: el encabezado se ignora. Datos completos, sin censura.</span></div>
+      <div class="f"><label for="i-a">Significancia α</label>
+        <select id="i-a"><option value="0.01">0,01</option><option value="0.05" selected>0,05</option><option value="0.10">0,10</option></select></div>
+      <div class="f"><label for="i-b">p-valores por bootstrap</label>
+        <select id="i-b"><option value="200" selected>200 simulaciones</option><option value="500">500 simulaciones</option><option value="1000">1000 simulaciones</option><option value="0">Sin bootstrap (orientativo)</option></select></div>
+    </div>
+    <div class="linkrow noprint">
+      <button class="btn key" type="button" id="i-go">Analizar datos</button>
+      <button class="btn" type="button" id="i-sample">Datos de ejemplo</button>
+      <button class="btn" type="button" id="i-fileb">Cargar .csv / .txt</button>
+      <input type="file" id="i-file" accept=".csv,.txt,.tsv,text/plain" hidden>
+    </div>
+    <p class="hint st noprint" id="i-status" aria-live="polite"></p>
+    <div class="out" id="i-out"></div>
+    <div class="assump"><b>Supuestos</b>Datos independientes e idénticamente distribuidos (compruébalo en la verificación previa), completos y sin censura. Parámetros por máxima verosimilitud; en los modelos 3P el umbral se perfila bajo el mínimo y puede quedar pegado a él cuando la verosimilitud no tiene máximo definido. El p-valor sale de simular desde cada ajuste y reajustar, porque la tabla clásica de KS no vale con parámetros estimados de los mismos datos. Minitab usa tablas para el p de Anderson-Darling, así que los números pueden diferir. Un p alto indica que no hay evidencia contra la distribución, no que sea la verdadera.</div>
+  </section>
+
+  </main>
+</div>
+
+<!-- INFORME -->
+<div id="v-report" hidden>
+  <div class="rbar noprint">
+    <button class="btn" type="button" id="back-calc">← Volver al cálculo</button>
+    <button class="btn key" type="button" id="dl-word">Descargar Word (.docx)</button>
+    <div class="f"><label for="rp-eq">Equipo o instalación</label><input type="text" id="rp-eq" value="Compresor AJAX DPC-2804 N°1 — ECA Arenal"></div>
+    <div class="f"><label for="rp-an">Elaborado por</label><input type="text" id="rp-an" value="Hugo Villegas Barría"></div>
+    <div class="f"><label for="rp-cod">Código</label><input type="text" id="rp-cod" value="IPM-CONF-002"></div>
+  </div>
+  <p class="hint noprint" id="word-msg" aria-live="polite"></p>
+  <p class="hint noprint" id="print-hint"></p>
+  <article class="sheet" id="sheet"></article>
+</div>
+
+<footer class="end noprint">
+  Implementación propia de métodos estándar: Laplace y Mann-Kendall para tendencia, Tukey para atípicos, máxima verosimilitud para los parámetros, Kolmogorov-Smirnov y Anderson-Darling con p-valor por bootstrap paramétrico. Los resultados son estimaciones estadísticas y dependen por completo de la calidad del dato de entrada: valida los tiempos de falla antes de llevar cualquier cifra a un informe firmado.
+</footer>
+</div>
+
+<script>
+/*MATH-START*/
+'use strict';
+// ---------- funciones especiales ----------
+function erfSeries(x){
+  var ax=Math.abs(x), sum=ax, term=ax, n=0, x2=ax*ax, add;
+  do{ n++; term*=-x2/n; add=term/(2*n+1); sum+=add; }while(Math.abs(add)>1e-17*Math.abs(sum) && n<300);
+  var r=2/Math.sqrt(Math.PI)*sum; return x<0?-r:r;
+}
+function erfcCF(x){ // x >= 2.5
+  var f=x; for(var k=80;k>=1;k--){ f=x+(k/2)/f; }
+  return Math.exp(-x*x)/Math.sqrt(Math.PI)/f;
+}
+function erfc(x){
+  if(x<0) return 2-erfc(-x);
+  if(x<2.5) return 1-erfSeries(x);
+  return erfcCF(x);
+}
+function pnorm(z){ return 0.5*erfc(-z/Math.SQRT2); }
+function qnorm(p){
+  if(p<=0) return -Infinity; if(p>=1) return Infinity;
+  var a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  var b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  var c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  var d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  var pl=0.02425, x, q, r;
+  if(p<pl){ q=Math.sqrt(-2*Math.log(p)); x=(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  else if(p>1-pl){ q=Math.sqrt(-2*Math.log(1-p)); x=-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  else { q=p-0.5; r=q*q; x=(((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
+  var e=pnorm(x)-p, u=e*Math.sqrt(2*Math.PI)*Math.exp(x*x/2);
+  return x-u/(1+x*u/2);
+}
+function lgamma(x){
+  if(x<0.5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x)))-lgamma(1-x);
+  x-=1;
+  var g=7, c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  var a=c[0], t=x+g+0.5;
+  for(var i=1;i<g+2;i++) a+=c[i]/(x+i);
+  return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);
+}
+function digamma(x){
+  var r=0; while(x<6){ r-=1/x; x+=1; }
+  var f=1/(x*x);
+  return r+Math.log(x)-0.5/x-f*(1/12-f*(1/120-f*(1/252-f*(1/240-f/132))));
+}
+function trigamma(x){
+  var r=0; while(x<6){ r+=1/(x*x); x+=1; }
+  var f=1/(x*x);
+  return r+1/x+f/2+(1/x)*f*(1/6-f*(1/30-f*(1/42-f/30)));
+}
+function pgammaReg(a,x){
+  if(x<=0) return 0;
+  var lg=lgamma(a);
+  if(x<a+1){
+    var ap=a, sum=1/a, del=sum;
+    for(var n=0;n<1000;n++){ ap+=1; del*=x/ap; sum+=del; if(Math.abs(del)<Math.abs(sum)*1e-16) break; }
+    return Math.min(1,sum*Math.exp(-x+a*Math.log(x)-lg));
+  }
+  var b=x+1-a, c=1/1e-300, d=1/b, h=d;
+  for(var i=1;i<1000;i++){
+    var an=-i*(i-a); b+=2; d=an*d+b; if(Math.abs(d)<1e-300) d=1e-300;
+    c=b+an/c; if(Math.abs(c)<1e-300) c=1e-300; d=1/d;
+    var del2=d*c; h*=del2; if(Math.abs(del2-1)<1e-15) break;
+  }
+  return Math.max(0,1-Math.exp(-x+a*Math.log(x)-lg)*h);
+}
+function qgammaStd(a,u){
+  var z=qnorm(u), t=1-1/(9*a)+z/(3*Math.sqrt(a)), y=a*t*t*t;
+  if(!(y>0)) y=Math.exp((Math.log(u)+lgamma(a+1))/a);
+  var lo=0, hi=Infinity, lg=lgamma(a);
+  for(var i=0;i<80;i++){
+    var err=pgammaReg(a,y)-u;
+    if(Math.abs(err)<1e-13) break;
+    if(err>0) hi=y; else lo=y;
+    var pdf=Math.exp((a-1)*Math.log(y)-y-lg), yn=y-err/pdf;
+    if(!(yn>lo && yn<hi) || !isFinite(yn)) yn=isFinite(hi)?(lo+hi)/2:y*2;
+    y=yn;
+  }
+  return y;
+}
+function mean(a){ var s=0; for(var i=0;i<a.length;i++) s+=a[i]; return s/a.length; }
+function nelderMead(f,x0,steps,maxIt){
+  var n=x0.length, pts=[x0.slice()], i, j;
+  for(i=0;i<n;i++){ var p=x0.slice(); p[i]+=steps[i]; pts.push(p); }
+  var vals=pts.map(f);
+  function mv(a,b,t){ return a.map(function(v,k){ return v+t*(b[k]-v); }); }
+  for(var it=0;it<(maxIt||400);it++){
+    var idx=vals.map(function(v,k){return k;}).sort(function(a,b){return vals[a]-vals[b];});
+    pts=idx.map(function(k){return pts[k];}); vals=idx.map(function(k){return vals[k];});
+    if(Math.abs(vals[n]-vals[0])<1e-12*(Math.abs(vals[0])+1e-12)) break;
+    var c=new Array(n).fill(0);
+    for(i=0;i<n;i++) for(j=0;j<n;j++) c[j]+=pts[i][j]/n;
+    var xr=mv(c,pts[n],-1), fr=f(xr);
+    if(fr<vals[0]){ var xe=mv(c,pts[n],-2), fe=f(xe); if(fe<fr){pts[n]=xe;vals[n]=fe;} else {pts[n]=xr;vals[n]=fr;} }
+    else if(fr<vals[n-1]){ pts[n]=xr; vals[n]=fr; }
+    else {
+      var xc=fr<vals[n]?mv(c,pts[n],-0.5):mv(c,pts[n],0.5), fc=f(xc);
+      if(fc<Math.min(fr,vals[n])){ pts[n]=xc; vals[n]=fc; }
+      else { for(i=1;i<=n;i++){ pts[i]=mv(pts[0],pts[i],0.5); vals[i]=f(pts[i]); } }
+    }
+  }
+  var bi=0; for(i=1;i<=n;i++) if(vals[i]<vals[bi]) bi=i;
+  return pts[bi];
+}
+// ---------- familias base (parámetros por máxima verosimilitud) ----------
+var HALFLN2PI=0.9189385332046727;
+function sd0(x){ var m=mean(x), s=0; for(var i=0;i<x.length;i++) s+=(x[i]-m)*(x[i]-m); return Math.sqrt(s/x.length); }
+function logisticLp(x,mu,s){ var z=Math.abs((x-mu)/s); return -z-Math.log(s)-2*Math.log1p(Math.exp(-z)); }
+function logisticCdf(x,mu,s){ var z=(x-mu)/s; return z>=0?1/(1+Math.exp(-z)):Math.exp(z)/(1+Math.exp(z)); }
+function logisticFit(x){
+  var m=mean(x), s0=sd0(x)*Math.sqrt(3)/Math.PI||1e-9;
+  var r=nelderMead(function(p){
+    var s=Math.exp(p[1]), t=0;
+    for(var i=0;i<x.length;i++) t-=logisticLp(x[i],p[0],s);
+    return isFinite(t)?t:1e300;
+  },[m,Math.log(s0)],[s0,0.3],500);
+  return [r[0],Math.exp(r[1])];
+}
+function levFit(x){
+  var n=x.length, mn=Infinity, mx=-Infinity, i;
+  for(i=0;i<n;i++){ if(x[i]<mn)mn=x[i]; if(x[i]>mx)mx=x[i]; }
+  var R=(mx-mn)||1, m=mean(x), s=sd0(x)||R;
+  function g(b){ var s0=0,s1=0; for(var k=0;k<n;k++){ var w=Math.exp(-(x[k]-mn)/b); s0+=w; s1+=w*x[k]; } return b-m+s1/s0; }
+  var lo=Math.log(1e-9*R), hi=Math.log(1e3*s);
+  for(i=0;i<90;i++){ var mid=(lo+hi)/2; if(g(Math.exp(mid))>0) hi=mid; else lo=mid; }
+  var b=Math.exp((lo+hi)/2), sw=0;
+  for(i=0;i<n;i++) sw+=Math.exp(-(x[i]-mn)/b);
+  return [mn-b*Math.log(sw/n), b];
+}
+var B={};
+B.normal={k:2,pos:false,names:['Media (μ)','Desv. estándar (σ)'],sn:['μ','σ'],
+  fit:function(x){ return [mean(x),sd0(x)||1e-9]; },
+  lp:function(x,p){ var z=(x-p[0])/p[1]; return -Math.log(p[1])-HALFLN2PI-0.5*z*z; },
+  cdf:function(x,p){ return pnorm((x-p[0])/p[1]); },
+  q:function(u,p){ return p[0]+p[1]*qnorm(u); }};
+B.lognormal={k:2,pos:true,names:['Ubicación (μ de ln x)','Escala (σ de ln x)'],sn:['μ','σ'],
+  fit:function(x){ var l=x.map(Math.log); return [mean(l),sd0(l)||1e-9]; },
+  lp:function(x,p){ if(x<=0) return -Infinity; var lx=Math.log(x), z=(lx-p[0])/p[1]; return -lx-Math.log(p[1])-HALFLN2PI-0.5*z*z; },
+  cdf:function(x,p){ return x<=0?0:pnorm((Math.log(x)-p[0])/p[1]); },
+  q:function(u,p){ return Math.exp(p[0]+p[1]*qnorm(u)); }};
+B.exp={k:1,pos:true,names:['Media (θ)'],sn:['θ'],
+  fit:function(x){ return [mean(x)]; },
+  lp:function(x,p){ return x<0?-Infinity:-Math.log(p[0])-x/p[0]; },
+  cdf:function(x,p){ return x<=0?0:1-Math.exp(-x/p[0]); },
+  q:function(u,p){ return -p[0]*Math.log(1-u); }};
+B.exp2={k:2,pos:false,names:['Umbral (c)','Escala (θ)'],sn:['c','θ'],
+  fit:function(x){
+    var n=x.length, mn=Infinity; for(var i=0;i<n;i++) if(x[i]<mn) mn=x[i];
+    var th=n*(mean(x)-mn)/(n-1)||1e-9; return [mn-th/n,th];
+  },
+  lp:function(x,p){ return x<p[0]?-Infinity:-Math.log(p[1])-(x-p[0])/p[1]; },
+  cdf:function(x,p){ return x<=p[0]?0:1-Math.exp(-(x-p[0])/p[1]); },
+  q:function(u,p){ return p[0]-p[1]*Math.log(1-u); }};
+B.weibull={k:2,pos:true,names:['Forma (β)','Escala (η)'],sn:['β','η'],
+  fit:function(x){
+    var n=x.length, lx=new Array(n), i, lm=-Infinity, ml=0;
+    for(i=0;i<n;i++){ lx[i]=Math.log(x[i]); if(lx[i]>lm) lm=lx[i]; ml+=lx[i]; }
+    ml/=n;
+    if(lm-ml<1e-12) return [1000,Math.exp(lm)];
+    function g(k){ var s0=0,s1=0; for(var j=0;j<n;j++){ var w=Math.exp(k*(lx[j]-lm)); s0+=w; s1+=w*lx[j]; } return s1/s0-1/k-ml; }
+    var lo=Math.log(0.02), hi=Math.log(2000);
+    for(i=0;i<50;i++){ var mid=(lo+hi)/2; if(g(Math.exp(mid))>0) hi=mid; else lo=mid; }
+    var k=Math.exp((lo+hi)/2), s=0;
+    for(i=0;i<n;i++) s+=Math.exp(k*(lx[i]-lm));
+    return [k,Math.exp(lm)*Math.pow(s/n,1/k)];
+  },
+  lp:function(x,p){ if(x<=0) return -Infinity; var lx=Math.log(x), ll=Math.log(p[1]); return Math.log(p[0])-ll+(p[0]-1)*(lx-ll)-Math.exp(p[0]*(lx-ll)); },
+  cdf:function(x,p){ return x<=0?0:1-Math.exp(-Math.exp(p[0]*(Math.log(x)-Math.log(p[1])))); },
+  q:function(u,p){ return p[1]*Math.pow(-Math.log(1-u),1/p[0]); }};
+B.gamma={k:2,pos:true,names:['Forma (k)','Escala (θ)'],sn:['k','θ'],
+  fit:function(x){
+    var n=x.length, m=mean(x), ml=0, i;
+    for(i=0;i<n;i++) ml+=Math.log(x[i]);
+    ml/=n;
+    var s=Math.log(m)-ml;
+    if(s<1e-12) return [1e6,m/1e6];
+    var k=(3-s+Math.sqrt((s-3)*(s-3)+24*s))/(12*s);
+    for(i=0;i<40;i++){
+      var kn=k-(Math.log(k)-digamma(k)-s)/(1/k-trigamma(k));
+      if(!(kn>0)) kn=k/2;
+      if(Math.abs(kn-k)<1e-12*k){ k=kn; break; }
+      k=kn;
+    }
+    return [k,m/k];
+  },
+  lp:function(x,p){ return x<=0?-Infinity:(p[0]-1)*Math.log(x)-x/p[1]-lgamma(p[0])-p[0]*Math.log(p[1]); },
+  cdf:function(x,p){ return x<=0?0:pgammaReg(p[0],x/p[1]); },
+  q:function(u,p){ return p[1]*qgammaStd(p[0],u); }};
+B.logistic={k:2,pos:false,names:['Ubicación (μ)','Escala (s)'],sn:['μ','s'],
+  fit:logisticFit,
+  lp:function(x,p){ return logisticLp(x,p[0],p[1]); },
+  cdf:function(x,p){ return logisticCdf(x,p[0],p[1]); },
+  q:function(u,p){ return p[0]+p[1]*Math.log(u/(1-u)); }};
+B.loglogistic={k:2,pos:true,names:['Ubicación (de ln x)','Escala (de ln x)'],sn:['μ','s'],
+  fit:function(x){ return logisticFit(x.map(Math.log)); },
+  lp:function(x,p){ return x<=0?-Infinity:logisticLp(Math.log(x),p[0],p[1])-Math.log(x); },
+  cdf:function(x,p){ return x<=0?0:logisticCdf(Math.log(x),p[0],p[1]); },
+  q:function(u,p){ return Math.exp(p[0]+p[1]*Math.log(u/(1-u))); }};
+B.lev={k:2,pos:false,names:['Ubicación (μ)','Escala (β)'],sn:['μ','β'],
+  fit:levFit,
+  lp:function(x,p){ var z=(x-p[0])/p[1]; return -Math.log(p[1])-z-Math.exp(-z); },
+  cdf:function(x,p){ return Math.exp(-Math.exp(-(x-p[0])/p[1])); },
+  q:function(u,p){ return p[0]-p[1]*Math.log(-Math.log(u)); }};
+B.sev={k:2,pos:false,names:['Ubicación (μ)','Escala (β)'],sn:['μ','β'],
+  fit:function(x){ var r=levFit(x.map(function(v){return -v;})); return [-r[0],r[1]]; },
+  lp:function(x,p){ var z=(x-p[0])/p[1]; return -Math.log(p[1])+z-Math.exp(z); },
+  cdf:function(x,p){ return 1-Math.exp(-Math.exp((x-p[0])/p[1])); },
+  q:function(u,p){ return p[0]+p[1]*Math.log(-Math.log(1-u)); }};
+function llOf(lp){ return function(x,p){ var s=0; for(var i=0;i<x.length;i++){ var l=lp(x[i],p); if(!isFinite(l)) return -Infinity; s+=l; } return s; }; }
+Object.keys(B).forEach(function(k){ B[k].ll=llOf(B[k].lp); });
+// extensión a 3 parámetros: umbral c < mínimo, verosimilitud perfilada
+function make3P(base){
+  var d={k:base.k+1,pos:false,names:['Umbral (c)'].concat(base.names),sn:['c'].concat(base.sn),
+    lp:function(x,p){ return base.lp(x-p[0],p.slice(1)); },
+    cdf:function(x,p){ return base.cdf(x-p[0],p.slice(1)); },
+    q:function(u,p){ return p[0]+base.q(u,p.slice(1)); },
+    fit:function(x){
+      var n=x.length, mn=Infinity, mx=-Infinity, i;
+      for(i=0;i<n;i++){ if(x[i]<mn)mn=x[i]; if(x[i]>mx)mx=x[i]; }
+      var R=(mx-mn)||Math.abs(mn)||1;
+      function shifted(c){ var xs=new Array(n); for(var j=0;j<n;j++) xs[j]=x[j]-c; return xs; }
+      function obj(u){ var xs=shifted(mn-R*Math.pow(10,u)), v=base.ll(xs,base.fit(xs)); return isFinite(v)?v:-1e300; }
+      var U0=-3, U1=0.7, N=36, bi=0, bv=-Infinity;
+      for(i=0;i<=N;i++){ var v=obj(U0+(U1-U0)*i/N); if(v>bv){ bv=v; bi=i; } }
+      var a=U0+(U1-U0)*Math.max(bi-1,0)/N, b=U0+(U1-U0)*Math.min(bi+1,N)/N;
+      var gr=0.6180339887, c1=b-gr*(b-a), c2=a+gr*(b-a), f1=obj(c1), f2=obj(c2);
+      for(i=0;i<28;i++){
+        if(f1>f2){ b=c2; c2=c1; f2=f1; c1=b-gr*(b-a); f1=obj(c1); }
+        else { a=c1; c1=c2; f1=f2; c2=a+gr*(b-a); f2=obj(c2); }
+      }
+      var c=mn-R*Math.pow(10,(a+b)/2), p=[c].concat(base.fit(shifted(c)));
+      p.flag=bi<=1?'borde':'';
+      return p;
+    }};
+  d.ll=llOf(d.lp);
+  return d;
+}
+var FAM=[
+  ['normal','Normal',B.normal],
+  ['lognormal','Lognormal',B.lognormal],
+  ['lognormal3','Lognormal 3P',make3P(B.lognormal)],
+  ['exp','Exponencial',B.exp],
+  ['exp2','Exponencial 2P',B.exp2],
+  ['weibull','Weibull',B.weibull],
+  ['weibull3','Weibull 3P',make3P(B.weibull)],
+  ['gamma','Gamma',B.gamma],
+  ['gamma3','Gamma 3P',make3P(B.gamma)],
+  ['logistic','Logística',B.logistic],
+  ['loglogistic','Loglogística',B.loglogistic],
+  ['lev','Valor extremo máx. (Gumbel)',B.lev],
+  ['sev','Valor extremo mín.',B.sev]
+].map(function(a){ var d=a[2]; d.id=a[0]; d.label=a[1]; return d; });
+// ---------- bondad de ajuste ----------
+function gof(x,cdf){
+  var n=x.length, F=new Array(n), Dp=0, Dm=0, i;
+  for(i=0;i<n;i++){
+    var f=cdf(x[i]); if(!isFinite(f)) f=0.5;
+    f=Math.min(Math.max(f,1e-300),1-1e-16); F[i]=f;
+    Dp=Math.max(Dp,(i+1)/n-f); Dm=Math.max(Dm,f-i/n);
+  }
+  var A=0;
+  for(i=0;i<n;i++) A+=(2*i+1)*(Math.log(F[i])+Math.log(1-F[n-1-i]));
+  return {D:Math.max(Dp,Dm),A:-n-A/n};
+}
+function ksP(D,n){
+  var l=(Math.sqrt(n)+0.12+0.11/Math.sqrt(n))*D;
+  if(l<0.27) return 1;
+  var s=0;
+  for(var k=1;k<=100;k++){ var t=Math.exp(-2*k*k*l*l); s+=(k%2?1:-1)*t; if(t<1e-12) break; }
+  return Math.min(1,Math.max(0,2*s));
+}
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function hashData(x){ var h=2166136261|0; for(var i=0;i<x.length;i++){ h=Math.imul(h^(Math.round(x[i]*1e6)|0),16777619); } return h>>>0; }
+// bootstrap paramétrico: simula desde el ajuste, reajusta y compara D y A²
+function bootstrapStep(d,p,n,rng){
+  var xs=new Array(n), i;
+  for(i=0;i<n;i++){ var u=rng(); if(u<1e-12) u=1e-12; xs[i]=d.q(u,p); if(!isFinite(xs[i])) return null; }
+  xs.sort(function(a,b){return a-b;});
+  var pp; try{ pp=d.fit(xs); }catch(e){ return null; }
+  var g=gof(xs,function(v){ return d.cdf(v,pp); });
+  return isFinite(g.D)&&isFinite(g.A)?g:null;
+}
+// ---------- lectura de datos ----------
+function parseNumbers(text){
+  var toks=text.split(/[\s;]+/), vals=[], skipped=0;
+  toks.forEach(function(t){
+    if(!t) return;
+    var parts=[t];
+    var commas=(t.match(/,/g)||[]).length;
+    if(commas>=2 && !/^-?\d{1,3}(\.\d{3})+,\d+$/.test(t)) parts=t.split(',');
+    parts.forEach(function(s){
+      if(!s) return;
+      var u=s;
+      if(/^-?\d{1,3}(\.\d{3})+,\d+$/.test(u)) u=u.replace(/\./g,'').replace(',','.');
+      else if(/^-?\d*,\d+$/.test(u)) u=u.replace(',','.');
+      if(/^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(u)){ var v=parseFloat(u); if(isFinite(v)){ vals.push(v); return; } }
+      skipped++;
+    });
+  });
+  return {vals:vals,skipped:skipped};
+}
+function dataStats(x){
+  var n=x.length, m=mean(x), m2=0, m3=0, m4=0, i;
+  for(i=0;i<n;i++){ var d=x[i]-m; m2+=d*d; m3+=d*d*d; m4+=d*d*d*d; }
+  var v=m2/n, sdv=Math.sqrt(m2/(n-1));
+  return {n:n,min:x[0],max:x[n-1],mean:m,sd:sdv,skew:v>0?(m3/n)/Math.pow(v,1.5):0,kurt:v>0?(m4/n)/(v*v)-3:0};
+}
+/*MATH-END*/
+/* ---------- formato ---------- */
+function fmt(x,d){
+  d=d||4;
+  if(x===null||x===undefined||typeof x!=='number'||!isFinite(x)) return '—';
+  if(x===0) return '0';
+  const a=Math.abs(x);
+  if(a>=1e7||a<1e-4) return x.toExponential(3).replace('.',',');
+  return x.toLocaleString('es-CL',{maximumSignificantDigits:d});
+}
+const pct=(x,d)=>isFinite(x)?(x*100).toLocaleString('es-CL',{minimumFractionDigits:d===undefined?2:d,maximumFractionDigits:d===undefined?2:d})+' %':'—';
+function cells(list){
+  return '<div class="grid-out">'+list.map(c=>
+    '<div class="cell'+(c[2]?' hi':'')+'"><span class="k">'+c[0]+'</span><span class="v">'+c[1]+(c[3]?' <span class="u">'+c[3]+'</span>':'')+'</span></div>').join('')+'</div>';
+}
+function verdict(txt,tag,flag){
+  return '<div class="verdict'+(flag?' flag':'')+'"><span class="tag">'+(tag||'Lectura')+'</span><span>'+txt+'</span></div>';
+}
+function parseNums(s){ return s.split(/[\s,;]+/).filter(Boolean).map(Number).filter(v=>isFinite(v)&&v>0).sort((a,b)=>a-b); }
+
+/* ---------- gráfico SVG ---------- */
+function niceTicks(min,max,n){
+  n=n||5;
+  if(!isFinite(min)||!isFinite(max)||min===max) return [min];
+  const span=max-min, step0=span/n, mag=Math.pow(10,Math.floor(Math.log10(step0)));
+  const norm=step0/mag; let step;
+  if(norm<1.5)step=1;else if(norm<3)step=2;else if(norm<7)step=5;else step=10;
+  step*=mag;
+  const out=[]; let v=Math.ceil(min/step)*step;
+  while(v<=max+step*1e-9){out.push(Math.round(v/step)*step);v+=step;}
+  return out;
+}
+function svgPlot(o){
+  const W=640,H=330,L=62,R=18,T=14,B=46;
+  const xd=o.xdom, yd=o.ydom;
+  const px=v=>L+(v-xd[0])/(xd[1]-xd[0])*(W-L-R);
+  const py=v=>H-B-(v-yd[0])/(yd[1]-yd[0])*(H-T-B);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(o.alt||'gráfico')+'">';
+  s+='<rect x="'+L+'" y="'+T+'" width="'+(W-L-R)+'" height="'+(H-T-B)+'" fill="none" stroke="var(--line)"/>';
+  (o.yticks||[]).forEach(t=>{
+    const y=py(t[0]); if(!isFinite(y))return;
+    s+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="var(--line)" stroke-dasharray="2 4"/>';
+    s+='<text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-family="var(--font-mono)" font-size="11" fill="var(--ink-soft)">'+t[1]+'</text>';
+  });
+  (o.xticks||[]).forEach(t=>{
+    const x=px(t[0]); if(!isFinite(x))return;
+    s+='<line x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+(H-B)+'" stroke="var(--line)" stroke-dasharray="2 4"/>';
+    s+='<text x="'+x+'" y="'+(H-B+18)+'" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink-soft)">'+t[1]+'</text>';
+  });
+  (o.bars||[]).forEach(b=>{const x0=px(b.x0),x1=px(b.x1),y=py(b.h),y0=py(0);s+='<rect class="bar" x="'+(x0+0.6).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+Math.max(0,x1-x0-1.2).toFixed(1)+'" height="'+Math.max(0,y0-y).toFixed(1)+'" fill="var(--ink-soft)" fill-opacity=".38" stroke="var(--ink-soft)" stroke-width="1"/>';});
+  (o.series||[]).forEach(se=>{
+    const col=se.color||'var(--accent)';
+    if(se.type==='points'){
+      se.pts.forEach(p=>{const x=px(p[0]),y=py(p[1]);if(isFinite(x)&&isFinite(y))s+='<circle cx="'+x+'" cy="'+y+'" r="3.4" fill="'+col+'"/>';});
+    }else{
+      const d=se.pts.filter(p=>isFinite(p[0])&&isFinite(p[1])).map((p,i)=>(i?'L':'M')+px(p[0]).toFixed(1)+' '+py(p[1]).toFixed(1)).join(' ');
+      s+='<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"'+(se.dash?' stroke-dasharray="5 4"':'')+'/>';
+    }
+  });
+  (o.marks||[]).forEach(m=>{
+    const x=px(m.x); if(!isFinite(x))return;
+    s+='<line x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+(H-B)+'" stroke="var(--flag)" stroke-width="1.5" stroke-dasharray="4 3"/>';
+    s+='<text x="'+(x+5)+'" y="'+(T+14)+'" font-family="var(--font-mono)" font-size="11" fill="var(--flag)">'+m.label+'</text>';
+  });
+  s+='<text x="'+((L+W-R)/2)+'" y="'+(H-6)+'" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink-soft)">'+(o.xlab||'')+'</text>';
+  s+='<text x="14" y="'+((T+H-B)/2)+'" text-anchor="middle" transform="rotate(-90 14 '+((T+H-B)/2)+')" font-family="var(--font-mono)" font-size="11" fill="var(--ink-soft)">'+(o.ylab||'')+'</text>';
+  return s+'</svg>';
+}
+const figure=(svg,cap)=>'<figure>'+svg+'<figcaption>'+cap+'</figcaption></figure>';
+
+
+
+/*VERIF-START*/
+function quantile7(s,p){ var h=(s.length-1)*p, lo=Math.floor(h), hi=Math.ceil(h); return s[lo]+(h-lo)*(s[hi]-s[lo]); }
+function verifStats(x){
+  var n=x.length, i, j, cum=[], s=0;
+  for(i=0;i<n;i++){ s+=x[i]; cum.push(s); }
+  var Tn=cum[n-1], sum=0;
+  for(i=0;i<n-1;i++) sum+=cum[i];
+  var U=(sum/(n-1)-Tn/2)/(Tn*Math.sqrt(1/(12*(n-1))));
+  var pU=2*(1-pnorm(Math.abs(U)));
+  var S=0;
+  for(i=0;i<n-1;i++) for(j=i+1;j<n;j++) S+=Math.sign(x[j]-x[i]);
+  var counts={}; x.forEach(function(v){ counts[v]=(counts[v]||0)+1; });
+  var varS=n*(n-1)*(2*n+5)/18;
+  Object.keys(counts).forEach(function(k){ var t=counts[k]; if(t>1) varS-=t*(t-1)*(2*t+5)/18; });
+  var Z=S>0?(S-1)/Math.sqrt(varS):(S<0?(S+1)/Math.sqrt(varS):0);
+  var pZ=2*(1-pnorm(Math.abs(Z)));
+  var tau=S/(n*(n-1)/2);
+  var m=mean(x), num=0, den=0;
+  for(i=0;i<n;i++){ den+=(x[i]-m)*(x[i]-m); if(i<n-1) num+=(x[i]-m)*(x[i+1]-m); }
+  var r1=den>0?num/den:0, zr=r1*Math.sqrt(n), pR=2*(1-pnorm(Math.abs(zr)));
+  var lx=x.map(Math.log).sort(function(a,b){return a-b;});
+  var q1=quantile7(lx,0.25), q3=quantile7(lx,0.75), iqr=q3-q1;
+  var loF=q1-1.5*iqr, hiF=q3+1.5*iqr, loX=q1-3*iqr, hiX=q3+3*iqr, out=[], ext=0;
+  x.forEach(function(v,k){ var l=Math.log(v); if(l<loF||l>hiF){ out.push({i:k+1,v:v}); if(l<loX||l>hiX) ext++; } });
+  var sorted=x.slice().sort(function(a,b){return a-b;});
+  // recta de mínimos cuadrados TBF ~ índice
+  var mi=(n+1)/2, sxy=0, sxx=0;
+  for(i=0;i<n;i++){ sxy+=(i+1-mi)*(x[i]-m); sxx+=(i+1-mi)*(i+1-mi); }
+  var slope=sxy/sxx;
+  return {n:n,cum:cum,Tn:Tn,U:U,pU:pU,S:S,Z:Z,pZ:pZ,tau:tau,r1:r1,pR:pR,outliers:out,ext:ext,mean:m,median:quantile7(sorted,0.5),slope:slope,icpt:m-slope*mi};
+}
+/*VERIF-END*/
+
+/* ---------- miniaturas del índice ---------- */
+const S='stroke="var(--ink-soft)" fill="none" stroke-width="1.4"', A='stroke="var(--accent)" fill="none" stroke-width="1.8"';
+const THUMB={
+  verif:'<svg viewBox="0 0 132 60"><line x1="14" y1="48" x2="122" y2="48" '+S+'/><line x1="14" y1="8" x2="14" y2="48" '+S+'/><path d="M20 20 L116 40" stroke="var(--flag)" fill="none" stroke-width="1.4" stroke-dasharray="4 3"/><circle cx="24" cy="16" r="2.6" fill="var(--accent)"/><circle cx="38" cy="24" r="2.6" fill="var(--accent)"/><circle cx="52" cy="22" r="2.6" fill="var(--accent)"/><circle cx="66" cy="30" r="2.6" fill="var(--accent)"/><circle cx="80" cy="27" r="2.6" fill="var(--accent)"/><circle cx="94" cy="37" r="2.6" fill="var(--accent)"/><circle cx="108" cy="40" r="2.6" fill="var(--accent)"/></svg>',
+  ident:'<svg viewBox="0 0 132 60"><line x1="12" y1="48" x2="122" y2="48" '+S+'/><rect x="18" y="38" width="12" height="10" fill="var(--ink-soft)" opacity=".5"/><rect x="31" y="22" width="12" height="26" fill="var(--ink-soft)" opacity=".5"/><rect x="44" y="14" width="12" height="34" fill="var(--ink-soft)" opacity=".5"/><rect x="57" y="22" width="12" height="26" fill="var(--ink-soft)" opacity=".5"/><rect x="70" y="32" width="12" height="16" fill="var(--ink-soft)" opacity=".5"/><rect x="83" y="40" width="12" height="8" fill="var(--ink-soft)" opacity=".5"/><rect x="96" y="44" width="12" height="4" fill="var(--ink-soft)" opacity=".5"/><path d="M16 46 C34 44 42 12 54 12 C70 12 78 38 108 46" '+A+'/></svg>'
+};
+
+/* ---------- utilidades de interfaz ---------- */
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
+function fp(p){ if(p===null||p===undefined||!isFinite(p)) return '…'; if(p<0.001) return '<0,001'; if(p>0.9995) return '>0,999'; return p.toFixed(3).replace('.',','); }
+function tick(){ return new Promise(function(r){ setTimeout(r,0); }); }
+const SAMPLE_ID=[212,548,96,1320,405,760,143,2210,330,905,58,612,1185,274,478,1640,192,826,367,1010,129,693,455,1480,241,584,318,872,167,1095];
+
+/* ---------- 1. verificación previa ---------- */
+function calcVerif(){
+  const x=parseNumbers($('v-data').value).vals.filter(function(v){return v>0;});
+  const alpha=+$('v-a').value;
+  if(x.length<5){ $('v-out').innerHTML='<p class="err">Se necesitan al menos 5 tiempos entre fallas positivos.</p>'; return; }
+  const n=x.length, R=verifStats(x);
+  let out=cells([
+    ['Laplace U',fmt(R.U,3),true],['p-valor (Laplace)',fp(R.pU),true],
+    ['Mann-Kendall Z',fmt(R.Z,3),true],['p-valor (Mann-Kendall)',fp(R.pZ),true],
+    ['τ de Kendall',fmt(R.tau,3)],['Autocorrelación r₁',fmt(R.r1,3)],
+    ['p-valor (r₁)',fp(R.pR)],['Atípicos (Tukey, ln)',String(R.outliers.length)],
+    ['n de TBF',String(n)],['TBF medio',fmt(R.mean,4),'','h'],['TBF mediano',fmt(R.median,4),'','h'],
+    ['Pendiente del TBF',fmt(R.slope,3),'','h por falla']
+  ]);
+  // gráfico 1: TBF en orden
+  const ymax=Math.max.apply(null,x)*1.1;
+  const pts=x.map(function(v,i){return [i+1,v];});
+  out+=figure(svgPlot({
+    xdom:[0.5,n+0.5],ydom:[0,ymax],
+    xticks:niceTicks(1,n,Math.min(n,8)).filter(function(v){return Number.isInteger(v);}).map(function(v){return [v,String(v)];}),
+    yticks:niceTicks(0,ymax,5).map(function(v){return [v,fmt(v,3)];}),
+    series:[{type:'line',pts:pts,color:'var(--ink-soft)'},{type:'line',pts:[[1,R.icpt+R.slope],[n,R.icpt+R.slope*n]],dash:true,color:'var(--flag)'},{type:'points',pts:pts}],
+    xlab:'N° de falla (orden cronológico)',ylab:'TBF (h)',alt:'Tiempo entre fallas en orden cronológico'
+  }),'TBF en el orden en que ocurrieron; la línea punteada es la recta de mínimos cuadrados.');
+  // gráfico 2: fallas acumuladas
+  const Tn=R.Tn;
+  out+=figure(svgPlot({
+    xdom:[0,Tn*1.04],ydom:[0,n*1.06],
+    xticks:niceTicks(0,Tn,6).map(function(v){return [v,fmt(v,3)];}),
+    yticks:niceTicks(0,n,5).filter(function(v){return Number.isInteger(v);}).map(function(v){return [v,String(v)];}),
+    series:[{type:'line',pts:[[0,0],[Tn,n]],dash:true,color:'var(--ink-soft)'},{type:'points',pts:R.cum.map(function(c,i){return [c,i+1];})}],
+    xlab:'Tiempo acumulado (h)',ylab:'Fallas acumuladas',alt:'Fallas acumuladas contra tiempo'
+  }),'Puntos sobre la recta punteada: tasa de falla constante. Por encima al inicio y por debajo al final indica deterioro.');
+  // lecturas
+  const trend=R.pU<alpha||R.pZ<alpha;
+  const det=R.U>0||R.Z<0;
+  const sigU=R.pU<alpha, sigZ=R.pZ<alpha;
+  let lect;
+  if(trend){
+    lect='Hay evidencia de tendencia al '+pct(alpha,0)+' ('+(sigU&&sigZ?'Laplace y Mann-Kendall coinciden':(sigU?'solo Laplace la detecta':'solo Mann-Kendall la detecta'))+'): los TBF '+(det?'se acortan':'se alargan')+' con el tiempo. Los datos no son idénticamente distribuidos, así que una distribución única no describe al equipo hoy. Usa el módulo Crow-AMSAA del Toolkit y reserva el ajuste de distribución para subconjuntos sin tendencia.';
+  }else{
+    lect='No hay evidencia de tendencia al '+pct(alpha,0)+' (p de Laplace '+fp(R.pU)+', p de Mann-Kendall '+fp(R.pZ)+'). Con n = '+n+' eso no prueba que no exista: solo que los datos no la muestran. Los TBF pueden tratarse como una muestra homogénea para ajustar una distribución.';
+  }
+  let out2=out+verdict(lect,'Tendencia',trend);
+  if(R.pR<alpha) out2+=verdict('La autocorrelación de rezago 1 ('+fmt(R.r1,3)+') es significativa: cada TBF depende del anterior, lo que invalida el supuesto de independencia del ajuste de distribución.','Dependencia',true);
+  if(R.outliers.length){
+    const lst=R.outliers.slice(0,6).map(function(o){return 'falla '+o.i+' ('+fmt(o.v,4)+' h)';}).join(', ');
+    out2+=verdict('Tukey sobre ln(TBF) marca '+R.outliers.length+' valor(es) atípico(s): '+lst+(R.outliers.length>6?', …':'')+'. Revisa si son fallas reales, errores de registro o modos de falla distintos antes de ajustar.','Atípicos',true);
+  }
+  if(n<10) out2+=verdict('Con '+n+' datos las tres pruebas tienen poca potencia. Un resultado sin significancia no descarta tendencia.','Muestra pequeña',true);
+  $('v-out').innerHTML=out2;
+}
+
+/* ---------- 2. identificación de distribución ---------- */
+let ID=null, RUN=0, busy=false;
+function passP(r){ return r.pD!=null?r.pD:r.pAsym; }
+function computeBest(){
+  const c=ID.rows.filter(function(r){return r.ok;});
+  if(!c.length){ ID.best=null; return; }
+  const pass=c.filter(function(r){return passP(r)>ID.alpha;});
+  let pool=(pass.length?pass:c).slice().sort(function(a,b){return a.A-b.A;});
+  const near=pool.filter(function(r){return r.A<=pool[0].A+0.1;}).sort(function(a,b){return a.d.k-b.d.k||a.A-b.A;});
+  ID.best=near[0]; ID.anyPass=pass.length>0; ID.nPass=pass.length;
+}
+function setStatus(t){ $('i-status').textContent=t||''; }
+async function runIdent(){
+  const id=++RUN;
+  const parsed=parseNumbers($('i-data').value);
+  const x=parsed.vals.slice().sort(function(a,b){return a-b;});
+  const info=parsed.vals.length+' valores leídos'+(parsed.skipped?' · '+parsed.skipped+' texto(s) ignorado(s)':'');
+  if(x.length<5){ ID=null; $('i-out').innerHTML='<p class="err">Se necesitan al menos 5 datos numéricos para ajustar distribuciones.</p>'; setStatus(info); busy=false; $('i-go').disabled=false; return; }
+  if(x[0]===x[x.length-1]){ ID=null; $('i-out').innerHTML='<p class="err">Todos los datos son iguales: no hay variabilidad que ajustar.</p>'; setStatus(info); busy=false; $('i-go').disabled=false; return; }
+  busy=true; $('i-go').disabled=true;
+  const n=x.length, alpha=+$('i-a').value, Bn=parseInt($('i-b').value,10);
+  const rows=[];
+  FAM.forEach(function(d){
+    const row={d:d,ok:true,pD:null,pA:null};
+    if(d.pos && x[0]<=0){ row.ok=false; row.reason='Requiere datos mayores que 0'; rows.push(row); return; }
+    try{
+      const p=d.fit(x), ll=d.ll(x,p);
+      if(!isFinite(ll)) throw new Error('ll');
+      const g=gof(x,function(v){return d.cdf(v,p);});
+      if(!isFinite(g.D)||!isFinite(g.A)) throw new Error('gof');
+      row.p=p; row.D=g.D; row.A=g.A; row.pAsym=ksP(g.D,n); row.ll=ll;
+      row.aic=2*d.k-2*ll; row.bic=d.k*Math.log(n)-2*ll; row.flag=p.flag||'';
+    }catch(e){ row.ok=false; row.reason='No convergió'; }
+    rows.push(row);
+  });
+  rows.sort(function(a,b){ if(a.ok!==b.ok) return a.ok?-1:1; return a.ok?a.A-b.A:0; });
+  ID={x:x,n:n,alpha:alpha,rows:rows,stats:dataStats(x),B:Bn,sel:null,done:false,info:info};
+  computeBest(); ID.sel=ID.best?ID.best.d.id:null;
+  renderIdent();
+  if(Bn>0){
+    const okRows=rows.filter(function(r){return r.ok;}), total=okRows.length*Bn, rng=mulberry32(hashData(x));
+    let doneCount=0;
+    for(let ri=0;ri<okRows.length;ri++){
+      const r=okRows[ri]; let cD=0,cA=0,valid=0;
+      for(let b=0;b<Bn;b++){
+        const g=bootstrapStep(r.d,r.p,n,rng);
+        if(g){ valid++; if(g.D>=r.D-1e-12) cD++; if(g.A>=r.A-1e-12) cA++; }
+        doneCount++;
+        if(b%8===7){
+          setStatus(info+' · calculando p-valores bootstrap: '+r.d.label+' ('+(ri+1)+'/'+okRows.length+') · '+Math.round(100*doneCount/total)+' %');
+          await tick();
+          if(id!==RUN) return;
+        }
+      }
+      if(valid>=20){ r.pD=(cD+1)/(valid+1); r.pA=(cA+1)/(valid+1); }
+      computeBest(); renderIdent();
+    }
+  }
+  if(id!==RUN) return;
+  ID.done=true; computeBest();
+  if(!ID.rows.some(function(r){return r.ok&&r.d.id===ID.sel;})) ID.sel=ID.best?ID.best.d.id:null;
+  renderIdent(); setStatus(info); busy=false; $('i-go').disabled=false;
+}
+
+function pdfPts(row,lo,hi){
+  const pts=[]; let pm=0;
+  for(let i=0;i<=220;i++){ const xv=lo+(hi-lo)*i/220, l=row.d.lp(xv,row.p), y=isFinite(l)?Math.exp(l):0; pts.push([xv,y]); if(y>pm) pm=y; }
+  return {pts:pts,max:pm};
+}
+function figHist(row,x){
+  const n=x.length, mn=x[0], mx=x[n-1], nb=Math.max(5,Math.min(15,Math.round(Math.sqrt(n)))), bw=(mx-mn)/nb||1, cnt=new Array(nb).fill(0);
+  x.forEach(function(v){ let k=Math.floor((v-mn)/bw); if(k>=nb)k=nb-1; cnt[k]++; });
+  const dens=cnt.map(function(c){return c/(n*bw);}), hmax=Math.max.apply(null,dens);
+  const lo=mn-0.05*(mx-mn), hi=mx+0.08*(mx-mn), P=pdfPts(row,lo,hi);
+  const ymax=Math.max(hmax,Math.min(P.max,hmax*2))*1.12;
+  const pts=P.pts.map(function(p){return [p[0],Math.min(p[1],ymax)];});
+  return figure(svgPlot({
+    xdom:[lo,hi],ydom:[0,ymax],
+    xticks:niceTicks(lo,hi,6).filter(function(v){return v>=lo&&v<=hi;}).map(function(v){return [v,fmt(v,3)];}),
+    yticks:niceTicks(0,ymax,5).map(function(v){return [v,fmt(v,2)];}),
+    bars:dens.map(function(h,i){return {x0:mn+i*bw,x1:mn+(i+1)*bw,h:h};}),
+    series:[{type:'line',pts:pts}],
+    xlab:'Valor (h)',ylab:'Densidad',alt:'Histograma con densidad ajustada'
+  }),'Histograma de los datos y densidad de '+esc(row.d.label)+'.');
+}
+function figQQ(row,x){
+  const n=x.length, th=[]; let i;
+  for(i=0;i<n;i++) th.push(row.d.q((i+0.5)/n,row.p));
+  const fin=th.filter(isFinite);
+  let lo=Math.min(x[0],Math.min.apply(null,fin)), hi=Math.max(x[n-1],Math.max.apply(null,fin));
+  const pad=0.05*((hi-lo)||1); lo-=pad; hi+=pad;
+  const tk=niceTicks(lo,hi,5).map(function(v){return [v,fmt(v,3)];});
+  const pts=[]; for(i=0;i<n;i++) if(isFinite(th[i])) pts.push([th[i],x[i]]);
+  return figure(svgPlot({
+    xdom:[lo,hi],ydom:[lo,hi],xticks:tk,yticks:tk,
+    series:[{type:'line',pts:[[lo,lo],[hi,hi]],dash:true,color:'var(--ink-soft)'},{type:'points',pts:pts}],
+    xlab:'Cuantil teórico (h)',ylab:'Cuantil observado (h)',alt:'Gráfico Q-Q'
+  }),'Q-Q de '+esc(row.d.label)+': puntos cerca de la diagonal indican buen ajuste.');
+}
+function renderIdent(){
+  const S=ID; if(!S) return;
+  const b=S.best, st=S.stats, okRows=S.rows.filter(function(r){return r.ok;}), pending=S.B>0&&!S.done;
+  let h='';
+  if(b){
+    const pk=S.B>0?b.pD:b.pAsym;
+    h+=cells([
+      ['Mejor ajuste',esc(b.d.label),true],
+      ['A² (Anderson-Darling)',fmt(b.A,3),true],
+      ['p-valor KS',S.B>0?fp(pk):fp(pk)+'*'],
+      ['p-valor AD',S.B>0?fp(b.pA):'—'],
+      ['No se rechazan',S.nPass+' de '+okRows.length],
+      ['n de datos',String(S.n)],
+      ['Media',fmt(st.mean,5),'','h'],['Desv. estándar',fmt(st.sd,4),'','h'],
+      ['Asimetría',fmt(st.skew,3)],['Curtosis',fmt(st.kurt,3)]
+    ]);
+  }
+  h+='<div class="sec-t"><b>Comparación de distribuciones</b> · ordenadas por A²</div>';
+  let rows='';
+  S.rows.forEach(function(r){
+    if(!r.ok){ rows+='<tr class="na"><td class="l">'+esc(r.d.label)+'</td><td class="l" colspan="7">'+esc(r.reason)+'</td></tr>'; return; }
+    const pv=passP(r), pars=r.d.sn.map(function(n,i){return n+' = '+fmt(r.p[i],4);}).join(' · ');
+    const pending1=S.B>0&&r.pD==null;
+    const res=pending1?'…':(pv>S.alpha?'no se rechaza':'se rechaza');
+    const pk=S.B>0?r.pD:r.pAsym;
+    rows+='<tr data-id="'+r.d.id+'" tabindex="0"'+(S.sel===r.d.id?' class="mark"':'')+'>'
+      +'<td class="l">'+esc(r.d.label)+(b&&b===r?' (mejor)':'')+'</td>'
+      +'<td class="l par">'+esc(pars)+(r.flag?' *':'')+'</td>'
+      +'<td>'+fmt(r.D,3)+'</td><td>'+fp(pk)+(S.B>0?'':'*')+'</td>'
+      +'<td>'+fmt(r.A,3)+'</td><td>'+(S.B>0?fp(r.pA):'—')+'</td>'
+      +'<td>'+fmt(r.aic,5)+'</td><td>'+res+'</td></tr>';
+  });
+  h+='<div class="tbl-scroll"><table class="data"><thead><tr><th class="l">Distribución</th><th class="l">Parámetros</th><th>D (KS)</th><th>p KS</th><th>A² (AD)</th><th>p AD</th><th>AIC</th><th>Resultado</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  const sel=S.rows.filter(function(r){return r.ok&&r.d.id===S.sel;})[0];
+  if(sel){
+    h+='<div class="sec-t"><b>Parámetros</b> · '+esc(sel.d.label)+'</div>';
+    const pc=sel.d.names.map(function(n,i){return [esc(n),fmt(sel.p[i],6),i<2];});
+    pc.push(['ln L (verosimilitud)',fmt(sel.ll,6)],['AIC',fmt(sel.aic,6)],['BIC',fmt(sel.bic,6)]);
+    h+=cells(pc);
+    h+=figHist(sel,S.x)+figQQ(sel,S.x);
+  }
+  h+='<p class="hint noprint" style="margin-top:12px">Toca una fila de la tabla para ver sus parámetros y gráficos.'+(S.B>0?'':' *Sin bootstrap, el p-valor KS usa la distribución asintótica de Kolmogorov y es orientativo: tiende a aceptar de más cuando los parámetros se estiman de los mismos datos.')+'</p>';
+  if(b){
+    const bp=passP(b), bpTxt=(S.B>0&&b.pD==null)?'…':fp(bp);
+    let lect;
+    if(S.anyPass){
+      lect='<b>'+esc(b.d.label)+'</b> tiene el menor A² ('+fmt(b.A,3)+') entre las distribuciones que no se rechazan, con p de KS '+bpTxt+' frente a α = '+fmt(S.alpha,2)+'; si la diferencia de A² es de 0,1 o menos se prefiere el modelo con menos parámetros. No se rechazan '+S.nPass+' de '+okRows.length+' distribuciones.'+(S.nPass>1?' Con más de una aceptable, decide también por sentido físico y por la cola de la distribución, que es lo que gobierna el riesgo.':'')+(pending?' Resultado provisional: el bootstrap sigue calculando.':'');
+    }else{
+      lect='Ninguna distribución pasa la prueba con α = '+fmt(S.alpha,2)+'. La de menor A² es '+esc(b.d.label)+' ('+fmt(b.A,3)+', p KS '+bpTxt+'). Revisa atípicos, mezcla de modos de falla o datos redondeados antes de adoptarla, y confirma en la verificación previa que no haya tendencia.'+(pending?' Resultado provisional: el bootstrap sigue calculando.':'');
+    }
+    h+=verdict(lect,'Lectura',!S.anyPass);
+    if(sel&&sel.flag) h+=verdict('En '+esc(sel.d.label)+' el umbral quedó pegado al mínimo de los datos (*). En modelos de 3 parámetros la verosimilitud puede crecer sin límite en ese borde, así que el ajuste es poco confiable: compáralo con la versión de 2 parámetros.','Umbral',true);
+    if(S.n<20) h+=verdict('Con '+S.n+' datos las pruebas tienen poca potencia: varias distribuciones pueden parecer aceptables a la vez.','Muestra pequeña',true);
+  }
+  $('i-out').innerHTML=h;
+  [].forEach.call($('i-out').querySelectorAll('tr[data-id]'),function(tr){
+    const pick=function(){ S.sel=tr.getAttribute('data-id'); renderIdent(); };
+    tr.addEventListener('click',pick);
+    tr.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pick(); } });
+  });
+}
+
+/* ---------- módulos ---------- */
+const MODS=[
+  {id:'verif',el:'m-verif',t:'Verificación previa de los datos',g:'Validación de los datos',fn:calcVerif,
+   d:'Prueba de tendencia (Laplace y Mann-Kendall), independencia (autocorrelación) y atípicos (Tukey) sobre los tiempos entre fallas en orden. Decide si corresponde ajustar una distribución o usar Crow-AMSAA.'},
+  {id:'ident',el:'m-ident',t:'Identificación de distribución',g:'Ajuste de distribuciones',manual:true,
+   fn:runIdent,open:function(){ if(!ID&&!busy) runIdent(); else if(ID) renderIdent(); },
+   d:'Ajusta 13 distribuciones por máxima verosimilitud y las compara con Kolmogorov-Smirnov y Anderson-Darling, con p-valores por bootstrap, AIC, histograma y gráfico Q-Q, al estilo del Distribution ID de Minitab.'}
+];
+
+/* ---------- informe ---------- */
+function buildReport(id){
+  const mod=MODS.find(function(m){return m.id===id;}), sec=$(mod.el);
+  const hoy=new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
+  const rows=[];
+  [].forEach.call(sec.querySelectorAll('.f'),function(f){
+    if(f.hidden) return;
+    const lab=f.querySelector('label'), ctl=f.querySelector('input,select,textarea');
+    if(!lab||!ctl) return;
+    let val;
+    if(ctl.tagName==='SELECT') val=ctl.options[ctl.selectedIndex].text;
+    else if(ctl.tagName==='TEXTAREA'){
+      const n=ctl.value.split(/[\s,;]+/).filter(Boolean).length;
+      val=ctl.value.trim().replace(/\s+/g,' ');
+      if(val.length>120) val=val.slice(0,118)+'…';
+      val+=' ('+n+' valores)';
+    } else val=ctl.value;
+    rows.push('<tr><td class="k">'+esc(lab.textContent)+'</td><td class="v">'+esc(val)+'</td></tr>');
+  });
+  const kvT=function(r){return '<table class="kv"><tbody>'+r.join('')+'</tbody></table>';};
+  const kv=rows.length>8?'<div class="two">'+kvT(rows.slice(0,Math.ceil(rows.length/2)))+kvT(rows.slice(Math.ceil(rows.length/2)))+'</div>':kvT(rows);
+  let resHtml='', hasHead=false;
+  [].forEach.call(sec.querySelectorAll('.out > .grid-out, .out > .sec-t, .out > .tbl-scroll'),function(el){
+    if(el.classList.contains('sec-t')){ resHtml+='<h3>'+el.innerHTML.replace(/<\/?b>/g,'')+'</h3>'; hasHead=true; }
+    else if(el.classList.contains('tbl-scroll')) resHtml+=el.outerHTML;
+    else{ if(!hasHead){ resHtml+='<h3>Resultados</h3>'; hasHead=true; } resHtml+='<div class="res">'+el.innerHTML+'</div>'; }
+  });
+  const figEls=[].slice.call(sec.querySelectorAll('.out figure'));
+  const figs=figEls.length?'<div class="figs n'+figEls.length+'">'+figEls.map(function(f){return f.outerHTML;}).join('')+'</div>':'';
+  $('sheet').classList.toggle('dense',figEls.length>1||!!sec.querySelector('.out .tbl-scroll'));
+  const lect=[].map.call(sec.querySelectorAll('.out .verdict'),function(v){return v.lastElementChild.innerHTML;}).join(' ');
+  const assump=sec.querySelector('.assump');
+  const eq=esc($('rp-eq').value), an=esc($('rp-an').value), cod=esc($('rp-cod').value);
+  $('sheet').innerHTML=
+    '<div class="sh-head"><div class="org">ENAP Magallanes<br>Ingeniería y Planificación del Mantenimiento</div>'+
+    '<div class="doc">'+cod+'<br>'+hoy+'</div></div>'+
+    '<h2>'+esc(mod.t)+'</h2><p class="sub">'+eq+'</p>'+
+    '<h3>Datos de entrada</h3>'+kv+
+    resHtml+figs+
+    '<h3>Lectura técnica</h3><p class="lect">'+lect+'</p>'+
+    '<div class="foot"><div><b>Método y supuestos.</b> '+(assump?assump.textContent.replace(/^Supuestos/,'').trim():'')+'</div>'+
+    '<div class="sign">'+an+'<br>Ingeniero de Estudios de Mantenimiento</div></div>';
+}
+
+/*WORD-START*/
+/* ---------- informe en Word (.docx editable, blanco y negro) ---------- */
+const DOCX_URL='https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js';
+let docxPromise=null;
+function loadDocx(){
+  if(typeof window!=='undefined'&&window.docx) return Promise.resolve(window.docx);
+  if(!docxPromise) docxPromise=new Promise(function(res,rej){
+    const s=document.createElement('script'); s.src=DOCX_URL; s.async=true;
+    s.onload=function(){ window.docx?res(window.docx):rej(new Error('docx')); };
+    s.onerror=function(){ docxPromise=null; rej(new Error('No se pudo cargar el generador de Word')); };
+    document.head.appendChild(s);
+  });
+  return docxPromise;
+}
+// SVG del informe → PNG en escala de grises
+const SVG_GRAYS={'--accent':'#000000','--ink':'#000000','--flag':'#000000','--ink-soft':'#555555','--line':'#b4b4b4','--panel':'#ffffff','--panel-2':'#f0f0f0','--paper':'#ffffff','--accent-soft':'#ececec'};
+function svgToPng(svg,scale){
+  return new Promise(function(res,rej){
+    try{
+      let src=new XMLSerializer().serializeToString(svg);
+      src=src.replace(/var\(--font-mono\)/g,"Consolas, 'IBM Plex Mono', monospace")
+             .replace(/var\((--[a-z0-9-]+)\)/g,function(m,k){ return SVG_GRAYS[k]||'#000000'; });
+      if(!/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/.test(src)) src=src.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"');
+      const vb=(svg.getAttribute('viewBox')||'0 0 640 330').split(/\s+/).map(Number), W=vb[2], H=vb[3];
+      src=src.replace('<svg','<svg width="'+W+'" height="'+H+'"');
+      const img=new Image();
+      img.onload=function(){
+        const c=document.createElement('canvas'); c.width=Math.round(W*scale); c.height=Math.round(H*scale);
+        const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
+        c.toBlob(function(b){ if(!b) return rej(new Error('png')); b.arrayBuffer().then(function(buf){ res({data:new Uint8Array(buf),w:W,h:H}); },rej); },'image/png');
+      };
+      img.onerror=function(){ rej(new Error('svg')); };
+      img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(src);
+    }catch(e){ rej(e); }
+  });
+}
+// lee la ficha del módulo en el mismo orden que la hoja A4
+function reportModel(id){
+  const mod=MODS.find(function(m){return m.id===id;}), sec=$(mod.el), M={title:mod.t,id:mod.id,inputs:[],blocks:[],figs:[],verdicts:[],assump:''};
+  [].forEach.call(sec.querySelectorAll('.f'),function(f){
+    if(f.hidden) return;
+    const lab=f.querySelector('label'), ctl=f.querySelector('input,select,textarea');
+    if(!lab||!ctl) return;
+    let val;
+    if(ctl.tagName==='SELECT') val=ctl.options[ctl.selectedIndex].text;
+    else if(ctl.tagName==='TEXTAREA'){
+      const n=ctl.value.split(/[\s,;]+/).filter(Boolean).length;
+      val=ctl.value.trim().replace(/\s+/g,' ');
+      if(val.length>160) val=val.slice(0,158)+'…';
+      val+=' ('+n+' valores)';
+    } else val=ctl.value;
+    M.inputs.push([lab.textContent.trim(),val]);
+  });
+  let hasHead=false;
+  [].forEach.call(sec.querySelectorAll('.out > .grid-out, .out > .sec-t, .out > .tbl-scroll'),function(el){
+    if(el.classList.contains('sec-t')){ M.blocks.push({t:'h',text:el.textContent.trim()}); hasHead=true; }
+    else if(el.classList.contains('tbl-scroll')){
+      const tb=el.querySelector('table');
+      const head=[].map.call(tb.querySelectorAll('thead th'),function(th){return {text:th.textContent.trim(),left:th.classList.contains('l')};});
+      const rows=[].map.call(tb.querySelectorAll('tbody tr'),function(tr){
+        return {mark:tr.classList.contains('mark'),cells:[].map.call(tr.children,function(td){return {text:td.textContent.trim(),span:td.colSpan||1,left:td.classList.contains('l')};})};
+      });
+      M.blocks.push({t:'table',head:head,rows:rows});
+    }else{
+      if(!hasHead){ M.blocks.push({t:'h',text:'Resultados'}); hasHead=true; }
+      M.blocks.push({t:'cells',cells:[].map.call(el.querySelectorAll('.cell'),function(c){
+        const u=c.querySelector('.u'), v=c.querySelector('.v').cloneNode(true);
+        if(v.querySelector('.u')) v.removeChild(v.querySelector('.u'));
+        return {k:c.querySelector('.k').textContent.trim(),v:v.textContent.trim(),u:u?u.textContent.trim():'',hi:c.classList.contains('hi')};
+      })});
+    }
+  });
+  [].forEach.call(sec.querySelectorAll('.out figure'),function(f){ M.figs.push({svg:f.querySelector('svg'),cap:(f.querySelector('figcaption')||{}).textContent||''}); });
+  [].forEach.call(sec.querySelectorAll('.out .verdict'),function(v){ M.verdicts.push({tag:v.firstElementChild.textContent.trim(),text:v.lastElementChild.textContent.trim()}); });
+  const a=sec.querySelector('.assump'); M.assump=a?a.textContent.replace(/^\s*Supuestos/,'').trim():'';
+  return M;
+}
+function buildDocx(D,M,meta,pngs){
+  const SANS='Arial', MONO='Consolas', CW=10206; // ancho útil A4 con márgenes de 15 mm (twips)
+  const none={style:D.BorderStyle.NONE,size:0,color:'FFFFFF'}, noB={top:none,bottom:none,left:none,right:none,insideHorizontal:none,insideVertical:none};
+  const thin=function(c){return {style:D.BorderStyle.SINGLE,size:4,color:c||'999999'};};
+  const dot={style:D.BorderStyle.DOTTED,size:4,color:'BBBBBB'};
+  const T=function(text,o){ o=o||{}; return new D.TextRun({text:String(text),font:o.mono?MONO:SANS,size:o.size||19,bold:!!o.bold,color:o.color||'000000',italics:!!o.it}); };
+  const P=function(runs,o){ o=o||{}; return new D.Paragraph({children:Array.isArray(runs)?runs:[runs],alignment:o.align,spacing:{before:o.before||0,after:o.after===undefined?40:o.after,line:o.line},border:o.border,keepNext:!!o.keepNext}); };
+  const H3=function(text){ return P(T(text.toUpperCase(),{mono:true,size:14,color:'444444'}),{before:200,after:80,keepNext:true,border:{bottom:{style:D.BorderStyle.SINGLE,size:4,color:'999999',space:1}}}); };
+  const cell=function(children,o){ o=o||{}; return new D.TableCell({children:children,width:{size:o.w,type:D.WidthType.DXA},columnSpan:o.span,borders:o.borders||noB,shading:o.fill?{fill:o.fill,type:D.ShadingType.CLEAR,color:'auto'}:undefined,margins:{top:o.mt===undefined?40:o.mt,bottom:o.mb===undefined?40:o.mb,left:80,right:80},verticalAlign:o.va}); };
+  const table=function(rows,widths,borders){ return new D.Table({rows:rows,columnWidths:widths,width:{size:CW,type:D.WidthType.DXA},layout:D.TableLayoutType.FIXED,borders:borders||noB}); };
+  const out=[];
+  // encabezado
+  out.push(table([new D.TableRow({children:[
+    cell([P(T('ENAP MAGALLANES',{mono:true,size:14,color:'444444'}),{after:0}),P(T('INGENIERÍA Y PLANIFICACIÓN DEL MANTENIMIENTO',{mono:true,size:14,color:'444444'}),{after:0})],{w:6606,mt:0,mb:60}),
+    cell([P(T(meta.cod,{mono:true,size:14,color:'444444'}),{align:D.AlignmentType.RIGHT,after:0}),P(T(meta.fecha,{mono:true,size:14,color:'444444'}),{align:D.AlignmentType.RIGHT,after:0})],{w:3600,mt:0,mb:60})
+  ]})],[6606,3600],{top:none,left:none,right:none,insideHorizontal:none,insideVertical:none,bottom:{style:D.BorderStyle.SINGLE,size:12,color:'000000'}}));
+  out.push(P(T(M.title,{size:30,bold:true}),{before:160,after:20}));
+  out.push(P(T(meta.eq,{size:18,color:'333333'}),{after:120}));
+  // datos de entrada
+  out.push(H3('Datos de entrada'));
+  out.push(table(M.inputs.map(function(r){ return new D.TableRow({cantSplit:true,children:[
+    cell([P(T(r[0],{size:17,color:'333333'}),{after:0})],{w:4300,borders:{bottom:dot,top:none,left:none,right:none},mt:30,mb:30}),
+    cell([P(T(r[1],{mono:true,size:17}),{after:0})],{w:5906,borders:{bottom:dot,top:none,left:none,right:none},mt:30,mb:30})
+  ]}); }),[4300,5906]));
+  // resultados, subtítulos y tablas en orden
+  M.blocks.forEach(function(b){
+    if(b.t==='h'){ out.push(H3(b.text)); return; }
+    if(b.t==='cells'){
+      const per=4, w=Math.floor(CW/per), widths=[w,w,w,CW-3*w], rows=[];
+      for(let i=0;i<b.cells.length;i+=per){
+        const ch=[];
+        for(let j=0;j<per;j++){
+          const c=b.cells[i+j];
+          ch.push(c?cell([
+            P(T(c.k.toUpperCase(),{mono:true,size:12,color:'444444'}),{after:10}),
+            P([T(c.v,{mono:true,size:21,bold:true})].concat(c.u?[T(' '+c.u,{size:14,color:'444444'})]:[]),{after:0})
+          ],{w:widths[j],fill:c.hi?'ECECEC':undefined,borders:{top:thin(),bottom:thin(),left:thin(),right:thin()},mt:50,mb:50}):cell([P(T(''),{after:0})],{w:widths[j],borders:{top:thin(),bottom:thin(),left:thin(),right:thin()}}));
+        }
+        rows.push(new D.TableRow({cantSplit:true,children:ch}));
+      }
+      out.push(table(rows,widths));
+      return;
+    }
+    if(b.t==='table'){
+      const wt=b.head.map(function(h){ return /parámetro/i.test(h.text)?3:/distribuci/i.test(h.text)?2:/resultado/i.test(h.text)?1.8:1; });
+      const tw=wt.reduce(function(a,c){return a+c;},0); let acc=0;
+      const widths=wt.map(function(x,i){ if(i===wt.length-1) return CW-acc; const v=Math.round(CW*x/tw); acc+=v; return v; });
+      const bd={top:none,left:none,right:none,bottom:dot};
+      const rows=[new D.TableRow({tableHeader:true,children:b.head.map(function(h,i){
+        return cell([P(T(h.text.toUpperCase(),{mono:true,size:12,color:'333333',bold:true}),{after:0,align:h.left?D.AlignmentType.LEFT:D.AlignmentType.RIGHT})],{w:widths[i],fill:'F0F0F0',borders:{top:thin('777777'),bottom:thin('777777'),left:none,right:none},mt:30,mb:30});
+      })})];
+      b.rows.forEach(function(r){
+        let col=0;
+        rows.push(new D.TableRow({cantSplit:true,children:r.cells.map(function(c){
+          let w=0; for(let k=0;k<c.span;k++) w+=widths[col+k]||0; col+=c.span;
+          return cell([P(T(c.text,{mono:true,size:14,bold:r.mark}),{after:0,align:c.left?D.AlignmentType.LEFT:D.AlignmentType.RIGHT})],{w:w,span:c.span>1?c.span:undefined,fill:r.mark?'ECECEC':undefined,borders:bd,mt:20,mb:20});
+        })}));
+      });
+      out.push(table(rows,widths));
+      if(b.rows.some(function(r){return r.mark;})) out.push(P(T('Fila sombreada: distribución mostrada en los parámetros y gráficos.',{size:14,color:'444444',it:true}),{before:40}));
+    }
+  });
+  // figuras
+  const figs=M.figs.map(function(f,i){ return {cap:f.cap,png:pngs[i]}; }).filter(function(f){return f.png;});
+  if(figs.length){
+    out.push(H3('Gráficos'));
+    const two=figs.length>1, wpx=two?318:560;
+    const figCell=function(f,w){ const h=Math.round(wpx*f.png.h/f.png.w); return cell([
+      new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.ImageRun({data:f.png.data,transformation:{width:wpx,height:h}})]}),
+      P(T(f.cap,{mono:true,size:13,color:'444444'}),{align:D.AlignmentType.CENTER,after:60})
+    ],{w:w,mt:40}); };
+    for(let i=0;i<figs.length;i+=(two?2:1)){
+      if(two){ const w=Math.floor(CW/2); out.push(table([new D.TableRow({cantSplit:true,children:[figCell(figs[i],w),figs[i+1]?figCell(figs[i+1],CW-w):cell([P(T(''))],{w:CW-w})]})],[w,CW-w])); }
+      else out.push(table([new D.TableRow({cantSplit:true,children:[figCell(figs[i],CW)]})],[CW]));
+    }
+  }
+  // lectura técnica
+  out.push(H3('Lectura técnica'));
+  M.verdicts.forEach(function(v){ out.push(P([T(v.tag+'. ',{bold:true,size:19}),T(v.text,{size:19})],{align:D.AlignmentType.JUSTIFIED,after:80})); });
+  // supuestos y firma
+  out.push(P(T(''),{after:120}));
+  out.push(table([new D.TableRow({cantSplit:true,children:[
+    cell([P([T('Método y supuestos. ',{bold:true,size:15,color:'333333'}),T(M.assump,{size:15,color:'333333'})],{align:D.AlignmentType.JUSTIFIED,after:0})],{w:6806,borders:{top:thin(),bottom:none,left:none,right:none},mt:80}),
+    cell([P(T(''),{after:520}),P(T(meta.an,{size:16}),{align:D.AlignmentType.CENTER,after:0,border:{top:{style:D.BorderStyle.SINGLE,size:4,color:'000000',space:2}}}),P(T('Ingeniero de Estudios de Mantenimiento',{size:16}),{align:D.AlignmentType.CENTER,after:0})],{w:3400,borders:{top:thin(),bottom:none,left:none,right:none},mt:80})
+  ]})],[6806,3400]));
+  return new D.Document({
+    creator:meta.an, title:M.title+' — '+meta.eq, description:'Informe generado con Toolkit IPM · Datos de vida',
+    styles:{default:{document:{run:{font:SANS,size:19}}}},
+    sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:850,bottom:850,left:850,right:850}}},children:out}]
+  });
+}
+let dlCap=null;
+try{ if(window.claude&&typeof window.claude.use==='function') dlCap=window.claude.use('downloads').catch(function(){return null;}); }catch(e){ dlCap=null; }
+function wordMsg(t){ $('word-msg').textContent=t||''; }
+async function exportWord(){
+  const btn=$('dl-word');
+  if(current==='ident'&&busy){ wordMsg('Espera a que termine el cálculo bootstrap para exportar.'); return; }
+  btn.disabled=true; wordMsg('Generando el informe en Word…');
+  try{
+    const D=await loadDocx();
+    const M=reportModel(current);
+    const pngs=[];
+    for(const f of M.figs){ try{ pngs.push(await svgToPng(f.svg,3)); }catch(e){ pngs.push(null); } }
+    const fecha=new Date(), iso=fecha.getFullYear()+'-'+String(fecha.getMonth()+1).padStart(2,'0')+'-'+String(fecha.getDate()).padStart(2,'0');
+    const meta={eq:$('rp-eq').value,an:$('rp-an').value,cod:$('rp-cod').value,fecha:fecha.toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'})};
+    const blob=await D.Packer.toBlob(buildDocx(D,M,meta,pngs));
+    const name=((meta.cod||'Informe')+'_'+M.title+'_'+iso).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/_+/g,'_')+'.docx';
+    const missing=pngs.filter(function(p){return !p;}).length;
+    const dl=dlCap?await dlCap:null;
+    if(dl){
+      try{ await dl.save({filename:name,data:blob}); wordMsg('Informe guardado: '+name+(missing?' (sin '+missing+' gráfico(s) que no se pudieron convertir)':'')); }
+      catch(e){
+        const c=e&&e.code;
+        wordMsg(c==='declined'?'Descarga cancelada.':c==='rate_limited'?'Ya hay una descarga esperando tu confirmación.':'No se pudo guardar el archivo en esta vista.');
+      }
+    }else{
+      const url=URL.createObjectURL(blob), a=document.createElement('a');
+      a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); },4000);
+      wordMsg('Informe generado: '+name+'. Si no se descargó, abre esta página desde claude.ai o como archivo local.');
+    }
+  }catch(e){
+    console.error(e);
+    wordMsg('No se pudo generar el Word: '+(e&&e.message||'error desconocido')+'.');
+  }finally{ btn.disabled=false; }
+}
+/*WORD-END*/
+
+/* ---------- navegación ---------- */
+let current='verif';
+function view(v){
+  $('v-index').hidden=v!=='index';
+  $('v-calc').hidden=v!=='calc';
+  $('v-report').hidden=v!=='report';
+  window.scrollTo(0,0);
+}
+function openMod(id){
+  const mod=MODS.find(function(m){return m.id===id;})||MODS[0];
+  current=mod.id;
+  MODS.forEach(function(m){ $(m.el).hidden=m.id!==mod.id; });
+  $('crumb-path').textContent='Índice / '+mod.t;
+  try{ (mod.open||mod.fn)(); }catch(e){ console.error(e); }
+  view('calc');
+  try{history.replaceState(null,'','#'+mod.id);}catch(e){}
+}
+(function init(){
+  const body=$('idx-body');
+  let n=0;
+  MODS.forEach(function(m){
+    if(m.g){
+      const tr=document.createElement('tr'); tr.className='sect';
+      const td=document.createElement('td'); td.colSpan=4; td.textContent=m.g;
+      tr.appendChild(td); body.appendChild(tr);
+    }
+    n++;
+    const tr=document.createElement('tr'); tr.className='row';
+    tr.innerHTML='<td class="num">'+n+'.</td><td class="thumb">'+THUMB[m.id]+'</td>'+
+      '<td><a class="tool" role="button" tabindex="0">'+m.t+'</a></td><td class="desc">'+m.d+'</td>';
+    const go=function(){openMod(m.id);};
+    tr.addEventListener('click',go);
+    tr.querySelector('a').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+    body.appendChild(tr);
+  });
+  $('back-idx').addEventListener('click',function(){view('index');try{history.replaceState(null,'','#index');}catch(e){}});
+  $('go-report').addEventListener('click',function(){
+    if(current==='ident'&&busy){ $('crumb-path').textContent='Índice / Identificación de distribución · espera a que termine el cálculo'; return; }
+    buildReport(current); view('report');
+  });
+  $('back-calc').addEventListener('click',function(){ $('crumb-path').textContent='Índice / '+MODS.find(function(m){return m.id===current;}).t; view('calc'); });
+  ['rp-eq','rp-an','rp-cod'].forEach(function(k){ $(k).addEventListener('input',function(){buildReport(current);}); });
+  MODS.forEach(function(m){
+    if(m.manual) return;
+    const sec=$(m.el), re=function(){ try{ m.fn(); }catch(e){ console.error(e); } };
+    sec.addEventListener('input',re); sec.addEventListener('change',re);
+  });
+  // módulo de identificación: cálculo solo al presionar el botón
+  $('i-go').addEventListener('click',runIdent);
+  $('i-sample').addEventListener('click',function(){ $('i-data').value=SAMPLE_ID.join('\n'); runIdent(); });
+  $('i-fileb').addEventListener('click',function(){ $('i-file').click(); });
+  $('i-file').addEventListener('change',function(e){
+    const f=e.target.files&&e.target.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=function(){ $('i-data').value=String(rd.result||''); runIdent(); };
+    rd.onerror=function(){ setStatus('No se pudo leer el archivo.'); };
+    rd.readAsText(f); e.target.value='';
+  });
+  $('i-a').addEventListener('change',function(){ if(ID){ ID.alpha=+$('i-a').value; computeBest(); renderIdent(); } });
+  $('i-data').value=SAMPLE_ID.join('\n');
+  $('dl-word').addEventListener('click',exportWord);
+  $('print-hint').textContent='Vista previa de la hoja A4 en blanco y negro. “Descargar Word” genera el mismo informe como .docx editable, con tablas nativas y gráficos como imágenes. Desde el archivo local también puedes usar Ctrl+P (⌘+P en Mac) para imprimirla o guardarla como PDF.';
+  const h=(location.hash||'').replace('#','');
+  if(MODS.some(function(m){return m.id===h;})) openMod(h); else view('index');
+})();
+</script>
