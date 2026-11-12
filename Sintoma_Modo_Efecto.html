@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Síntoma, Modo, Efecto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Idea: placa de equipo + tarjeta de orden de trabajo. Tres colores fijos para S / M / E, todo lo demás en acero neutro. */
+:root{
+  --bg:#e9ebe8; --surface:#f8f9f6; --ink:#1b2224; --muted:#5c686b; --line:#c3c9c6;
+  --accent:#1b2224; --on-accent:#f8f9f6;
+  --s:#0d6e8a; --s-bg:#d9edf3;
+  --m:#b0421a; --m-bg:#f7e0d6;
+  --e:#6a3fa0; --e-bg:#e8def5;
+  --ok:#1f7a45; --bad:#b3261e;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#14191a; --surface:#1e2526; --ink:#e8ecea; --muted:#9aa6a8; --line:#3a4547;
+    --accent:#e8ecea; --on-accent:#14191a;
+    --s:#5cc3e0; --s-bg:#123541; --m:#f08a5d; --m-bg:#45200f; --e:#b996ea; --e-bg:#30214a;
+    --ok:#5fcf8c; --bad:#f2837b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#14191a; --surface:#1e2526; --ink:#e8ecea; --muted:#9aa6a8; --line:#3a4547;
+  --accent:#e8ecea; --on-accent:#14191a;
+  --s:#5cc3e0; --s-bg:#123541; --m:#f08a5d; --m-bg:#45200f; --e:#b996ea; --e-bg:#30214a;
+  --ok:#5fcf8c; --bad:#f2837b;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body)}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 56px;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+h1{font:700 2.3rem/1 var(--display);letter-spacing:.01em;margin:0;text-transform:uppercase;text-wrap:balance}
+h1 b{font-weight:700}
+h1 .cs{color:var(--s)} h1 .cm{color:var(--m)} h1 .ce{color:var(--e)}
+h2{font:600 1.5rem/1.1 var(--display);text-transform:uppercase;margin:0;text-wrap:balance}
+h3{font:600 1.15rem/1.2 var(--display);text-transform:uppercase;margin:0}
+p{margin:0}
+nav{display:flex;gap:4px}
+nav a{font:600 1rem var(--display);text-transform:uppercase;letter-spacing:.04em;text-decoration:none;color:var(--muted);padding:6px 12px;border:1px solid transparent;border-radius:3px}
+nav a.on{color:var(--on-accent);background:var(--accent)}
+nav a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--s);outline-offset:2px}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{font:600 1.05rem var(--display);text-transform:uppercase;letter-spacing:.04em;background:var(--accent);color:var(--on-accent);border:0;border-radius:3px;padding:10px 20px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.muted{color:var(--muted)} .small{font-size:.875rem}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* marcador */
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.board div{background:var(--surface);padding:10px 14px}
+.board .k{font:500 .8rem var(--display);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.board .v{font:600 1.6rem/1.1 var(--display)}
+.bar{height:6px;background:var(--line);margin-top:6px}
+.bar i{display:block;height:100%}
+
+/* niveles */
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.lvl{text-align:left;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--ink);border-radius:3px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.lvl:hover{border-color:var(--ink)}
+.lvl .n{font:500 .8rem var(--mono);color:var(--muted)}
+.lvl .t{font:600 1.2rem/1.15 var(--display);text-transform:uppercase}
+.lvl .st{font-size:.875rem;color:var(--muted)}
+.stars{letter-spacing:2px;color:var(--m)}
+.stars s{text-decoration:none;color:var(--line)}
+
+/* caso */
+.plate{background:var(--surface);border:1px solid var(--ink);border-radius:3px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px 28px;align-items:baseline;position:relative}
+.plate .k{font:500 .75rem var(--display);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block}
+.plate .v{font:600 1.35rem/1.15 var(--display);text-transform:uppercase}
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--line);border-radius:3px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.card .txt{font-size:1.06rem;max-width:65ch}
+.card[data-pick="S"]{border-left-color:var(--s)} .card[data-pick="M"]{border-left-color:var(--m)} .card[data-pick="E"]{border-left-color:var(--e)}
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pick button{font:600 .95rem var(--display);text-transform:uppercase;letter-spacing:.04em;background:transparent;border:1px solid var(--line);border-radius:3px;padding:6px 12px;display:flex;gap:6px;align-items:center}
+.pick button i{font:500 .75rem var(--mono);font-style:normal;border:1px solid currentColor;border-radius:2px;padding:0 4px}
+.pick button[data-c="S"]{color:var(--s)} .pick button[data-c="M"]{color:var(--m)} .pick button[data-c="E"]{color:var(--e)}
+.pick button[aria-pressed="true"][data-c="S"]{background:var(--s-bg);border-color:var(--s)}
+.pick button[aria-pressed="true"][data-c="M"]{background:var(--m-bg);border-color:var(--m)}
+.pick button[aria-pressed="true"][data-c="E"]{background:var(--e-bg);border-color:var(--e)}
+.verdict{font-weight:600;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.tag{font:600 .85rem var(--display);text-transform:uppercase;letter-spacing:.05em;border-radius:2px;padding:2px 8px}
+.tag.S{background:var(--s-bg);color:var(--s)} .tag.M{background:var(--m-bg);color:var(--m)} .tag.E{background:var(--e-bg);color:var(--e)} .tag.K{background:var(--line);color:var(--ink)}
+.hint{font-size:.9rem;color:var(--muted);font-weight:400;flex-basis:100%}
+.chain{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:14px 16px}
+.chain div{display:flex;flex-direction:column;gap:4px;align-items:flex-start;font-size:.93rem}
+.prog{display:flex;gap:3px}
+.prog i{flex:1;height:6px;background:var(--line)}
+.prog i.d{background:var(--ink)} .prog i.p{background:var(--ok)} .prog i.f{background:var(--bad)}
+
+/* biblioteca */
+input[type=search],select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:8px 10px}
+input[type=search]{flex:1;min-width:200px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:900px;font-size:.875rem}
+th{font:600 .85rem var(--display);text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:8px 10px;border-bottom:2px solid var(--ink);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.iso{font-family:var(--mono)}
+th.S{color:var(--s)} th.M{color:var(--m)} th.E{color:var(--e)}
+textarea{width:100%;height:120px;font:.8rem var(--mono);background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+
+/* reglas */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.rule{background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--line);border-radius:3px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.rule.S{border-top-color:var(--s)} .rule.M{border-top-color:var(--m)} .rule.E{border-top-color:var(--e)}
+.rule q{font-style:italic;quotes:none}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:10px}
+.prose ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+section{display:flex;flex-direction:column;gap:16px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1><b class="cs">Síntoma</b>, <b class="cm">Modo</b>, <b class="ce">Efecto</b></h1>
+  <nav>
+    <a href="#juego" data-v="juego">Juego</a>
+    <a href="#biblioteca" data-v="biblioteca">Biblioteca</a>
+    <a href="#reglas" data-v="reglas">Reglas</a>
+  </nav>
+</header>
+
+<section id="v-juego"></section>
+
+<section id="v-biblioteca" hidden>
+  <div class="prose">
+    <h2>Biblioteca de modos de falla</h2>
+    <p class="muted">Los 100 casos del juego, ordenados como semilla de biblioteca: un modo de falla por fila. El código ISO 14224 es una referencia escrita de memoria; confírmalo contra el anexo B de la edición vigente antes de cargarlo en SAP.</p>
+  </div>
+  <div class="row">
+    <input type="search" id="q" placeholder="Buscar: sello, vibración, fuga…" aria-label="Buscar en la biblioteca">
+    <select id="fam" aria-label="Familia de equipos"></select>
+    <button class="btn ghost" id="copy">Copiar para Excel</button>
+  </div>
+  <p class="small muted" id="count"></p>
+  <textarea id="tsv" hidden readonly aria-label="Datos para copiar"></textarea>
+  <div class="tw"><table><thead><tr><th>Equipo</th><th>Ítem mantenible</th><th class="M">Modo de falla</th><th>Causa típica</th><th class="S">Síntoma</th><th class="E">Efecto</th><th>ISO</th></tr></thead><tbody id="tb"></tbody></table></div>
+</section>
+
+<section id="v-reglas" hidden>
+  <h2>Cómo separarlos</h2>
+  <div class="rules">
+    <div class="rule S"><span class="tag S">Síntoma</span><p><strong>Lo que alguien ve, oye, huele o mide.</strong> Es evidencia: una lectura, una alarma, un ruido, un resultado de ensayo.</p><p class="small muted">Prueba: <q>¿Puedo anotarlo en una ronda o verlo en una tendencia sin abrir el equipo?</q></p></div>
+    <div class="rule M"><span class="tag M">Modo de falla</span><p><strong>Qué le pasó a qué componente.</strong> Un evento físico: sustantivo de la pieza más lo que le ocurrió (rotura, desgaste, obstrucción, trabado).</p><p class="small muted">Prueba: <q>¿Puedo ir con una llave y tocar la pieza dañada?</q></p></div>
+    <div class="rule E"><span class="tag E">Efecto</span><p><strong>Lo que pasa después si nadie interviene.</strong> Consecuencia local, del sistema o de la planta: disparo, pérdida de capacidad, riesgo para las personas.</p><p class="small muted">Prueba: <q>¿Responde a la pregunta «¿y qué importa?»</q></p></div>
+  </div>
+  <div class="prose">
+    <h3>Trampas frecuentes</h3>
+    <ul>
+      <li><strong>Vibración alta, fuga, alta temperatura</strong> son síntomas cuando se miden. No dicen qué pieza falló.</li>
+      <li><strong>El disparo de la unidad</strong> es efecto, aunque sea lo primero que ve el operador. La alarma previa es el síntoma.</li>
+      <li><strong>La causa no es el modo.</strong> «Falta de lubricación» es causa; «fundición del cojinete» es modo. El juego muestra la causa al revisar cada caso.</li>
+      <li><strong>Fallas ocultas:</strong> en protecciones y respaldos el síntoma solo aparece en la prueba funcional, y el efecto solo ocurre si además falla lo protegido.</li>
+    </ul>
+    <h3>Dos convenciones que conviven</h3>
+    <p>En RCM (SAE JA1011, Moubray) el modo de falla es el evento que causa la falla funcional, a nivel de pieza: <em>rotura de placa de válvula</em>. Es la convención del juego.</p>
+    <p>En ISO 14224 y OREDA el modo de falla es lo que se observa en el límite del equipo: <em>fuga interna, vibración, no arranca</em>. Por eso varios códigos ISO se parecen a un síntoma. Una buena biblioteca guarda ambos: el código ISO para comparar estadísticas y el modo RCM para decidir tareas.</p>
+  </div>
+</section>
+</div>
+
+<script>
+const FAM=["Compresor reciprocante","Motor a gas","Lubricación y enfriamiento","Turbomaquinaria","Motores eléctricos","Transformadores y distribución","Instrumentación y control","Gas, incendio y seguridad","Válvulas y equipos estáticos","Bombas y generación"];
+const RAW=[
+"0|Compresor reciprocante|Válvula de succión|Rotura de placa de la válvula de succión|Temperatura de la tapa de válvula 25 °C sobre las tapas vecinas|Recirculación de gas caliente y caída del caudal de la etapa|Fatiga por impacto; líquidos o sólidos en el gas|INL",
+"0|Compresor reciprocante|Válvula de descarga|Resorte de la válvula de descarga fracturado|Temperatura de descarga de la etapa en ascenso sostenido|Menor eficiencia volumétrica y más combustible por MMm³ comprimido|Fatiga del resorte por pulsaciones|INL",
+"0|Compresor reciprocante|Anillos de pistón|Desgaste de los anillos de pistón|Presión interetapa fuera de rango con carga constante|Fuga interna entre cámaras y menor capacidad del cilindro|Lubricación insuficiente del cilindro; gas sucio|INL",
+"0|Compresor reciprocante|Empaquetadura de vástago|Desgaste de los anillos de la empaquetadura del vástago|Flujo de venteo de la empaquetadura sobre el límite|Gas en la pieza distanciadora y riesgo de atmósfera explosiva en la sala|Vástago rayado; lubricación deficiente|ELP",
+"0|Compresor reciprocante|Pistón|Aflojamiento de la tuerca del pistón|Golpe metálico en el cilindro en cada inversión de carrera|Impacto del pistón contra la tapa y daño mayor del cilindro|Pérdida de precarga; torque insuficiente|NOI",
+"0|Compresor reciprocante|Bandas de apoyo|Desgaste de las bandas de apoyo del pistón|Lectura de caída de vástago (rod drop) acercándose al límite|Contacto entre pistón y camisa, con rayado de la camisa|Fin de vida; gas seco o con sólidos|PDE",
+"0|Compresor reciprocante|Cruceta|Desgaste del metal antifricción de las zapatas de cruceta|Partículas de babbitt en el filtro y guía de cruceta más caliente|Agripamiento de la cruceta y detención forzada del compresor|Aceite contaminado; holgura incorrecta|OHE",
+"0|Compresor reciprocante|Cojinete de biela|Fundición del metal del cojinete de biela|Alarma de alta temperatura de cojinete y presión de aceite cayendo|Daño del muñón del cigüeñal y unidad fuera de servicio por semanas|Pérdida de la película de aceite|OHE",
+"0|Compresor reciprocante|Lubricador de cilindros|Bomba del lubricador forzado sin entrega|Indicador de no-flujo activado en el bloque divisor|Cilindro y empaquetadura trabajan en seco y se rayan|Émbolo desgastado; aire en la línea|LOO",
+"0|Compresor reciprocante|Conexión de pequeño diámetro|Fisura por fatiga en la soldadura de una conexión de pequeño diámetro|Olor a gas y detector portátil marcando junto al cilindro|Fuga de gas de proceso a la sala y parada de emergencia|Vibración inducida por pulsaciones|ELP",
+"1|Motor a gas|Bujía|Electrodo de la bujía erosionado|Temperatura de escape de un cilindro más baja que el resto|Falla de encendido y pérdida de potencia del motor|Horas de servicio; abertura excesiva|LOO",
+"1|Motor a gas|Bobina de encendido|Cortocircuito en la aislación de la bobina de encendido|Marcha inestable con explosiones en el escape|Combustible sin quemar en el escape y riesgo de explosión en el silenciador|Temperatura; envejecimiento|ERO",
+"1|Motor a gas|Válvula de inyección|Válvula de inyección de gas pegada abierta|Humo negro y temperatura de escape alta en ese cilindro|Detonación y sobrecarga térmica del pistón|Depósitos de carbón|HIO",
+"1|Motor a gas|Turbocompresor|Desgaste de los cojinetes del turbocompresor|Silbido agudo y aceite en el ducto de aire|Menor presión de barrido y motor limitado en carga|Aceite contaminado; paradas en caliente|NOI",
+"1|Motor a gas|Camisa de potencia|Rayado de la camisa del cilindro de potencia|Presión de cárter alta y consumo de aceite en aumento|Pérdida de compresión y menor potencia disponible|Lubricación deficiente; sobrecalentamiento|PDE",
+"1|Motor a gas|Lumbreras de escape|Obstrucción de las lumbreras de escape por carbón|No alcanza la velocidad nominal con el gobernador a tope|Barrido deficiente y menor capacidad de compresión|Exceso de lubricación; mala combustión|PLU",
+"1|Motor a gas|Gobernador|Actuador del gobernador trabado|Velocidad oscilando ±20 rpm sin cambio de carga|Disparo por sobrevelocidad y detención de la unidad|Suciedad; desgaste del varillaje|ERO",
+"1|Motor a gas|Motor de arranque|Paletas del motor de arranque neumático desgastadas|En el arranque gira lento y no completa el ciclo|Unidad no disponible cuando se necesita ponerla en servicio|Aire sin lubricación; desgaste|FTS",
+"1|Motor a gas|Sistema de encendido|Punto de encendido desplazado por desgaste del acople|Golpeteo de detonación audible a plena carga|Sobrepresión en los cilindros y daño de pistones|Desgaste; ajuste incorrecto|PDE",
+"1|Motor a gas|Múltiple de escape|Fisura en la junta de expansión del escape|Soplido y gases calientes visibles en la sala|Personal expuesto a monóxido de carbono|Fatiga térmica|ELU",
+"2|Sistema de lubricación|Bomba de aceite|Desgaste de los engranajes de la bomba de aceite principal|Presión de aceite baja en caliente y normal en frío|Disparo por baja presión de aceite|Holgura por desgaste|LOO",
+"2|Sistema de lubricación|Filtro de aceite|Colmatación del elemento filtrante|Presión diferencial del filtro sobre 1 bar|Se abre el bypass y llega aceite sin filtrar a los cojinetes|Contaminación; intervalo excedido|PLU",
+"2|Sistema de lubricación|Enfriador de aceite|Tubo del enfriador de aceite perforado|Aceite de aspecto lechoso y nivel del cárter subiendo|El aceite pierde sus propiedades y se dañan los cojinetes|Corrosión|INL",
+"2|Sistema de enfriamiento|Bomba de agua de camisas|Sello mecánico de la bomba de agua dañado|Goteo de refrigerante bajo la bomba y estanque de expansión bajando|Pérdida de refrigerante y disparo por alta temperatura de camisas|Desgaste de caras; operación en seco|ELU",
+"2|Sistema de enfriamiento|Válvula termostática|Elemento termostático pegado en posición de bypass|El agua de camisas se calienta con el radiador frío|Sobrecalentamiento del motor y detención por protección|Fatiga del elemento|OHE",
+"2|Aeroenfriador|Correas|Correas del ventilador patinando|Chillido en el arranque y olor a goma quemada|Menos flujo de aire y gas de descarga sobre la temperatura especificada|Tensión insuficiente; desgaste|LOO",
+"2|Aeroenfriador|Haz de tubos|Aletas del haz de tubos sucias por fuera|Diferencia de temperatura entre aire y proceso cada vez menor|Unidad limitada en carga en días calurosos|Polvo, pasto, insectos|PLU",
+"2|Aeroenfriador|Rodamiento del ventilador|Pista exterior del rodamiento del ventilador picada|Ruido áspero y vibración a la frecuencia de falla del rodamiento|Eje trabado y pérdida total del enfriamiento|Falta de grasa; fin de vida|VIB",
+"2|Sistema de lubricación|Aceite lubricante|Dilución del aceite con condensado de gas|Viscosidad bajo el límite en el análisis de aceite|Película lubricante insuficiente y desgaste acelerado|Gas húmedo; fuga por anillos|PDE",
+"2|Sistema de lubricación|Calefactor de cárter|Resistencia calefactora del cárter abierta|Temperatura de aceite bajo el permisivo en invierno|Arranque bloqueado y demora en la puesta en servicio|Fin de vida; sobretensión|FTS",
+"3|Compresor centrífugo|Sello seco de gas|Caras del sello seco dañadas|Flujo de venteo primario del sello sobre la alarma|Fuga de gas por el sello y disparo de la unidad|Líquido o sólidos en el gas de sello|ELP",
+"3|Compresor centrífugo|Cojinete radial|Desgaste del babbitt del cojinete radial|Vibración de eje sube de 25 a 60 µm pico a pico|Roce del rotor con los sellos laberínticos|Aceite contaminado|VIB",
+"3|Compresor centrífugo|Cojinete de empuje|Pérdida de material en las zapatas del cojinete axial|Desplazamiento axial acercándose al valor de alarma|Contacto axial entre rotor y estator, con daño mayor|Surge; sobrecarga axial|PDE",
+"3|Compresor centrífugo|Impulsor|Depósitos adheridos al impulsor|Altura politrópica bajo la curva a igual velocidad|Menos caudal entregado y más potencia consumida|Sólidos y sales en el gas|LOO",
+"3|Compresor centrífugo|Válvula antisurge|Válvula antisurge trabada cerrada|Flujo y presión oscilando con ruido de bombeo|Surge repetido y daño del cojinete de empuje|Actuador o posicionador defectuoso|FTO",
+"3|Tren turbocompresor|Acoplamiento|Fisura en las láminas del acoplamiento flexible|Vibración 2X creciente a ambos lados del acople|Rotura del acople y pérdida de la transmisión|Desalineamiento|VIB",
+"3|Turbina a gas|Combustor|Fisura en el liner del combustor|Dispersión de temperaturas de escape fuera de límite|Puntos calientes que dañan las toberas de primera etapa|Fatiga térmica|PDE",
+"3|Turbina a gas|Filtro de admisión|Colmatación de los filtros de aire de admisión|Presión diferencial de admisión alta|Pérdida de potencia de la turbina|Polvo; nieve y hielo|PLU",
+"3|Tren turbocompresor|Bomba auxiliar de aceite|Contactor de la bomba auxiliar de aceite quemado|La bomba no parte en la prueba semanal de arranque automático|Sin respaldo de lubricación si se pierde la bomba principal|Desgaste de contactos|FTS",
+"3|Tren turbocompresor|Sonda de proximidad|Cable de extensión de la sonda de proximidad dañado|Lectura de vibración con saltos y voltaje de gap fuera de rango|Disparo espurio de la unidad por vibración|Roce; conector contaminado con aceite|AIR",
+"4|Motor eléctrico|Rodamiento lado carga|Descascarado de la pista interior del rodamiento|Picos a la frecuencia BPFI en el espectro y descanso más caliente|Rotor trabado y bobinado dañado por roce|Lubricación; corrientes por el eje|VIB",
+"4|Motor eléctrico|Bobinado del estator|Cortocircuito entre espiras del estator|Desbalance de 12 % entre las corrientes de fase|Opera la protección y el motor queda fuera de servicio|Degradación térmica de la aislación|PDE",
+"4|Motor eléctrico|Aislación a tierra|Aislación a tierra del estator degradada por humedad|Resistencia de aislación de 2 MΩ e índice de polarización bajo 1,5|Falla a tierra en el próximo arranque|Humedad; contaminación|PDE",
+"4|Motor eléctrico|Rotor|Barra del rotor fracturada|Bandas laterales junto a la frecuencia de línea en el espectro de corriente|Torque pulsante y menor capacidad de arranque|Fatiga por arranques repetidos|PDE",
+"4|Motor eléctrico|Ventilador|Aspas del ventilador del motor rotas|Carcasa 20 °C más caliente a igual carga|Envejecimiento acelerado de la aislación|Impacto; fatiga|OHE",
+"4|Motor eléctrico|Caja de conexiones|Terminal flojo en la caja de conexiones|Punto caliente de 95 °C en la termografía|Arco, pérdida de una fase y motor operando en monofásico|Torque insuficiente; vibración|OHE",
+"4|Motor eléctrico|Base y acople|Desalineamiento angular entre motor y bomba|Vibración axial alta a 1X y 2X|Falla prematura de rodamientos y acoplamiento|Montaje; pata coja; dilatación|VIB",
+"4|Partidor|Contactor|Contactos del contactor soldados|El motor sigue girando después de la orden de parada|No se puede detener el equipo desde la sala de control|Corriente de partida; desgaste|STP",
+"4|Variador de frecuencia|Bus de corriente continua|Condensadores del bus de continua degradados|Alarma de rizado en el bus y disparos por sobretensión|Detenciones intermitentes del equipo accionado|Envejecimiento; temperatura|UST",
+"4|Partidor|Relé de sobrecarga|Relé de sobrecarga descalibrado bajo su ajuste|Opera repetidamente con corriente menor a la nominal|Detenciones espurias y pérdida de producción|Deriva; ajuste incorrecto|UST",
+"5|Transformador|Aislación sólida|Degradación del papel aislante|CO, CO₂ y furanos en aumento en el análisis de aceite|Menor vida útil y riesgo de falla dieléctrica|Sobrecarga térmica; humedad|PDE",
+"5|Transformador|Aislador de alta tensión|Fisura en el aislador de alta tensión|Mancha de aceite en la base del aislador y descargas parciales|Descarga a tierra y desconexión de la subestación|Esfuerzo mecánico; envejecimiento|ELU",
+"5|Transformador|Cambiador de taps|Contactos del cambiador de taps carbonizados|Acetileno en el análisis de gases y resistencia de contacto alta|Tensión secundaria fuera de banda|Arco en la conmutación|FOV",
+"5|Transformador|Tapa del estanque|Empaquetadura de la tapa endurecida|Nivel bajo en el conservador y manchas de aceite en el estanque|Ingreso de humedad y pérdida de rigidez dieléctrica|Envejecimiento del elastómero|ELU",
+"5|Reconectador|Mecanismo de operación|Mecanismo de operación del reconectador trabado|Tiempo de apertura sobre la especificación en la prueba|No despeja la falla, opera la protección aguas arriba y queda más carga sin energía|Lubricante endurecido|DOP",
+"5|Interruptor de media tensión|Botella de vacío|Pérdida de vacío en la botella del interruptor|No pasa la prueba de alto potencial|No interrumpe la corriente de falla y se produce arco interno|Fin de vida; fuga en el fuelle|FTF",
+"5|Banco de baterías|Celda|Celda de batería sulfatada|Tensión de celda baja en flotación|Autonomía insuficiente del control ante un corte de energía|Descargas profundas; bajo nivel de electrolito|LOO",
+"5|Cargador de baterías|Rectificador|Rectificador del cargador de baterías quemado|Alarma de baja tensión continua y baterías descargándose|Control y protecciones sin alimentación al agotarse la autonomía|Sobretensión; temperatura|FOV",
+"5|Cable de poder|Aislación|Arborescencias de agua en la aislación del cable|Descargas parciales y tangente delta elevadas|Falla de fase a tierra y pérdida del alimentador|Humedad; envejecimiento|PDE",
+"5|Malla de tierra|Conexión|Corrosión en la conexión a la malla de tierra|Resistencia de puesta a tierra sobre el valor de diseño|Tensiones de paso y de contacto peligrosas durante una falla|Corrosión galvánica|STD",
+"6|Termocupla|Termoelemento|Rotura del termoelemento de la termocupla|Lectura a fondo de escala|Disparo espurio por alta temperatura|Vibración; fatiga|AIR",
+"6|Termocupla|Caja de conexión|Bornes de la caja de conexión sulfatados|Lectura de temperatura con saltos intermitentes|Medición no confiable y equipo sin protección efectiva|Ingreso de humedad|ERO",
+"6|Transmisor de presión|Sensor|Deriva del cero del transmisor|Diferencia de 3 % contra el manómetro patrón|El control usa un valor falso y el disparo queda desplazado|Envejecimiento; sobrepresión|AIR",
+"6|Transmisor de presión|Línea de impulso|Línea de impulso tapada por hielo o hidratos|Señal plana que no sigue los cambios del proceso|Protección por presión inoperante sin que nadie lo note|Frío; condensado|PLU",
+"6|Interruptor de nivel|Flotador|Flotador del interruptor de nivel pegado|No actúa en la prueba funcional|Líquido arrastrado al compresor sin disparo por alto nivel|Suciedad; parafina|FTF",
+"6|Válvula de control|Posicionador|Posicionador descalibrado|Posición real difiere 10 % de la señal de mando|Control de presión oscilante|Desgaste del varillaje; vibración|ERO",
+"6|PLC|Tarjeta de entradas analógicas|Canal de la tarjeta analógica dañado|Diagnóstico de canal en falla y valor congelado|Lazo en manual y pérdida del control automático|Sobretensión transitoria|AIR",
+"6|Sistema de control|Fuente de 24 Vdc|Condensadores de la fuente de 24 Vdc secos|Salida con rizado y caídas a 21 V|Reinicio del PLC y detención de la planta|Temperatura; envejecimiento|FOV",
+"6|Válvula de combustible|Solenoide de parada|Bobina del solenoide de parada quemada|Bobina sin continuidad y cuerpo a temperatura ambiente|Cierre de la válvula de combustible y parada espuria|Sobretensión; temperatura|SPO",
+"6|Sensor de velocidad|Captador magnético|Entrehierro del captador magnético fuera de ajuste|Señal de rpm intermitente en el panel|Protección de sobrevelocidad no confiable|Vibración; montaje|ERO",
+"7|Detector de gas catalítico|Sensor|Sensor catalítico envenenado|No responde al gas patrón en la calibración|Una fuga de gas en la sala de compresores pasa sin detección|Siliconas; H₂S|FTF",
+"7|Detector de gas infrarrojo|Ventana óptica|Ventana óptica del detector sucia|Alarma de falla óptica en el controlador|Detector fuera de servicio y menor cobertura de la sala|Aceite; polvo; escarcha|NOO",
+"7|Detector de llama|Soporte|Detector de llama desalineado respecto a la zona protegida|No ve la lámpara de prueba desde el punto de ensayo|Un incendio en la zona cubierta queda sin detección|Vibración; golpe|FTF",
+"7|Detector de llama|Sensor óptico|Activación del detector por radiación de soldadura|Alarma de fuego sin llama presente durante trabajos en caliente|Parada de emergencia espuria y planta detenida|Fuente externa de radiación|SHH",
+"7|Válvula de seguridad|Resorte|Resorte de la válvula de seguridad relajado|Siseo y escarcha en la línea de descarga al venteo|Pérdida continua de gas al venteo|Fatiga; temperatura|LCP",
+"7|Válvula de seguridad|Asiento|Válvula de seguridad pegada por corrosión del asiento|No abre a la presión de ajuste en el banco de prueba|Sobrepresión del recipiente sin alivio|Corrosión; depósitos|FTO",
+"7|Válvula de parada de emergencia|Actuador|Fuga en el diafragma del actuador de la válvula de emergencia|Tiempo de cierre sobre el límite en la prueba de carrera parcial|La planta no queda aislada a tiempo en una emergencia|Envejecimiento del elastómero|DOP",
+"7|Válvula de venteo|Asiento|Asiento de la válvula de venteo dañado|Línea aguas abajo fría y con ruido de flujo estando cerrada|Pérdida de inventario de gas y emisión al ambiente|Erosión; sólidos|LCP",
+"7|Sistema de extinción|Cilindro de agente|Fuga lenta en la válvula del cilindro de agente extintor|Manómetro en zona roja en la inspección mensual|Descarga insuficiente para apagar un incendio|Sello deteriorado|PDE",
+"7|Sistema de alarma|Bocina|Bobina de la bocina de alarma abierta|Sin sonido en la prueba de alarmas|El personal no recibe el aviso de evacuación|Corrosión; humedad|FTF",
+"8|Válvula de bola|Asiento|Asiento de la válvula de bola rayado|La presión se iguala a través de la válvula cerrada|No se puede aislar el equipo para mantenimiento|Sólidos en el gas|LCP",
+"8|Válvula de compuerta|Vástago|Vástago de la válvula agripado|El volante no gira con el torque normal|No se puede maniobrar la válvula cuando se requiere|Corrosión; falta de grasa|FTC",
+"8|Válvula de retención|Clapeta|Clapeta de la válvula de retención trabada abierta|El compresor gira en sentido inverso al detenerse|Retorno de gas y daño del equipo por giro inverso|Depósitos; eje desgastado|INL",
+"8|Actuador neumático|Diafragma|Rotura del diafragma del actuador|Soplido de aire por el venteo del actuador|La válvula va a su posición de falla y se interrumpe el proceso|Envejecimiento; sobrepresión|SPO",
+"8|Separador de succión|Eliminador de niebla|Eliminador de niebla colapsado|Líquido en los drenajes aguas abajo del separador|Arrastre de líquido y rotura de válvulas del compresor|Golpe de líquido; corrosión|STD",
+"8|Separador de succión|Válvula de drenaje|Válvula de drenaje automático tapada|El nivel del visor sube entre drenajes manuales|Disparo por alto nivel de líquido|Parafina; sólidos|PLU",
+"8|Cañería de proceso|Pared|Pérdida de espesor por corrosión bajo aislación|Espesor por ultrasonido bajo el mínimo requerido|Rotura con liberación de gas a presión|Agua atrapada bajo la aislación|STD",
+"8|Unión bridada|Empaquetadura|Empaquetadura de la brida soplada|Burbujas con solución jabonosa y olor a gas|Fuga de gas a la atmósfera y zona clasificada más extensa|Apriete desigual; ciclos térmicos|ELP",
+"8|Filtro coalescedor|Elementos|Elementos coalescedores saturados|Presión diferencial alta en el filtro|Flujo restringido y menor presión de succión|Carga de líquidos y sólidos|PLU",
+"8|Patín del compresor|Pernos de anclaje|Pernos de anclaje sueltos|Movimiento visible del patín y grietas en el grout|Desalineamiento y vibración transmitida a las cañerías|Pérdida de precarga; grout degradado|STD",
+"9|Bomba centrífuga|Sello mecánico|Caras del sello mecánico desgastadas|Goteo continuo por el sello sobre lo admisible|Derrame de producto y contaminación del área|Operación en seco; sólidos|ELP",
+"9|Bomba centrífuga|Impulsor|Erosión del impulsor por cavitación|Ruido como de piedras en la succión y descarga fluctuante|Caudal y altura por debajo de la curva|Altura de succión disponible insuficiente|NOI",
+"9|Bomba centrífuga|Anillos de desgaste|Holgura excesiva en los anillos de desgaste|Presión de descarga 15 % bajo la curva al mismo caudal|Recirculación interna y menor eficiencia|Desgaste; sólidos|LOO",
+"9|Bomba dosificadora|Diafragma|Diafragma de la bomba dosificadora roto|Producto químico en la cámara hidráulica|Línea sin inhibidor y corrosión acelerada|Fatiga; ataque químico|INL",
+"9|Bomba centrífuga|Caja de rodamientos|Agua en el aceite de la caja de rodamientos|Aceite emulsionado en el visor|Falla del rodamiento y eje trabado|Sello de laberinto dañado; lavado|PDE",
+"9|Generador|Regulador de voltaje|Regulador automático de voltaje con falla interna|Tensión de salida oscilando entre 360 y 410 V|Desconexión de cargas sensibles|Componente electrónico; temperatura|FOV",
+"9|Generador|Excitatriz|Diodo rotatorio de la excitatriz en cortocircuito|Corriente de excitación alta y tensión que cae con carga|El generador no toma la carga nominal|Sobretensión transitoria|LOO",
+"9|Generador de emergencia|Batería de arranque|Batería de arranque descargada|El motor de arranque no gira en la prueba semanal|Sin respaldo eléctrico ante un corte de red|Cargador defectuoso; fin de vida|FTS",
+"9|Generador de emergencia|Transferencia automática|Mecanismo de la transferencia automática trabado|No conmuta en la prueba de corte simulado|Planta sin energía aunque el generador esté en marcha|Falta de operación; suciedad|FTF",
+"9|Aire de instrumentos|Secador|Desecante del secador saturado|Punto de rocío del aire sobre −20 °C|Hielo en las líneas de instrumentos y válvulas que no responden en invierno|Regeneración deficiente; fin de vida|PDE"
+];
+const C=RAW.map((r,i)=>{const p=r.split("|");return{id:i,f:+p[0],e:p[1],c:p[2],M:p[3],S:p[4],E:p[5],k:p[6],i:p[7]}});
+const NAME={S:"Síntoma",M:"Modo de falla",E:"Efecto"};
+const HINT={
+ "S>M":"Una lectura o un ruido no dice qué pieza falló. El modo nombra la pieza y lo que le ocurrió.",
+ "S>E":"Esto es evidencia que alguien mide u observa. El efecto es lo que la planta pierde después.",
+ "M>S":"Aquí hay una pieza dañada. El síntoma es la señal que esa pieza deja hacia afuera.",
+ "M>E":"Esto es el evento físico en la pieza. El efecto es la consecuencia de ese evento.",
+ "E>S":"Esto responde «¿y qué importa?». Es consecuencia, no evidencia.",
+ "E>M":"Esto es lo que ocurre después de la falla. El modo es el daño en la pieza que lo origina."
+};
+
+/* --- estado guardado (solo comodidad de este navegador) --- */
+let st={best:{},miss:[],cat:{S:[0,0],M:[0,0],E:[0,0]},conf:{}};
+try{const s=JSON.parse(localStorage.getItem("smf-v1"));if(s&&s.cat)st=Object.assign(st,s)}catch(e){}
+const save=()=>{try{localStorage.setItem("smf-v1",JSON.stringify(st))}catch(e){}};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const stars=p=>{const n=p>=90?3:p>=75?2:p>=50?1:0;return '<span class="stars" aria-label="'+n+' de 3 estrellas">'+"★".repeat(n)+"<s>"+"★".repeat(3-n)+"</s></span>"};
+
+/* --- juego --- */
+const G=document.getElementById("v-juego");
+let run=null;
+function home(){
+  run=null;
+  const tot=k=>st.cat[k][1]?Math.round(100*st.cat[k][0]/st.cat[k][1]):null;
+  const all=["S","M","E"].reduce((a,k)=>[a[0]+st.cat[k][0],a[1]+st.cat[k][1]],[0,0]);
+  const top=Object.entries(st.conf).sort((a,b)=>b[1]-a[1])[0];
+  const done=Object.keys(st.best).length;
+  let h='<div class="prose"><h2>Entrena con 100 casos de tus equipos</h2><p class="muted">Cada caso trae tres frases de una misma falla. Marca cuál es el síntoma, cuál el modo de falla y cuál el efecto. Diez niveles de diez casos.</p></div>';
+  h+='<div class="board"><div><span class="k">Niveles jugados</span><div class="v num">'+done+' / 10</div></div>';
+  h+='<div><span class="k">Acierto global</span><div class="v num">'+(all[1]?Math.round(100*all[0]/all[1])+" %":"—")+'</div></div>';
+  ["S","M","E"].forEach(k=>{const p=tot(k);h+='<div><span class="k">'+NAME[k]+'</span><div class="v num">'+(p===null?"—":p+" %")+'</div><div class="bar"><i style="width:'+(p||0)+'%;background:var(--'+k.toLowerCase()+')"></i></div></div>'});
+  h+='</div>';
+  if(top&&top[1]>1){const [a,b]=top[0].split(">");h+='<p class="small"><strong>Tu confusión más frecuente:</strong> marcas como '+NAME[b].toLowerCase()+' lo que es '+NAME[a].toLowerCase()+' ('+top[1]+' veces). '+HINT[top[0]]+'</p>'}
+  h+='<div class="row"><button class="btn" data-go="mix">Mezcla de 10 casos</button><button class="btn ghost" data-go="miss"'+(st.miss.length?"":" disabled")+'>Repasar mis errores ('+st.miss.length+')</button></div>';
+  h+='<div class="levels">';
+  FAM.forEach((n,i)=>{const b=st.best[i];h+='<button class="lvl" data-go="'+i+'"><span class="n">NIVEL '+String(i+1).padStart(2,"0")+'</span><span class="t">'+n+'</span><span class="st">'+(b===undefined?"Sin jugar":stars(b)+" mejor: "+b+" %")+'</span></button>'});
+  h+='</div>';
+  G.innerHTML=h;
+}
+function start(mode){
+  let ids,title;
+  if(mode==="mix"){ids=shuffle(C.map(c=>c.id)).slice(0,10);title="Mezcla"}
+  else if(mode==="miss"){ids=shuffle(st.miss).slice(0,10);title="Repaso de errores"}
+  else{ids=shuffle(C.filter(c=>c.f===+mode).map(c=>c.id));title=FAM[+mode]}
+  run={mode,title,ids,i:0,pts:0,ok:0,res:[],streak:0};
+  show();
+}
+function show(){
+  const c=C[run.ids[run.i]];
+  run.order=shuffle(["S","M","E"]);run.pick={};run.checked=false;
+  let h='<div class="row" style="justify-content:space-between"><h2>'+run.title+'</h2><span class="num">Caso '+(run.i+1)+' de '+run.ids.length+' · '+run.pts+' pts'+(run.streak>1?' · racha '+run.streak:'')+'</span></div>';
+  h+='<div class="prog">'+run.ids.map((_,j)=>'<i class="'+(j<run.i?(run.res[j]?"p":"f"):j===run.i?"d":"")+'"></i>').join("")+'</div>';
+  h+='<div class="plate"><div><span class="k">Equipo</span><span class="v">'+c.e+'</span></div><div><span class="k">Ítem mantenible</span><span class="v">'+c.c+'</span></div></div>';
+  h+='<div class="cards">'+run.order.map((k,n)=>'<div class="card" data-n="'+n+'"><div class="txt">'+c[k]+'</div><div class="pick" role="group" aria-label="Clasificar frase '+(n+1)+'">'+["S","M","E"].map(x=>'<button data-c="'+x+'" data-n="'+n+'" aria-pressed="false"><i>'+x+'</i>'+NAME[x]+'</button>').join("")+'</div><div class="verdict" hidden></div></div>').join("")+'</div>';
+  h+='<div id="after"></div><div class="row"><button class="btn" id="chk" disabled>Comprobar</button><button class="btn ghost" data-go="home">Salir</button></div>';
+  G.innerHTML=h;
+}
+function check(){
+  const c=C[run.ids[run.i]];let good=0;run.checked=true;
+  run.order.forEach((k,n)=>{
+    const p=run.pick[n],card=G.querySelector('.card[data-n="'+n+'"]'),v=card.querySelector(".verdict");
+    st.cat[k][1]++;
+    card.dataset.pick=k;card.querySelectorAll("button").forEach(b=>b.disabled=true);
+    v.hidden=false;
+    if(p===k){good++;st.cat[k][0]++;v.className="verdict ok";v.innerHTML='✓ Correcto <span class="tag '+k+'">'+NAME[k]+'</span>'}
+    else{const key=k+">"+p;st.conf[key]=(st.conf[key]||0)+1;v.className="verdict bad";v.innerHTML='✗ Era <span class="tag '+k+'">'+NAME[k]+'</span><span class="hint">'+HINT[key]+'</span>'}
+  });
+  const perfect=good===3;
+  run.streak=perfect?run.streak+1:0;
+  run.pts+=good*10+(perfect?20:0);run.ok+=good;run.res[run.i]=perfect;
+  st.miss=st.miss.filter(x=>x!==c.id);if(!perfect)st.miss.push(c.id);
+  save();
+  document.getElementById("after").innerHTML='<div class="chain"><div><span class="tag K">Causa</span>'+c.k+'</div><div><span class="tag M">Modo de falla</span>'+c.M+'</div><div><span class="tag S">Síntoma</span>'+c.S+'</div><div><span class="tag E">Efecto</span>'+c.E+'</div></div>';
+  const b=document.getElementById("chk");b.id="nxt";b.disabled=false;b.textContent=run.i+1<run.ids.length?"Siguiente caso":"Ver resultado";b.focus();
+}
+function finish(){
+  const n=run.ids.length,p=Math.round(100*run.ok/(3*n)),perf=run.res.filter(Boolean).length;
+  let rec="";
+  if(run.mode!=="mix"&&run.mode!=="miss"){const prev=st.best[run.mode];if(prev===undefined||p>prev){st.best[run.mode]=p;save();rec=prev===undefined?"":" Superaste tu marca anterior de "+prev+" %."}}
+  const msg=p>=90?"Dominas esta familia.":p>=75?"Vas bien. Repasa los casos fallados para cerrar el nivel.":"Lee las reglas y vuelve a intentarlo: la diferencia se aprende rápido.";
+  G.innerHTML='<h2>'+run.title+': resultado</h2><div class="board"><div><span class="k">Acierto</span><div class="v num">'+p+' % '+stars(p)+'</div></div><div><span class="k">Puntos</span><div class="v num">'+run.pts+'</div></div><div><span class="k">Casos perfectos</span><div class="v num">'+perf+' / '+n+'</div></div></div><p>'+msg+rec+'</p><div class="row"><button class="btn" data-go="'+run.mode+'"'+(run.mode==="miss"&&!st.miss.length?" disabled":"")+'>Jugar de nuevo</button><button class="btn ghost" data-go="home">Volver a los niveles</button><a class="btn ghost" href="#reglas" style="text-decoration:none">Ver reglas</a></div>';
+}
+G.addEventListener("click",ev=>{
+  const b=ev.target.closest("button");if(!b)return;
+  if(b.dataset.go!==undefined){b.dataset.go==="home"?home():start(b.dataset.go);return}
+  if(b.dataset.c&&!run.checked){
+    const n=b.dataset.n;run.pick[n]=b.dataset.c;
+    b.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    b.closest(".card").dataset.pick=b.dataset.c;
+    document.getElementById("chk").disabled=Object.keys(run.pick).length<3;return}
+  if(b.id==="chk"){check();return}
+  if(b.id==="nxt"){run.i++;run.i<run.ids.length?show():finish()}
+});
+
+/* --- biblioteca --- */
+const q=document.getElementById("q"),fam=document.getElementById("fam"),tb=document.getElementById("tb");
+fam.innerHTML='<option value="">Todas las familias</option>'+FAM.map((n,i)=>'<option value="'+i+'">'+n+'</option>').join("");
+let shown=C;
+function lib(){
+  const t=q.value.trim().toLowerCase(),f=fam.value;
+  shown=C.filter(c=>(f===""||c.f===+f)&&(!t||(c.e+c.c+c.M+c.S+c.E+c.k+c.i).toLowerCase().includes(t)));
+  tb.innerHTML=shown.map(c=>"<tr><td>"+c.e+"</td><td>"+c.c+"</td><td>"+c.M+"</td><td>"+c.k+"</td><td>"+c.S+"</td><td>"+c.E+'</td><td class="iso">'+c.i+"</td></tr>").join("");
+  document.getElementById("count").textContent=shown.length+" modos de falla";
+}
+q.addEventListener("input",lib);fam.addEventListener("change",lib);
+document.getElementById("copy").addEventListener("click",ev=>{
+  const txt=["Familia\tEquipo\tÍtem mantenible\tModo de falla\tCausa típica\tSíntoma\tEfecto\tISO 14224"].concat(shown.map(c=>[FAM[c.f],c.e,c.c,c.M,c.k,c.S,c.E,c.i].join("\t"))).join("\n");
+  const b=ev.currentTarget,ta=document.getElementById("tsv");
+  const fallback=()=>{ta.hidden=false;ta.value=txt;ta.select();b.textContent="Selecciona y copia el cuadro"};
+  try{navigator.clipboard.writeText(txt).then(()=>{b.textContent="Copiado: pega en Excel";setTimeout(()=>b.textContent="Copiar para Excel",2500)},fallback)}catch(e){fallback()}
+});
+
+/* --- vistas --- */
+function route(){
+  const v=["juego","biblioteca","reglas"].includes(location.hash.slice(1))?location.hash.slice(1):"juego";
+  ["juego","biblioteca","reglas"].forEach(n=>{document.getElementById("v-"+n).hidden=n!==v});
+  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",a.dataset.v===v));
+}
+window.addEventListener("hashchange",route);
+home();lib();route();
+</script>
+</body>
+</html>

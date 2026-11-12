@@ -30,6 +30,7 @@ Si el repositorio es público, puedes publicarlos en línea desde *Settings → 
 |---|---|---|---|
 | [Generador_Licencias_ConfiaKit.html](Generador_Licencias_ConfiaKit.html) | Página HTML | ConfiaKit Generador de licencias, genera las licencias para el programa.. | 2026-10-31 |
 | [Simulador_HMI_Sulzer.html](Simulador_HMI_Sulzer.html) | Página HTML | Simulador HMI Sulzer v2.0: partida de la turbina paso a paso (S1–S22), sincronización del generador BBC con los SOLAR (G1–G8), carga del compresor C-3 (C1–C3), acciones de campo, eventos de instructor y reporte de desempeño descargable. Enlaces directos por pestaña: #seq, #gen, #c3, #rep. | 2026-11-02 |
+| [Sintoma_Modo_Efecto.html](Sintoma_Modo_Efecto.html) | Página HTML | Programa que permite jugar y aprender a difererenciar MODO, SINTOMA y EFECTO DE FALLA. | 2026-11-11 |
 | [subir-a-github-v2.html](subir-a-github-v2.html) | Página HTML | Versión 2 dela archivo, ahora debiese subir o crear los sitios web | 2026-11-02 |
 | [subir-a-github.html](subir-a-github.html) | Página HTML | Sube los archivos a GitHub , se le agrego con respecto a su versión anterior el README | 2026-10-24 |
 | [toolkit_datos_vida.html](toolkit_datos_vida.html) | Página HTML | sirve para saber que función de distribución le sirve a mis datos. | 2026-11-10 |
